@@ -36,7 +36,7 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 
 ## Requirements
 - Windows 10/11 (the save location and the "is the game running?" check are Windows-specific)
-- Python 3.10 or newer should work; it is developed and tested on Python 3.14 only
+- Python 3.10 or newer is intended (dependency versions are ranges, not pins). Only Python 3.14 has been tested so far
 - A modern browser with internet access on first load (the page pulls Tailwind CSS and fonts from public CDNs)
 
 ## Quick start
