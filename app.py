@@ -11,6 +11,7 @@ import webbrowser
 
 from flask import Flask, Response, jsonify, render_template, request
 
+from zc import __version__
 from zc.service import EditError, Service
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -107,11 +108,12 @@ def main():
     ap.add_argument("--dir", action="append", default=[], help="extra folder of .sav files")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--version", action="version", version=f"Zero Company Save Editor {__version__}")
     a = ap.parse_args()
     service = Service(build_dirs(a.dir), os.path.join(ROOT, "backups"))
     app = create_app(service)
     url = f"http://127.0.0.1:{a.port}/"
-    print(f"Zero Company Save Editor on {url}")
+    print(f"Zero Company Save Editor v{__version__} on {url}")
     for k, v in service.dirs.items():
         print(f"  [{k}] {v}")
     if not a.no_browser:

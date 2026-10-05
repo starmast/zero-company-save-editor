@@ -23,6 +23,9 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 <sub>Screenshots use the `?portraits=off` option, so operators appear as initials; no game artwork is shown.</sub>
 </details>
 
+**Status:** early release (v0.1.0, see [CHANGELOG](CHANGELOG.md)). Tested with saves from game build
+`++ProjectBruno+Stable` changelist 197649; a game update can change the save format.
+
 ## Features
 - **Command** - save info, campaign progress (turn, level/XP), stockpile, and backups with one-click restore.
 - **Personnel** - roster strip with the real operator portraits stored in your save; Overview (focus points, training and
