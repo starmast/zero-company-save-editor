@@ -60,9 +60,12 @@ export function pips(ref, max = 6, { onchange } = {}) {
 }
 
 // Portrait circle (image, or initials badge when the save has no portrait for this operator).
+// `?portraits=off` in the page URL shows initials instead of the saved portraits.
+const PORTRAITS_OFF = new URLSearchParams(location.search).get("portraits") === "off";
+
 export function face(op, cls = "face") {
   const box = h("div", { class: cls });
-  if (op.portrait) {
+  if (op.portrait && !PORTRAITS_OFF) {
     const img = h("img", { src: op.portrait, alt: op.name, loading: "lazy" });
     img.addEventListener("error", () => box.replaceChildren(h("span", { class: "initials" }, initials(op.name))));
     box.append(img);

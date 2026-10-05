@@ -2,7 +2,7 @@
 import { h, $, fmtNum } from "./dom.js";
 import {
   S, onState, onPending, emitState, setBanner, pendingCount, discard, submit, getValue, isChanged,
-  setEdit, valid, describeEdit, actionList, loadSaves,
+  setEdit, valid, describeEdit, actionList, loadSaves, refresh,
 } from "./store.js";
 import * as saves from "./screens/saves.js";
 import * as command from "./screens/command.js";
@@ -159,5 +159,8 @@ export function start() {
     if (S.banner && S.banner.kind !== "err") S.banner = null;     // errors stay until dismissed
     render();
   });
-  loadSaves().then(render).catch((e) => { S.banner = { text: e.message, kind: "err" }; render(); });
+  loadSaves()
+    .then(() => refresh().catch(() => {}))          // resume a save the server already has open (e.g. after a page reload)
+    .then(render)
+    .catch((e) => { S.banner = { text: e.message, kind: "err" }; render(); });
 }

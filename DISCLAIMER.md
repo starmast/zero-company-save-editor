@@ -23,6 +23,11 @@ The optional extractor only reads the installation **you** own, on **your** mach
 folder. You are responsible for making sure that your use of the game's files complies with the game's end-user license
 agreement, the platform's terms of service, and the laws that apply to you. This is not legal advice.
 
+## Screenshots
+The screenshots in the README show this tool's own interface. Operator portraits are switched off (initials are shown)
+and no game artwork is used. Names, numbers and short descriptions shown in the interface come from a game save and
+are reproduced only to illustrate how the tool works.
+
 ## Use at your own risk
 - The software is provided **"as is", without warranty of any kind**, express or implied (see `LICENSE`).
 - Editing save files can corrupt them or change your game in ways the developers did not intend. Progress could be

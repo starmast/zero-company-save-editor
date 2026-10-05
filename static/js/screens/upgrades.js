@@ -129,6 +129,9 @@ export function render(args) {
   const u = S.state.view.upgrades;
   const tab = u.tabs.some((t) => t.key === args[0]) ? args[0] : "Facilities";
   const wrap = h("div", { class: "space-y-3" });
+  const tabNodes = u.tabs.find((x) => x.key === tab).rows.flatMap((r) => r.nodes);
+  if (!tabNodes.some((n) => n.name === sel))                  // pre-select something useful on arrival
+    sel = (tabNodes.find((n) => n.status === "InProgress") || tabNodes.find((n) => n.can_start) || tabNodes[0] || {}).name || null;
   const draw = () => {
     const t = u.tabs.find((x) => x.key === tab);
     const left = h("section", { class: "panel overflow-x-auto thin-scroll" },

@@ -230,6 +230,7 @@ export function render(args) {
   if (!cur) return h("p", { class: "text-mute" }, "No operators found in this save.");
   const tab = TABS.some(([k]) => k === args[1]) ? args[1] : "overview";
   if (!cur.bonds.some((b) => b.partner === selBond)) selBond = null;
+  if (!selBond && tab === "bonds" && cur.bonds.length) selBond = cur.bonds[0].partner;     // strongest bond first
   const byGuid = new Map(all.map((o) => [o.guid, o]));
 
   const body = tab === "overview" ? overview(cur) : tab === "bonds" ? bonds(cur, byGuid) : focusTree(cur);

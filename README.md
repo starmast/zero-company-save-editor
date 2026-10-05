@@ -7,6 +7,22 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 > No game content is included. Editing saves is at your own risk: **read [DISCLAIMER.md](DISCLAIMER.md)** before use,
 > and keep your own backups. Intended for offline, single-player use.
 
+<p align="center">
+  <img src="docs/screenshots/personnel-bonds.png" alt="Personnel > Bonds: partners placed on the game's 0-8 bond scale with an editor for the selected bond" width="900">
+</p>
+
+<details>
+<summary>More screenshots</summary>
+
+**Upgrades** - Den Level timeline, build slots and a detail panel
+<img src="docs/screenshots/upgrades.png" alt="Upgrades screen: Facilities rows on the Den Level 1-10 timeline" width="900">
+
+**Focus Tree** - set ability levels using the game's own focus costs
+<img src="docs/screenshots/focus-tree.png" alt="Personnel > Focus Tree: ability level pips with spent and next-level focus costs" width="900">
+
+<sub>Screenshots use the `?portraits=off` option, so operators appear as initials; no game artwork is shown.</sub>
+</details>
+
 ## Features
 - **Command** - save info, campaign progress (turn, level/XP), stockpile, and backups with one-click restore.
 - **Personnel** - roster strip with the real operator portraits stored in your save; Overview (focus points, training and
