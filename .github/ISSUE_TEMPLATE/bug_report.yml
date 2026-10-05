@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in the editor does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Please do not attach save files, game files, extracted game data (`gamedata/`) or
+        `.usmap` mapping files.** They can contain copyrighted game content. Describe what you see instead, and paste
+        the error message shown in the app (it appears in a banner at the top).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the app?
+      options:
+        - Save picker / opening a save
+        - Command (backups, restore, stockpile)
+        - Personnel (overview, bonds, focus tree)
+        - Upgrades
+        - Armory / Galaxy
+        - Advanced / Raw
+        - Game-data extractor (tools/extract)
+        - Installing / run.bat
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Editor version
+      description: Shown in the console when the app starts, and in CHANGELOG.md.
+      placeholder: "0.1.0"
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.14"
+  - type: input
+    id: game
+    attributes:
+      label: Game version / build
+      description: If you know it (the save's info shows a changelist number). A game patch can change the save format.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error text or console output
+      render: text

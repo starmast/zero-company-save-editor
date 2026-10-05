@@ -1,0 +1,51 @@
+name: My save broke or looks wrong in the game
+description: An edited save will not load, or the game shows something unexpected after an edit
+labels: ["save-problem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **First, restore your backup.** Open **Command** in the editor and press *Restore* on the `original` entry (or
+        the snapshot from just before the edit). Backups live in the `backups/` folder next to the app.
+
+        **Please do not attach save files or game files.** Describe the situation instead; that is enough to start.
+  - type: textarea
+    id: edits
+    attributes:
+      label: What did you change?
+      description: "Which screen and which values, for example: Upgrades - started 30 upgrades with the also-expedite option."
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you write it?
+      options:
+        - Apply to save
+        - Save as copy
+        - Restore from backup
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What happens in the game?
+      description: Does it fail to load, crash, or load but show wrong values? Which screen?
+    validations:
+      required: true
+  - type: textarea
+    id: banner
+    attributes:
+      label: Message shown by the editor when you applied
+      description: The green/red banner text, including the backup file name it mentions.
+  - type: input
+    id: version
+    attributes:
+      label: Editor version
+      placeholder: "0.1.0"
+  - type: input
+    id: game
+    attributes:
+      label: Game version / build
+      description: If you know it. A game patch can change the save format.

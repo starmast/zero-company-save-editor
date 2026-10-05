@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Keep in mind that this project only reads and writes save files: it will not modify the game,
+        its files or its protections, and it is meant for offline single-player use (see DISCLAIMER.md).
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to be able to do?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What do you know about how the game stores it?
+      description: For example "the game shows X on the Y screen" or what changes between two of your saves. Do not attach saves or game files.
