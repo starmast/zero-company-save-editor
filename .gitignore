@@ -1,0 +1,47 @@
+# --- Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# --- Runtime data created by the app (contains your save files and conversions of them)
+backups/
+cache/
+*.sav
+*.sav.tmp
+*.tmp
+
+# --- Your save files. The folder exists so the app can list "project copy" saves; keep contents local.
+saves/*
+!saves/.gitkeep
+
+# --- Extracted game content (copyrighted; never publish) and tool downloads
+gamedata/
+*.usmap
+*.uasset
+*.uexp
+*.ubulk
+*.pak
+*.utoc
+*.ucas
+
+# --- .NET extractor build output and third-party binaries fetched at build/run time
+tools/extract/bin/
+tools/extract/obj/
+tools/extract/*.dll
+*.dll
+*.pdb
+
+# --- Editor / tool / OS files
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+.env
+*.log

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zero Company Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: {
+          ink: '#070c12', deck: '#0d141d', steel: '#121c28', edge: '#25364a', mute: '#6f8296',
+          cream: '#ece5d2', glow: '#86b9db', amber: '#f2a93b', ok: '#5fd0a0', bad: '#e5636f',
+        },
+        fontFamily: { display: ['"Barlow Condensed"', 'Bahnschrift', 'Arial Narrow', 'sans-serif'],
+                      body: ['Barlow', 'Segoe UI', 'system-ui', 'sans-serif'] },
+      } },
+    };
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/game.css') }}">
+</head>
+<body class="h-full bg-ink text-slate-200 font-body antialiased">
+  <div id="app" class="min-h-full flex flex-col"></div>
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
