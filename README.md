@@ -1,5 +1,8 @@
 # Zero Company Save Editor
 
+[![tests](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml/badge.svg)](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A local web app for viewing and editing **Star Wars: Zero Company** save files, laid out the way the game presents
 things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up and verified first.
 
@@ -39,7 +42,7 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 
 ## Requirements
 - Windows 10/11 (the save location and the "is the game running?" check are Windows-specific)
-- Python 3.10 or newer is intended (dependency versions are ranges, not pins). Only Python 3.14 has been tested so far
+- Python 3.10 to 3.14 (the test suite runs on all five versions in CI; developed on 3.14)
 - A modern browser with internet access on first load (the page pulls Tailwind CSS and fonts from public CDNs)
 
 ## Quick start
@@ -106,6 +109,10 @@ static/, templates/  the browser UI (vanilla ES modules, Tailwind via CDN)
 tools/extract/     optional game-data extractor (C#)
 tests/
 ```
+
+## Feedback
+Found a problem or have an idea? [Open an issue](https://github.com/starmast/zero-company-save-editor/issues/new/choose).
+Please do **not** attach save files, game files or extracted game data to issues.
 
 ## Limitations
 - Windows only. Built against the 2026 releases of the game; a game update can change the save format.

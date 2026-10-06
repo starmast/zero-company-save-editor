@@ -5,8 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.1.0] - 2026-10-05
 
-First public release. Tested with saves from game build `++ProjectBruno+Stable` changelist 197649 (Unreal Engine 5.6.1)
-and on Python 3.14. A game update may change the save format.
+First public release. Tested with saves from game build `++ProjectBruno+Stable` changelist 197649 (Unreal Engine 5.6.1).
+The test suite runs in CI on Python 3.10-3.14. A game update may change the save format.
 
 ### Added
 - Local Flask web app that opens Star Wars: Zero Company saves and edits them in place, laid out like the game:
