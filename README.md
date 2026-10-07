@@ -126,7 +126,7 @@ Please do **not** attach save files, game files or extracted game data to issues
 - Windows only. Built against the 2026 releases of the game; a game update can change the save format.
 - No adding of items or abilities and no computed combat stats (health, damage); those need data this project has not yet
   been able to verify. Healing does not add the game's own treatment history entry.
-- A fallen operator brought back works in the Personnel screens and on missions (tested in the game with the tutorial
+- A fallen operator brought back works in the Personnel screens, the Den and on missions (tested in the game with the tutorial
   operator), but it was built by comparing a fallen operator with the living roster, not from a save the game wrote
   itself. They have no bonds with anyone recruited after their death and none of the roster's permanent health
   progression, so their Health can read lower than the others'.

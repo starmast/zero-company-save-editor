@@ -12,8 +12,8 @@ All notable changes to this project are documented here. The format follows
 - **Bring back** a fallen operator from the Personnel screen: removes them from the fallen list and the
   death records, appends them to the roster with the current turn as their recruited turn, and removes their death and
   injury effects. Bonds with operators recruited after their death are not created and the permanent health
-  progression is not added. Tested in the game with the tutorial operator: they appear on the roster and in the
-  Personnel screens and can be taken on missions.
+  progression is not added. Tested in the game with the tutorial operator: they appear on the roster, in the Personnel
+  screens and in the Den, and can be taken on missions.
 - **Roster order**: hold and drag an operator's icon on the Personnel strip (or use Earlier / Later) to move them. The roster is a list of operator ids that
   the game's Personnel strip and mission select follow (confirmed in the game); the edit swaps those fixed-size entries in
   place, so nothing else in the save changes, and it is verified to be exactly the requested order.
