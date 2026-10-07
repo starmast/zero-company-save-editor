@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 - **Roster order**: hold and drag an operator's icon on the Personnel strip (or use Earlier / Later) to move them. The roster is a list of operator ids that
-  the game's Personnel strip follows (checked against an in-game screenshot); the edit swaps those fixed-size entries in
+  the game's Personnel strip and mission select follow (confirmed in the game); the edit swaps those fixed-size entries in
   place, so nothing else in the save changes, and it is verified to be exactly the requested order.
 
 ## [0.2.0] - 2026-10-06
