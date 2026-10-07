@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from . import coil, medbay, portraits as portraits_mod, savefile, upgrades, views
+from . import coil, medbay, portraits as portraits_mod, roster, savefile, upgrades, views
 from .domain import SaveModel, TYPE_RANGES, scalar_nodes, validate
 from .gvas import Gvas, GvasError, SCALARS
 
@@ -344,6 +344,18 @@ class Service:
         cut["fact_tags"] = info["expected"]
         return g
 
+    def _reorder_roster(self, g: Gvas, order, touched: set, cut: dict) -> Gvas:
+        if (not isinstance(order, list) or not order
+                or any(not isinstance(x, str) or not re.fullmatch(r"[0-9A-F]{32}", x) for x in order)):
+            raise EditError("bad roster order")
+        try:
+            g, info = roster.reorder(g, order)
+        except GvasError as e:
+            raise EditError(f"Roster: {e}") from e
+        touched |= info["paths"]
+        cut["roster"] = info["expected"]
+        return g
+
     def _run_actions(self, g: Gvas, actions: list[dict]) -> tuple[Gvas, set, dict]:
         touched: set = set()
         cut: dict = {"prefixes": set(), "opaque_removed": 0}
@@ -357,6 +369,11 @@ class Service:
                     raise EditError("bad operator reference")
                 healed.add(guid)
                 g = self._heal(g, guid, touched, cut)
+                continue
+            if kind == "reorder_roster":
+                if "roster" in cut:
+                    raise EditError("duplicate roster action")
+                g = self._reorder_roster(g, a.get("order"), touched, cut)
                 continue
             if kind == "remove_coil_upgrades":
                 if "fact_tags" in cut:
@@ -425,6 +442,8 @@ class Service:
             for gid, size in per.items():
                 if meta_per.get(gid) not in (None, size):
                     raise EditError("verification failed: a character's recorded size is out of sync")
+        if "roster" in cut and roster.order(g2) != cut["roster"]:
+            raise EditError("verification failed: roster order is not what was intended")
         if "fact_tags" in cut and coil.tags(g2) != cut["fact_tags"]:
             raise EditError("verification failed: fact tags are not what was intended")
         a, b = _flatten(c.gvas), _flatten(g2)

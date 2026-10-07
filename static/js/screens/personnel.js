@@ -1,6 +1,6 @@
 // Personnel: roster strip (portraits) + Overview / Bonds / Focus Tree, as in the game.
 import { h, fmtNum } from "../dom.js";
-import { S, getValue, setEdit, isChanged } from "../store.js";
+import { S, getValue, setEdit, isChanged, rosterOrder, moveOperator } from "../store.js";
 import { numInput, stepper, pips, face, live } from "../widgets.js";
 import { go } from "../shell.js";
 
@@ -22,7 +22,7 @@ function strip(ops, memorial, cur, tab) {
       h("div", { class: "text-[13px] mt-1 leading-tight truncate caps font-display" }, op.name));
   };
   const strip = h("div", { class: "panel px-3 py-3 flex gap-2 overflow-x-auto thin-scroll items-start", role: "tablist" });
-  ops.forEach((o) => strip.append(chip(o)));
+  ops.forEach((o) => strip.append(chip(o)));            // already in (pending) roster order
   if (memorial.length) {
     strip.append(h("div", { class: "self-stretch w-px bg-edge mx-2" }),
       h("div", { class: "self-center text-[11px] text-mute caps rotate-0 px-1" }, "Memorial"));
@@ -223,9 +223,22 @@ function crossBox(personnel) {
       h("div", { class: "text-xs text-mute" }, "whole roster · sum of every bond")));
 }
 
+// Roster position: the Personnel strip in the game follows this order.
+function moveBox(cur) {
+  const order = rosterOrder(), i = order.indexOf(cur.guid), n = order.length;
+  const btn = (label, delta, off) => h("button", { type: "button", class: "btn", disabled: off ? "" : null,
+    onclick: () => moveOperator(cur.guid, delta) }, label);
+  return h("div", { class: "panel p-3" },
+    h("div", { class: "caps font-display text-lg leading-none" }, "Roster position"),
+    h("div", { class: "text-xs text-mute mb-2" }, "Position " + (i + 1) + " of " + n + ". The game's strip follows this order."),
+    h("div", { class: "flex gap-2" }, btn("◀ Earlier", -1, i <= 0), btn("Later ▶", 1, i >= n - 1)));
+}
+
 // ------------------------------------------------------------------------ main
 export function render(args) {
-  const p = S.state.view.personnel;
+  const base = S.state.view.personnel;
+  const byG = new Map(base.roster.map((o) => [o.guid, o]));
+  const p = { ...base, roster: rosterOrder().map((g) => byG.get(g)).filter(Boolean) };   // pending order, if any
   const all = p.roster.concat(p.memorial);
   const cur = all.find((o) => o.guid === args[0]) || all[0];
   if (!cur) return h("p", { class: "text-mute" }, "No operators found in this save.");
@@ -243,7 +256,8 @@ export function render(args) {
     tab !== "overview" || cur.focus ? h("div", { class: "panel p-3 flex items-center gap-3" },
       (() => { const b = h("b", { class: "text-3xl font-display text-amber" }); live(b, () => String(unspent(cur))); return b; })(),
       h("div", { class: "caps font-display text-lg leading-none" }, "Focus points remaining")) : null,
-    tab === "bonds" ? crossBox(p) : null);
+    tab === "bonds" ? crossBox(p) : null,
+    cur.dead ? null : moveBox(cur));
 
   return h("div", { class: "space-y-3" },
     tabs(cur, tab),

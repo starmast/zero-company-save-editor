@@ -33,7 +33,8 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 - **Command** - save info, campaign progress (turn, level/XP), stockpile, and backups with one-click restore.
 - **Personnel** - roster strip with the real operator portraits stored in your save; Overview (focus points, training and
   stat effects), Bonds (the game's 0-8 scale and roster-wide cross training) and Focus Tree (set ability levels; focus
-  spent follows the game's own cost table, and you choose to spend your unspent focus or have it granted).
+  spent follows the game's own cost table, and you choose to spend your unspent focus or have it granted). Move an operator earlier or later to change the
+  roster order the game's Personnel strip shows.
 - **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
   game's Build button does and optionally expedite them so the game finishes them at the next turn change.
 - **Armory** - utility items and weapon mods.

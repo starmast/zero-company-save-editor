@@ -106,6 +106,10 @@ function actionbar() {
       const who = S.state.view.medbay.injured.find((o) => o.guid === a.guid);
       return { where: "Medbay", label: "Heal " + (who ? who.name : "operator") + " (free, instant)" };
     }
+    if (a.type === "reorder_roster") {
+      const names = new Map(S.state.view.personnel.roster.map((o) => [o.guid, o.name]));
+      return { where: "Personnel", label: "Roster order: " + a.order.map((g) => names.get(g) || "?").join(", ") };
+    }
     if (a.type === "remove_coil_upgrades") {
       const label = (c) => (S.state.view.coil.active.find((u) => u.id === c.id) || { name: c.id }).name + (c.to === "Prevented" ? " (prevent)" : "");
       return { where: "Galaxy", label: "Remove Coil upgrade" + (a.changes.length === 1 ? ": " : "s: ") + a.changes.map(label).join(", ") };
