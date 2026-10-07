@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from . import coil, medbay, portraits as portraits_mod, revive, roster, savefile, upgrades, views
+from . import coil, focus, medbay, portraits as portraits_mod, revive, roster, savefile, upgrades, views
 from .domain import SaveModel, TYPE_RANGES, scalar_nodes, validate
 from .gvas import Gvas, GvasError, SCALARS
 
@@ -359,10 +359,25 @@ class Service:
         touched |= info["count_paths"]
         cut["prefixes"] |= info["prefixes"]
         cut["opaque_removed"] += info["opaque_removed"]
+        try:                                       # a returning operator gets a complete focus tree too
+            g = self._complete_focus(g, guid, touched, cut)
+        except EditError:
+            pass
         exp = info["expected"]
         cut.setdefault("revived", []).append({
             "guid": guid, "turn": exp["turn"], "dead": exp["dead"], "roster": before_roster + [guid],
             "recruited": {**before_recruited, guid: before_recruited.get(guid, exp["turn"])}})
+        return g
+
+    def _complete_focus(self, g: Gvas, guid: str, touched: set, cut: dict) -> Gvas:
+        if guid not in self.current.model.operators:
+            raise EditError("unknown operator")
+        try:
+            g, info = focus.complete(g, guid)
+        except GvasError as e:
+            raise EditError(f"Focus tree: {e}") from e
+        cut["prefixes"] |= info["prefixes"]
+        cut.setdefault("focus", []).append({"guid": guid, "expected": info["expected"]})
         return g
 
     def _reorder_roster(self, g: Gvas, order, touched: set, cut: dict) -> Gvas:
@@ -383,6 +398,7 @@ class Service:
         seen: set = set()
         healed: set = set()
         revived: set = set()
+        completed: set = set()
         for a in actions:
             kind = a.get("type")
             if kind == "heal_operator":
@@ -391,6 +407,13 @@ class Service:
                     raise EditError("bad operator reference")
                 healed.add(guid)
                 g = self._heal(g, guid, touched, cut)
+                continue
+            if kind == "complete_focus_tree":
+                guid = str(a.get("guid", "")).upper()
+                if not re.fullmatch(r"[0-9A-F]{32}", guid) or guid in completed:
+                    raise EditError("bad operator reference")
+                completed.add(guid)
+                g = self._complete_focus(g, guid, touched, cut)
                 continue
             if kind == "revive_operator":
                 guid = str(a.get("guid", "")).upper()
@@ -487,6 +510,10 @@ class Service:
                 names = [medbay.effect_name(g2, e) for e in medbay.effects_node(g2, gid).children]
                 if any(n.startswith(revive.DEAD_EFFECTS) for n in names):
                     raise EditError("verification failed: a death effect is still present")
+        for fx in cut.get("focus", []):
+            have = focus.records(g2, fx["guid"])
+            if any(have.get(tag) != recs for tag, recs in fx["expected"].items()):
+                raise EditError("verification failed: the focus tree tiers are not what was intended")
         if "roster" in cut and roster.order(g2) != cut["roster"]:
             raise EditError("verification failed: roster order is not what was intended")
         if "fact_tags" in cut and coil.tags(g2) != cut["fact_tags"]:

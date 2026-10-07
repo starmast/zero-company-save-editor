@@ -274,7 +274,21 @@ function focusTree(op) {
     wrap.replaceChildren(...body);
   };
   draw();
-  return wrap;
+  if (!op.tree_incomplete) return wrap;
+  const fix = h("button", { type: "button", class: "btn shrink-0" });
+  const paint = () => {
+    const on = S.treeFixes.has(op.guid);
+    fix.textContent = on ? "Queued - undo" : "Complete tree";
+    fix.classList.toggle("btn-primary", !on);
+    fix.setAttribute("aria-pressed", String(on));
+  };
+  fix.addEventListener("click", () => { toggle(S.treeFixes, op.guid); paint(); });
+  paint();
+  return h("div", { class: "space-y-3" },
+    h("div", { class: "panel p-3 flex items-center gap-3" },
+      h("p", { class: "flex-1 text-sm" }, op.name + "'s focus tree is missing the records for the higher tiers of some abilities, so the game cannot " +
+        "show or level them. This copies the missing tiers from another operator who has the same abilities (they are the same for everyone)."), fix),
+    wrap);
 }
 
 function crossBox(personnel) {

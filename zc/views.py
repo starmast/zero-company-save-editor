@@ -11,7 +11,7 @@ from typing import Optional
 
 import re
 
-from . import coil, gamedata
+from . import coil, focus, gamedata
 from .domain import Field, SaveModel, guid_hex
 
 BOND_OFFSET = 4          # in-game bond scale 0-8 = save level (-4..4) + 4
@@ -90,6 +90,9 @@ def personnel(m: SaveModel, portraits: set[str]) -> dict:
     ops = [_operator(m, m.operators[g], portraits) for g in order]
     memorial = [_operator(m, m.operators[g], portraits)
                 for g in m.operators if g in m.dead]
+    gaps = focus.incomplete(m.g)
+    for o in ops + memorial:
+        o["tree_incomplete"] = o["guid"] in gaps
     cross_total = sum(b["cross"].value for b in m.bond_rows if b.get("cross") is not None)
     return {"roster": ops, "memorial": memorial, "cross_training_total": cross_total,
             "bond_words": BOND_WORDS}

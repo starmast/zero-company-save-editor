@@ -37,7 +37,7 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
   use Earlier / Later) to change the roster order. The game's Personnel strip and
   mission select both follow it.
 - **Memorial** - on a fallen operator's Personnel page, **Bring back** returns them to the roster (experimental, see
-  limitations).
+  limitations) and completes their focus tree if its higher tiers are missing.
 - **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
   game's Build button does and optionally expedite them so the game finishes them at the next turn change.
 - **Armory** - utility items and weapon mods.

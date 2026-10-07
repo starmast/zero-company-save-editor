@@ -106,6 +106,11 @@ function actionbar() {
       const who = S.state.view.medbay.injured.find((o) => o.guid === a.guid);
       return { where: "Medbay", label: "Heal " + (who ? who.name : "operator") + " (free, instant)" };
     }
+    if (a.type === "complete_focus_tree") {
+      const all = S.state.view.personnel.roster.concat(S.state.view.personnel.memorial);
+      const who = all.find((o) => o.guid === a.guid);
+      return { where: "Personnel", label: "Complete focus tree: " + (who ? who.name : "operator") };
+    }
     if (a.type === "revive_operator") {
       const who = S.state.view.personnel.memorial.find((o) => o.guid === a.guid);
       return { where: "Personnel", label: "Bring back " + (who ? who.name : "operator") + " from the Memorial" };

@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Complete focus tree**: an operator whose abilities only have their first tier saved (the tutorial operator, Aurelio)
+  gets the missing tier records copied from another operator with the same ability (the lists are identical for
+  everyone), so the game can show and level them. Offered on the Focus Tree tab, and done automatically by Bring back.
 - **Bring back** a fallen operator from the Personnel screen (experimental): removes them from the fallen list and the
   death records, appends them to the roster with the current turn as their recruited turn, and removes their death and
   injury effects. Bonds with operators recruited after their death are not created and the game applies roster stat

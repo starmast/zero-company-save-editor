@@ -384,13 +384,13 @@ class Gvas:
         self._grow(buf, arr, -(el.end - el.start))
         return Gvas(bytes(buf))
 
-    def array_append_raw(self, arr: Node, raw: bytes) -> "Gvas":
-        """Append one fixed-size element (given as its raw bytes) to an ArrayProperty; returns a NEW Gvas."""
-        if arr.tname != "ArrayProperty" or arr.count is None or not raw:
+    def array_append_raw(self, arr: Node, raw: bytes, n: int = 1) -> "Gvas":
+        """Append `n` elements (their raw bytes, concatenated) to an ArrayProperty; returns a NEW Gvas."""
+        if arr.tname != "ArrayProperty" or arr.count is None or not raw or n < 1:
             raise GvasError("not an appendable array")
         buf = bytearray(self.data)
         buf[arr.end:arr.end] = raw
-        struct.pack_into("<i", buf, arr.value_offset, arr.count + 1)
+        struct.pack_into("<i", buf, arr.value_offset, arr.count + n)
         self._grow(buf, arr, len(raw))
         return Gvas(bytes(buf))
 
