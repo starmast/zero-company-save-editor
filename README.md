@@ -36,9 +36,10 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
   spent follows the game's own cost table, and you choose to spend your unspent focus or have it granted).
 - **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
   game's Build button does and optionally expedite them so the game finishes them at the next turn change.
-- **Armory** - utility items and weapon mods. **Galaxy** - influence, contacts and reward tier per region, plus the
-  permanent **Coil upgrades** the enemy has gained from failed Crisis missions, each one can be removed (the crisis becomes available again) or set to
-  prevented (as if you had won it), individually or all at once.
+- **Armory** - utility items and weapon mods.
+- **Galaxy** - influence, contacts and reward tier per region, plus the permanent **Coil upgrades** the enemy has gained
+  from failed Crisis missions. Each one can be removed (the crisis becomes available again) or set to prevented (as if
+  you had won it), individually or all at once.
 - **Medbay** - beds, the bacta tank, their costs and who is injured, as your save records it, with a **Heal** button that
   removes an operator's injuries the way the bacta tank does (instant and free: no credits or tank charge are used).
 - **Advanced** - every editable value as a flat list, plus a raw property-tree viewer.
