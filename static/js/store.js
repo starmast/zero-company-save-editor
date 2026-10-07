@@ -59,14 +59,24 @@ export function toggle(set, id, on) {
 // ----------------------------------------------------------------- data flows
 // Roster order as shown (pending if the user moved someone), and moving one operator a place earlier/later.
 export const rosterOrder = () => S.rosterOrder || S.state.view.personnel.roster.map((o) => o.guid);
+function setRosterOrder(order) {
+  const saved = S.state.view.personnel.roster.map((o) => o.guid);
+  S.rosterOrder = order.every((g, k) => g === saved[k]) ? null : order;
+  emitState();
+}
 export function moveOperator(guid, delta) {
   const order = rosterOrder().slice();
   const i = order.indexOf(guid), j = i + delta;
   if (i < 0 || j < 0 || j >= order.length) return;
   [order[i], order[j]] = [order[j], order[i]];
-  const saved = S.state.view.personnel.roster.map((o) => o.guid);
-  S.rosterOrder = order.every((g, k) => g === saved[k]) ? null : order;
-  emitState();
+  setRosterOrder(order);
+}
+// Drop `guid` so that `index` other operators come before it.
+export function moveOperatorTo(guid, index) {
+  const order = rosterOrder().filter((g) => g !== guid);
+  if (!rosterOrder().includes(guid)) return;
+  order.splice(Math.max(0, Math.min(index, order.length)), 0, guid);
+  setRosterOrder(order);
 }
 
 export async function loadSaves() {

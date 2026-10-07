@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- **Roster order**: move an operator earlier or later on the Personnel screen. The roster is a list of operator ids that
+- **Roster order**: hold and drag an operator's icon on the Personnel strip (or use Earlier / Later) to move them. The roster is a list of operator ids that
   the game's Personnel strip follows (checked against an in-game screenshot); the edit swaps those fixed-size entries in
   place, so nothing else in the save changes, and it is verified to be exactly the requested order.
 

@@ -1,6 +1,6 @@
 // Personnel: roster strip (portraits) + Overview / Bonds / Focus Tree, as in the game.
 import { h, fmtNum } from "../dom.js";
-import { S, getValue, setEdit, isChanged, rosterOrder, moveOperator } from "../store.js";
+import { S, getValue, setEdit, isChanged, rosterOrder, moveOperator, moveOperatorTo } from "../store.js";
 import { numInput, stepper, pips, face, live } from "../widgets.js";
 import { go } from "../shell.js";
 
@@ -11,17 +11,81 @@ let selBond = null;                  // partner guid selected on the Bonds tab
 function unspent(op) { return op.focus ? getValue(op.focus) : 0; }
 
 // ----------------------------------------------------------------- roster strip
+let suppressClick = false;         // the click that ends a drag must not open the operator
+
+// Hold a living operator's icon and drag it sideways to a new place in the roster.
+function startDrag(e, strip) {
+  if (e.button !== 0) return;
+  const chip = e.target.closest?.(".roster-chip[data-live]");
+  if (!chip || !strip.contains(chip)) return;
+  const guid = chip.dataset.guid, x0 = e.clientX, y0 = e.clientY, t0 = Date.now(), touch = e.pointerType === "touch";
+  let ghost = null, target = 0;
+  const others = () => [...strip.querySelectorAll(".roster-chip[data-live]")].filter((c) => c !== chip);
+  const mark = () => {
+    strip.querySelectorAll(".drop-before,.drop-after").forEach((c) => c.classList.remove("drop-before", "drop-after"));
+    const cs = others();
+    if (!cs.length) return;
+    if (target < cs.length) cs[target].classList.add("drop-before"); else cs[cs.length - 1].classList.add("drop-after");
+  };
+  const stop = () => {
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", cancel);
+    document.removeEventListener("keydown", onKey);
+    ghost?.remove();
+    chip.classList.remove("dragging");
+    strip.classList.remove("reordering");
+    strip.querySelectorAll(".drop-before,.drop-after").forEach((c) => c.classList.remove("drop-before", "drop-after"));
+  };
+  const cancel = () => stop();
+  const onKey = (ev) => { if (ev.key === "Escape") stop(); };
+  const onMove = (ev) => {
+    if (!ghost) {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      if (touch && Date.now() - t0 < 250) { stop(); return; }              // a quick swipe, not a hold-and-drag
+      ghost = chip.cloneNode(true);
+      ghost.classList.add("roster-ghost");
+      ghost.style.width = chip.offsetWidth + "px";
+      document.body.append(ghost);
+      chip.classList.add("dragging");
+      strip.classList.add("reordering");
+    }
+    ghost.style.left = ev.clientX - ghost.offsetWidth / 2 + "px";
+    ghost.style.top = ev.clientY - 40 + "px";
+    const r = strip.getBoundingClientRect();
+    if (ev.clientX < r.left + 40) strip.scrollLeft -= 14; else if (ev.clientX > r.right - 40) strip.scrollLeft += 14;
+    target = others().filter((c) => { const b = c.getBoundingClientRect(); return b.left + b.width / 2 < ev.clientX; }).length;
+    mark();
+  };
+  const onUp = () => {
+    const dragged = !!ghost, to = target;
+    stop();
+    if (!dragged) return;
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 60);
+    moveOperatorTo(guid, to);
+  };
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
+  document.addEventListener("pointercancel", cancel);
+  document.addEventListener("keydown", onKey);
+}
+
 function strip(ops, memorial, cur, tab) {
   const chip = (op) => {
     const fp = op.focus ? h("span", { class: "fp", title: "Unspent focus points" }) : null;
     if (fp) live(fp, () => String(unspent(op)));
     return h("button", {
       type: "button", class: "roster-chip" + (op.guid === cur.guid ? " sel" : "") + (op.dead ? " dead" : ""),
+      ...(op.dead ? {} : { "data-live": "", "data-guid": op.guid, title: "Hold and drag to change the roster order" }),
       onclick: () => go("personnel", op.guid, tab), "aria-label": op.name,
     }, face(op), fp, op.injuries && !op.dead ? h("span", { class: "inj", title: "Injured", "aria-label": "Injured" }, "+") : null,
       h("div", { class: "text-[13px] mt-1 leading-tight truncate caps font-display" }, op.name));
   };
   const strip = h("div", { class: "panel px-3 py-3 flex gap-2 overflow-x-auto thin-scroll items-start", role: "tablist" });
+  strip.addEventListener("dragstart", (e) => e.preventDefault());           // no native image drag
+  strip.addEventListener("click", (e) => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); } }, true);
+  strip.addEventListener("pointerdown", (e) => startDrag(e, strip));
   ops.forEach((o) => strip.append(chip(o)));            // already in (pending) roster order
   if (memorial.length) {
     strip.append(h("div", { class: "self-stretch w-px bg-edge mx-2" }),
