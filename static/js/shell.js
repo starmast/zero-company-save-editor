@@ -107,8 +107,8 @@ function actionbar() {
       return { where: "Medbay", label: "Heal " + (who ? who.name : "operator") + " (free, instant)" };
     }
     if (a.type === "remove_coil_upgrades") {
-      const names = a.ids.map((id) => (S.state.view.coil.active.find((u) => u.id === id) || { name: id }).name);
-      return { where: "Galaxy", label: "Remove Coil upgrade" + (names.length === 1 ? ": " : "s: ") + names.join(", ") };
+      const label = (c) => (S.state.view.coil.active.find((u) => u.id === c.id) || { name: c.id }).name + (c.to === "Prevented" ? " (prevent)" : "");
+      return { where: "Galaxy", label: "Remove Coil upgrade" + (a.changes.length === 1 ? ": " : "s: ") + a.changes.map(label).join(", ") };
     }
     const row = S.state.upgrades.items.find((x) => x.id === a.id);
     return { where: "Upgrades", label: ({ start_upgrade: "Start ", start_expedite_upgrade: "Start + expedite ", expedite_upgrade: "Expedite " })[a.type] + (row ? row.title : a.name) };

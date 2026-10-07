@@ -1,6 +1,6 @@
 // Galaxy (Holotable): one card per map region with its influence, contacts and reward tier.
 import { h } from "../dom.js";
-import { S, toggle } from "../store.js";
+import { S, emitPending } from "../store.js";
 import { numInput, stepper } from "../widgets.js";
 
 function field(label, control, note) {
@@ -8,39 +8,54 @@ function field(label, control, note) {
     h("div", { class: "flex-1" }, label, note ? h("div", { class: "text-[11px] text-mute" }, note) : null), control);
 }
 
-// One button per Coil upgrade (queues its removal) plus "remove all".
-function removeButton(u) {
-  const b = h("button", { type: "button", class: "btn shrink-0" });
+// Each Coil upgrade can be taken away two ways: back to Available (it can be gained again) or Prevented (as if won).
+function choice(u, to, label, hint, repaintAll) {
+  const b = h("button", { type: "button", class: "btn shrink-0", title: hint });
   const paint = () => {
-    const on = S.coilRemoves.has(u.id);
-    b.textContent = on ? "Queued - undo" : "Remove";
-    b.classList.toggle("btn-primary", !on);
+    const on = S.coilChanges.get(u.id) === to;
+    b.textContent = on ? label + " (queued) - undo" : label;
+    b.classList.toggle("btn-primary", on);
     b.setAttribute("aria-pressed", String(on));
   };
-  b.addEventListener("click", () => { toggle(S.coilRemoves, u.id); paint(); });
+  b.addEventListener("click", () => {
+    if (S.coilChanges.get(u.id) === to) S.coilChanges.delete(u.id); else S.coilChanges.set(u.id, to);
+    emitPending();
+    repaintAll();
+  });
+  b._paint = paint;
   paint();
   return b;
 }
 
 function coilPanel() {
   const list = S.state.view.coil.active;
+  const allOn = (to) => list.length > 0 && list.every((u) => S.coilChanges.get(u.id) === to);
+  const bulk = (to) => {
+    const all = allOn(to);
+    for (const u of list) { if (all) S.coilChanges.delete(u.id); else S.coilChanges.set(u.id, to); }
+    emitPending();
+    panel.replaceWith(coilPanel());
+  };
+  const repaintAll = () => panel.querySelectorAll("button").forEach((x) => x._paint && x._paint());
   const panel = h("section", { class: "panel" },
-    h("div", { class: "panel-h flex items-center" }, "Active Coil upgrades: " + list.length,
-      list.length > 1 ? h("button", { type: "button", class: "btn ml-auto normal-case tracking-normal font-body",
-        onclick: () => { const all = list.every((u) => S.coilRemoves.has(u.id)); for (const u of list) toggle(S.coilRemoves, u.id, !all); panel.replaceWith(coilPanel()); } },
-        list.every((u) => S.coilRemoves.has(u.id)) ? "Undo all" : "Remove all") : null));
+    h("div", { class: "panel-h flex items-center gap-2" }, "Active Coil upgrades: " + list.length,
+      list.length ? h("span", { class: "ml-auto flex gap-2 normal-case tracking-normal font-body" },
+        h("button", { type: "button", class: "btn", onclick: () => bulk("Available") }, allOn("Available") ? "Undo all" : "Remove all"),
+        h("button", { type: "button", class: "btn", onclick: () => bulk("Prevented") }, allOn("Prevented") ? "Undo all" : "Prevent all")) : null));
   if (!list.length) panel.append(h("p", { class: "p-4 text-sm text-mute" }, "The Coil have no permanent upgrades."));
   for (const u of list) {
-    panel.append(h("div", { class: "flex items-center gap-3 px-3 py-2 border-b hair" },
-      h("div", { class: "flex-1 min-w-0" },
+    panel.append(h("div", { class: "flex items-center gap-3 px-3 py-2 border-b hair flex-wrap" },
+      h("div", { class: "flex-1 min-w-[14rem]" },
         h("div", { class: "text-xs text-mute caps" }, u.unit + " · " + u.tier),
         h("div", { class: "font-display text-xl text-cream leading-tight" }, u.name),
         u.description ? h("div", { class: "text-sm text-mute" }, u.description) : null),
-      removeButton(u)));
+      h("div", { class: "flex gap-2" },
+        choice(u, "Available", "Remove", "Take it away; the crisis can be failed (and the upgrade gained) again", repaintAll),
+        choice(u, "Prevented", "Prevent", "Take it away as if the crisis had been won", repaintAll))));
   }
   panel.append(h("p", { class: "px-3 py-2 text-xs text-mute" },
-    "Upgrades the Coil keep permanently after a Crisis Mission or Operation is failed. Removing one puts that crisis back to available, " +
-    "so it can be failed (and the upgrade gained) again."));
+    "Upgrades the Coil keep permanently after a Crisis Mission or Operation is failed. Remove puts that crisis back to available, " +
+    "so it can be failed (and the upgrade gained) again. Prevent marks it as prevented, as if you had won it."));
   return panel;
 }
 

@@ -4,8 +4,9 @@ When a Crisis mission or operation expires or fails, the game makes that enemy u
 crisis's state fact tag to `.Selected` (a crisis starts as `.Available`; winning it makes it `.Prevented`).  The tags
 live in StrategyData.FactTags, a native array: int32 count, then one FString per tag.
 
-Removing an upgrade is the inverse of what the game writes when it gives one: `<crisis>.Selected` becomes
-`<crisis>.Available` again (the crisis can be failed, and the upgrade gained, once more).  Every other tag is untouched.
+Taking an upgrade away renames `<crisis>.Selected` to one of the two other states the game itself uses:
+`.Available` (the inverse of gaining it: the crisis can be failed, and the upgrade gained, once more) or `.Prevented`
+(as if the crisis had been won: the upgrade is gone and the crisis is settled).  Every other tag is untouched.
 """
 from __future__ import annotations
 
@@ -15,6 +16,7 @@ import struct
 from .gvas import Gvas, GvasError, Node
 
 PREFIX = "BitReactor.Design.Crisis."
+STATES = ("Available", "Prevented")
 SELECTED = re.compile(r"^BitReactor\.Design\.Crisis\.(Major|Minor)\.([A-Za-z0-9]+_[A-Z])\.Selected$")
 
 
@@ -58,24 +60,28 @@ def active(g: Gvas) -> list[dict]:
     return out
 
 
-def remove(g: Gvas, ids: list[str]) -> tuple[Gvas, dict]:
-    """Take the named upgrades away.  Returns (new Gvas, {"path": FactTags path, "expected": new tag list})."""
+def remove(g: Gvas, changes: dict[str, str]) -> tuple[Gvas, dict]:
+    """Take upgrades away: `changes` maps an upgrade id ("Major.Striker_A") to its new state ("Available"/"Prevented").
+
+    Returns (new Gvas, {"path": FactTags path, "expected": new tag list}).
+    """
     node = fact_tags_node(g)
     if node is None:
         raise GvasError("fact tags not found")
+    if not changes or any(s not in STATES for s in changes.values()):
+        raise GvasError("unknown Coil upgrade state")
     old = read_tags(g, node)
-    want = {f"{PREFIX}{i}.Selected" for i in ids}
-    missing = want - set(old)
-    if missing or len(want) != len(ids):
-        raise GvasError("that Coil upgrade is not active")
     have = set(old)
+    target = {f"{PREFIX}{i}.Selected": s for i, s in changes.items()}
+    if not set(target) <= have:
+        raise GvasError("that Coil upgrade is not active")
     new = []
     for t in old:
-        if t in want:
-            avail = t[:-len("Selected")] + "Available"
-            if avail in have:                       # never write a duplicate tag
+        if t in target:
+            moved = t[:-len("Selected")] + target[t]
+            if moved in have:                       # never write a duplicate tag
                 continue
-            new.append(avail)
+            new.append(moved)
         else:
             new.append(t)
     body = b"".join(struct.pack("<i", len(t) + 1) + t.encode("ascii") + b"\0" for t in new)

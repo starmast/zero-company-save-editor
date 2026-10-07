@@ -330,11 +330,14 @@ class Service:
         cut["opaque_removed"] += info["opaque_removed"]
         return g
 
-    def _remove_coil(self, g: Gvas, ids: list[str], touched: set, cut: dict) -> Gvas:
-        if not ids or any(not isinstance(i, str) or not re.fullmatch(r"(Major|Minor)\.[A-Za-z0-9]+_[A-Z]", i) for i in ids):
+    def _remove_coil(self, g: Gvas, changes, touched: set, cut: dict) -> Gvas:
+        ok = (isinstance(changes, list) and changes and all(
+            isinstance(c, dict) and isinstance(c.get("id"), str) and c.get("to") in coil.STATES
+            and re.fullmatch(r"(Major|Minor)\.[A-Za-z0-9]+_[A-Z]", c["id"]) for c in changes))
+        if not ok or len({c["id"] for c in changes}) != len(changes):
             raise EditError("bad Coil upgrade reference")
         try:
-            g, info = coil.remove(g, ids)
+            g, info = coil.remove(g, {c["id"]: c["to"] for c in changes})
         except GvasError as e:
             raise EditError(f"Coil upgrades: {e}") from e
         touched.add(info["path"])
@@ -358,7 +361,7 @@ class Service:
             if kind == "remove_coil_upgrades":
                 if "fact_tags" in cut:
                     raise EditError("duplicate Coil action")
-                g = self._remove_coil(g, list(a.get("ids") or []), touched, cut)
+                g = self._remove_coil(g, a.get("changes"), touched, cut)
                 continue
             if kind not in ("start_upgrade", "expedite_upgrade", "start_expedite_upgrade"):
                 raise EditError(f"unknown action {kind!r}")
