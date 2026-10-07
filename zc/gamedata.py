@@ -35,6 +35,7 @@ def clear_cache() -> None:
     _strings.cache_clear()
     _items.cache_clear()
     _effects.cache_clear()
+    _crisis.cache_clear()
 
 
 def available() -> bool:
@@ -221,3 +222,42 @@ def _thresholds(folder: str) -> dict:
 def focus_thresholds() -> dict:
     """ability tag -> cumulative focus needed for level 1..n (e.g. Lethal: [0, 2, 5, 9, 15, 23])."""
     return _thresholds(data_dir())
+
+
+# ----------------------------------------------------------------------------- Coil crisis upgrades
+# unit code in the crisis tag -> key of its in-game name
+_CRISIS_UNIT_KEYS = {"B1": "Name_First_B1_Coil", "B2": "Name_First_B2_Coil", "BXM": "Name_First_BXMarauder_Coil",
+                     "BXS": "Name_First_BXSniper_Coil", "Brute": "Name_First_CoilBrute",
+                     "Captain": "Name_First_CoilCaptain", "Enforcer": "Name_First_CoilEnforcer",
+                     "Guardian": "Name_First_CoilGuardian", "Seer": "Name_First_CoilSeer",
+                     "Striker": "Name_First_CoilStriker"}
+
+
+@lru_cache(maxsize=None)
+def _crisis(folder: str) -> dict:
+    """Crisis effect text keyed by tag id ('Major.Striker_A'): {"title", "description"}."""
+    out = {}
+    for asset, v in (_load("raw_crisis.json", folder) or {}).items():
+        if not asset.startswith("GE_CrisisEffect_"):
+            continue
+        tag = title = desc = ""
+        for o in v["objects"]:
+            p = o.get("Properties") or {}
+            tag = tag or (p.get("StatusEffectTag") or {}).get("TagName", "")
+            title = title or _text(p.get("PreviewTitle")) or _text(p.get("DisplayableEffectName"))
+            desc = desc or _text(p.get("PreviewDescription")) or _text(p.get("GenericDescription"))
+        m = re.match(r"BitReactor\.Design\.Crisis\.((?:Major|Minor)\.\w+)$", tag)
+        if m and title:
+            out[m.group(1)] = {"title": title, "description": plain(desc)}
+    return out
+
+
+def crisis_effect(crisis_id: str) -> Optional[dict]:
+    """Name and description of a Coil upgrade ('Minor.B1_A'), or None when the game data is not extracted."""
+    return _crisis(data_dir()).get(crisis_id)
+
+
+def crisis_unit(unit: str) -> Optional[str]:
+    """In-game name of the Coil unit an upgrade belongs to (e.g. 'Striker' -> 'Coil Striker')."""
+    key = _CRISIS_UNIT_KEYS.get(unit)
+    return _strings(data_dir()).get(key) if key else None

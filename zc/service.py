@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from . import medbay, portraits as portraits_mod, savefile, upgrades, views
+from . import coil, medbay, portraits as portraits_mod, savefile, upgrades, views
 from .domain import SaveModel, TYPE_RANGES, scalar_nodes, validate
 from .gvas import Gvas, GvasError, SCALARS
 
@@ -330,6 +330,17 @@ class Service:
         cut["opaque_removed"] += info["opaque_removed"]
         return g
 
+    def _remove_coil(self, g: Gvas, ids: list[str], touched: set, cut: dict) -> Gvas:
+        if not ids or any(not isinstance(i, str) or not re.fullmatch(r"(Major|Minor)\.[A-Za-z0-9]+_[A-Z]", i) for i in ids):
+            raise EditError("bad Coil upgrade reference")
+        try:
+            g, info = coil.remove(g, ids)
+        except GvasError as e:
+            raise EditError(f"Coil upgrades: {e}") from e
+        touched.add(info["path"])
+        cut["fact_tags"] = info["expected"]
+        return g
+
     def _run_actions(self, g: Gvas, actions: list[dict]) -> tuple[Gvas, set, dict]:
         touched: set = set()
         cut: dict = {"prefixes": set(), "opaque_removed": 0}
@@ -343,6 +354,11 @@ class Service:
                     raise EditError("bad operator reference")
                 healed.add(guid)
                 g = self._heal(g, guid, touched, cut)
+                continue
+            if kind == "remove_coil_upgrades":
+                if "fact_tags" in cut:
+                    raise EditError("duplicate Coil action")
+                g = self._remove_coil(g, list(a.get("ids") or []), touched, cut)
                 continue
             if kind not in ("start_upgrade", "expedite_upgrade", "start_expedite_upgrade"):
                 raise EditError(f"unknown action {kind!r}")
@@ -406,6 +422,8 @@ class Service:
             for gid, size in per.items():
                 if meta_per.get(gid) not in (None, size):
                     raise EditError("verification failed: a character's recorded size is out of sync")
+        if "fact_tags" in cut and coil.tags(g2) != cut["fact_tags"]:
+            raise EditError("verification failed: fact tags are not what was intended")
         a, b = _flatten(c.gvas), _flatten(g2)
         diff = {k for k in set(a) | set(b) if a.get(k) != b.get(k)}
         prefixes = cut["prefixes"]

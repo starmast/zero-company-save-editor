@@ -11,7 +11,7 @@ from typing import Optional
 
 import re
 
-from . import gamedata
+from . import coil, gamedata
 from .domain import Field, SaveModel, guid_hex
 
 BOND_OFFSET = 4          # in-game bond scale 0-8 = save level (-4..4) + 4
@@ -178,6 +178,18 @@ def galaxy(m: SaveModel) -> dict:
     return {"regions": regions}
 
 
+def coil_upgrades(m: SaveModel) -> dict:
+    """Permanent Coil enemy upgrades (gained by failing Crisis missions); each can be removed."""
+    rows = []
+    for u in coil.active(m.g):
+        fx = gamedata.crisis_effect(u["id"]) or {}
+        rows.append({"id": u["id"], "tier": u["tier"], "unit": gamedata.crisis_unit(u["unit"]) or "Coil " + u["unit"],
+                     "name": fx.get("title") or u["id"].replace(".", " ").replace("_", " "),
+                     "description": fx.get("description", "")})
+    rows.sort(key=lambda r: (r["unit"], r["tier"] != "Major", r["name"]))
+    return {"active": rows}
+
+
 # ------------------------------------------------------------------ upgrades
 TAG_PREFIX = "BitReactor.Strategy.Facilities.Upgrade."
 TABS = ["Facilities", "Crew", "Weapons"]
@@ -269,6 +281,7 @@ def build(m: SaveModel, info: Optional[dict], portrait_guids, upgrades_info: Opt
         "armory": armory(m),
         "medbay": medbay(m, portraits),
         "galaxy": galaxy(m),
+        "coil": coil_upgrades(m),
     }
     if upgrades_info is not None:
         out["upgrades"] = upgrades_screen(upgrades_info)

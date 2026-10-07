@@ -22,6 +22,7 @@ dotnet run --no-build -- upgrades --usmap <file>.usmap             # gamedata/up
 dotnet run --no-build -- dump items GameData/ItemData/ --usmap <file>.usmap
 dotnet run --no-build -- dump effects RosterUpgradeEffects/ CrossTrainingStatRewards/ GameData/Progression/ --usmap <file>.usmap
 dotnet run --no-build -- dump focus GameData/FocusPointData/ --usmap <file>.usmap
+dotnet run --no-build -- dump crisis ResultEffects/CrisisEffects/ --usmap <file>.usmap   # Coil upgrade names/descriptions
 dotnet run --no-build -- probe <AssetName> --usmap <file>.usmap     # print one asset's properties to a temp file
 dotnet run --no-build -- file Config/DefaultGame.ini               # print a packaged text file
 ```
@@ -32,4 +33,4 @@ Notes
 - The game's archives are Unreal Engine 5.6 IoStore containers that are not encrypted; data assets use unversioned
   properties, which is why a mappings file is required.
 - The Python app expects these files in `gamedata/`: `strings_en.json`, `upgrades.json`, `raw_items.json`,
-  `raw_effects.json`, `raw_focus.json`.
+  `raw_effects.json`, `raw_focus.json`, `raw_crisis.json`.
