@@ -317,7 +317,7 @@ function reviveBox(cur) {
     h("p", { class: "text-xs text-mute" },
       "Puts " + cur.name + " back on the roster as the last operator, removes the death and injury effects, and records " +
       "the current turn as their recruited turn. Bonds with operators recruited after their death do not exist yet, " +
-      "and roster stat bonuses are applied by the game. Experimental: apply it to a copy first."),
+      "and the roster's permanent health bonus is not added, so their Health can read lower."),
     b);
 }
 

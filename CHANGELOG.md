@@ -9,10 +9,11 @@ All notable changes to this project are documented here. The format follows
 - **Complete focus tree**: an operator whose abilities only have their first tier saved (the tutorial operator, Aurelio)
   gets the missing tier records copied from another operator with the same ability (the lists are identical for
   everyone), so the game can show and level them. Offered on the Focus Tree tab, and done automatically by Bring back.
-- **Bring back** a fallen operator from the Personnel screen (experimental): removes them from the fallen list and the
+- **Bring back** a fallen operator from the Personnel screen: removes them from the fallen list and the
   death records, appends them to the roster with the current turn as their recruited turn, and removes their death and
-  injury effects. Bonds with operators recruited after their death are not created and the game applies roster stat
-  bonuses itself, so try it on a copy first.
+  injury effects. Bonds with operators recruited after their death are not created and the permanent health
+  progression is not added. Tested in the game with the tutorial operator: they appear on the roster and in the
+  Personnel screens and can be taken on missions.
 - **Roster order**: hold and drag an operator's icon on the Personnel strip (or use Earlier / Later) to move them. The roster is a list of operator ids that
   the game's Personnel strip and mission select follow (confirmed in the game); the edit swaps those fixed-size entries in
   place, so nothing else in the save changes, and it is verified to be exactly the requested order.
