@@ -12,7 +12,7 @@ from typing import Optional
 import re
 
 from . import gamedata
-from .domain import Field, SaveModel
+from .domain import Field, SaveModel, guid_hex
 
 BOND_OFFSET = 4          # in-game bond scale 0-8 = save level (-4..4) + 4
 LEVEL_OFFSET = 1         # in-game "LV n" = save RosterLevel + 1
@@ -103,6 +103,48 @@ def command(m: SaveModel, info: Optional[dict]) -> dict:
                  "type": info.get("saveGameType"), "autosave": info.get("autoSaveType"),
                  "difficulty": info.get("currentDifficultyLevel"), "permadeath": info.get("bPermaDeath")},
         "progression": {k: ref(v) for k, v in m.prog.items()},
+    }
+
+
+# -------------------------------------------------------------------- medbay
+MEDBAY_SLOTS = {"BedOne": "Bed 1", "BedTwo": "Bed 2", "BedThree": "Bed 3", "BedFour": "Bed 4",
+                "BactaTank": "Bacta tank"}
+
+
+def medbay(m: SaveModel, portraits: set[str]) -> dict:
+    """Beds, the bacta tank, costs, who is injured and who is currently being treated.
+
+    Values are the game's own: `Facts.Values.Medbay.*` (slot counts) and `MedbayCost.*` (credits),
+    which match the in-game Medbay screen.  Read-only for now (see CHANGELOG).
+    """
+    g = m.g
+    f = lambda name, d=0: int(round(m.fact(name, d) or 0))
+    injured = []
+    for op in m.operators.values():
+        if op["injuries"] and not op["dead"]:
+            injured.append({"guid": op["guid"], "name": op["name"], "injuries": op["injuries"],
+                            "portrait": f"/api/portrait/{op['guid']}.png" if op["guid"] in portraits else None})
+    injured.sort(key=lambda x: x["name"])
+
+    treating = []
+    ar = g.child(m.sd, "ActiveRecipes")
+    for e in (ar.children or []) if ar else []:
+        val = e.children[1]
+        cls = g.get(g.child(val, "SoftRecipeClass")) if g.child(val, "SoftRecipeClass") else ""
+        name = cls.rsplit("/", 1)[-1]
+        if "InjuryRecover" not in name or g.get(g.child(val, "Status")).endswith("Available"):
+            continue
+        ctx = g.child(val, "InProgressRecipeContext")
+        ids = g.child(ctx, "AssignedCharacterIDs") if ctx else None
+        who = [m.name_of(guid_hex(g, x)) for x in ((ids.children or []) if ids else [])]
+        slot = next((label for key, label in MEDBAY_SLOTS.items() if f"_{key}_" in name), name)
+        treating.append({"slot": slot, "operators": who,
+                         "started": g.get(g.child(val, "TurnStarted")) if g.child(val, "TurnStarted") else None})
+    return {
+        "beds": f("Facts.Values.Medbay.TotalBeds"), "tanks": f("Facts.Values.Medbay.TotalTanks"),
+        "cost": {"bed": f("Facts.Values.MedbayCost.BedSingle"), "tank": f("Facts.Values.MedbayCost.TankSingle"),
+                 "bed_double": f("Facts.Values.MedbayCost.BedDouble"), "tank_double": f("Facts.Values.MedbayCost.TankDouble")},
+        "injured": injured, "treating": treating,
     }
 
 
@@ -225,6 +267,7 @@ def build(m: SaveModel, info: Optional[dict], portrait_guids, upgrades_info: Opt
         "command": command(m, info),
         "personnel": personnel(m, portraits),
         "armory": armory(m),
+        "medbay": medbay(m, portraits),
         "galaxy": galaxy(m),
     }
     if upgrades_info is not None:

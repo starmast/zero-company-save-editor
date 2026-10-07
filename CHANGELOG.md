@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Medbay** screen: beds, bacta tank, costs and injured operators, read from the save (view-only). Injured operators
+  get a marker on the Personnel roster strip.
+
 ## [0.1.0] - 2026-10-05
 
 First public release. Tested with saves from game build `++ProjectBruno+Stable` changelist 197649 (Unreal Engine 5.6.1).

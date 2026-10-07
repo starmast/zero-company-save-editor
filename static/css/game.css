@@ -97,3 +97,6 @@ body { background:
 .contents { display: contents; }
 .hair, .border-b.hair { border-color:#1c2b3c; }
 .panel-h { }
+
+.roster-chip .inj { position:absolute; top:-4px; left:6px; background:#e5636f; color:#fff; font-family:"Barlow Condensed"; font-weight:700;
+  width:1.1rem; height:1.1rem; line-height:1.1rem; border-radius:50%; font-size:.95rem; }

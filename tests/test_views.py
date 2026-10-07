@@ -107,3 +107,24 @@ def test_edit_through_view_ref_changes_the_same_bytes(svc, state):
     assert new["focus"]["value"] == ref["value"] + 3
     assert new["focus"]["total"] == op["focus"]["total"] + 3        # total moves with it
     assert next(f for f in after["fields"] if f["id"] == ref["id"])["value"] == ref["value"] + 3
+
+
+def test_medbay_view(state):
+    mb = state["view"]["medbay"]
+    assert mb["beds"] >= 1 and mb["tanks"] >= 1
+    assert mb["cost"]["bed"] > 0 and mb["cost"]["tank"] > mb["cost"]["bed"]
+    assert mb["injured"] == []                          # the only injury in this save is on a dead operator
+    assert mb["treating"] == []
+    assert all(isinstance(v, int) for v in (mb["beds"], mb["tanks"]))
+
+
+def test_medbay_lists_injured_living_operators_only(svc, state):
+    from zc import views
+    model = svc.current.model
+    living = next(o for o in model.operators.values() if not o["dead"] and o["focus"])
+    dead = next(o for o in model.operators.values() if o["dead"])
+    living["injuries"], dead["injuries"] = 2, 1
+    mb = views.medbay(model, {living["guid"]})
+    assert [o["guid"] for o in mb["injured"]] == [living["guid"]]
+    assert mb["injured"][0]["injuries"] == 2 and mb["injured"][0]["portrait"].endswith(".png")
+    assert views.medbay(model, set())["injured"][0]["portrait"] is None

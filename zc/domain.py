@@ -96,6 +96,7 @@ class SaveModel:
         self.dead: set[str] = set()
         self.bond_rows: list[dict] = []
         self.regions: list[dict] = []
+        self.facts: dict[str, Node] = {}           # Facts.Values.* -> value node
         self._char_names(metadata_json)
         self.sd = self._find_strategy_data()
         self._resources_and_inventory()
@@ -103,6 +104,7 @@ class SaveModel:
         self._operators()
         self._bonds()
         self._regions()
+        self._fact_values()
 
     # -- helpers -----------------------------------------------------------
     def _find_strategy_data(self) -> Node:
@@ -343,6 +345,23 @@ class SaveModel:
             fr = self._add(g.child(val, "InfluenceRewardIndex"), "Galaxy", region,
                            "Influence reward index", lo=-1, hi=100)
             self.regions.append({"tag": tag, "name": region, "influence": fi, "contacts": fc, "reward": fr})
+
+    def _fact_values(self):
+        g = self.g
+        lv = g.child(self.sd, "LiteralFactValues")
+        for e in (lv.children or []) if lv else []:
+            tag = g.child(e.children[0], "TagName")
+            if tag is not None:
+                self.facts[g.get(tag)] = e.children[1]
+
+    def fact(self, name: str, default=None):
+        node = self.facts.get(name)
+        if node is None:
+            return default
+        try:
+            return self.g.get(node)
+        except GvasError:
+            return default
 
     # -- public ------------------------------------------------------------
     def public(self) -> list[dict]:

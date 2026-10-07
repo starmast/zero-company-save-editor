@@ -10,12 +10,13 @@ import * as personnel from "./screens/personnel.js";
 import * as upgrades from "./screens/upgrades.js";
 import * as armory from "./screens/armory.js";
 import * as galaxy from "./screens/galaxy.js";
+import * as medbay from "./screens/medbay.js";
 import * as advanced from "./screens/advanced.js";
 
-const SCREENS = { saves, command, personnel, upgrades, armory, galaxy, advanced };
+const SCREENS = { saves, command, personnel, upgrades, armory, medbay, galaxy, advanced };
 const NAV = [
   ["command", "Command"], ["personnel", "Personnel"], ["armory", "Armory"],
-  ["upgrades", "Upgrades"], ["galaxy", "Galaxy"], ["advanced", "Advanced"],
+  ["upgrades", "Upgrades"], ["medbay", "Medbay"], ["galaxy", "Galaxy"], ["advanced", "Advanced"],
 ];
 
 export function route() {

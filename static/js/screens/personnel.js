@@ -18,7 +18,8 @@ function strip(ops, memorial, cur, tab) {
     return h("button", {
       type: "button", class: "roster-chip" + (op.guid === cur.guid ? " sel" : "") + (op.dead ? " dead" : ""),
       onclick: () => go("personnel", op.guid, tab), "aria-label": op.name,
-    }, face(op), fp, h("div", { class: "text-[13px] mt-1 leading-tight truncate caps font-display" }, op.name));
+    }, face(op), fp, op.injuries && !op.dead ? h("span", { class: "inj", title: "Injured", "aria-label": "Injured" }, "+") : null,
+      h("div", { class: "text-[13px] mt-1 leading-tight truncate caps font-display" }, op.name));
   };
   const strip = h("div", { class: "panel px-3 py-3 flex gap-2 overflow-x-auto thin-scroll items-start", role: "tablist" });
   ops.forEach((o) => strip.append(chip(o)));
