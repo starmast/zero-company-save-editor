@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from . import coil, medbay, portraits as portraits_mod, roster, savefile, upgrades, views
+from . import coil, medbay, portraits as portraits_mod, revive, roster, savefile, upgrades, views
 from .domain import SaveModel, TYPE_RANGES, scalar_nodes, validate
 from .gvas import Gvas, GvasError, SCALARS
 
@@ -344,6 +344,27 @@ class Service:
         cut["fact_tags"] = info["expected"]
         return g
 
+    def _revive(self, g: Gvas, guid: str, touched: set, cut: dict) -> Gvas:
+        model = self.current.model
+        op = model.operators.get(guid)
+        if op is None or guid not in model.dead:
+            raise EditError("That operator is not among the fallen; re-open the save.")
+        cap = int(round(model.fact("Facts.Values.MaximumRosterCount", 0) or 0)) or None
+        before_roster = revive.roster_order(g)
+        before_recruited = revive.recruited_map(g)
+        try:
+            g, info = revive.revive_operator(g, guid, cap)
+        except GvasError as e:
+            raise EditError(f"{op['name']}: {e}") from e
+        touched |= info["count_paths"]
+        cut["prefixes"] |= info["prefixes"]
+        cut["opaque_removed"] += info["opaque_removed"]
+        exp = info["expected"]
+        cut.setdefault("revived", []).append({
+            "guid": guid, "turn": exp["turn"], "dead": exp["dead"], "roster": before_roster + [guid],
+            "recruited": {**before_recruited, guid: before_recruited.get(guid, exp["turn"])}})
+        return g
+
     def _reorder_roster(self, g: Gvas, order, touched: set, cut: dict) -> Gvas:
         if (not isinstance(order, list) or not order
                 or any(not isinstance(x, str) or not re.fullmatch(r"[0-9A-F]{32}", x) for x in order)):
@@ -361,6 +382,7 @@ class Service:
         cut: dict = {"prefixes": set(), "opaque_removed": 0}
         seen: set = set()
         healed: set = set()
+        revived: set = set()
         for a in actions:
             kind = a.get("type")
             if kind == "heal_operator":
@@ -369,6 +391,13 @@ class Service:
                     raise EditError("bad operator reference")
                 healed.add(guid)
                 g = self._heal(g, guid, touched, cut)
+                continue
+            if kind == "revive_operator":
+                guid = str(a.get("guid", "")).upper()
+                if not re.fullmatch(r"[0-9A-F]{32}", guid) or guid in revived:
+                    raise EditError("bad operator reference")
+                revived.add(guid)
+                g = self._revive(g, guid, touched, cut)
                 continue
             if kind == "reorder_roster":
                 if "roster" in cut:
@@ -442,6 +471,22 @@ class Service:
             for gid, size in per.items():
                 if meta_per.get(gid) not in (None, size):
                     raise EditError("verification failed: a character's recorded size is out of sync")
+        if cut.get("revived"):
+            gone = {r["guid"] for r in cut["revived"]}
+            if set(revive.dead_guids(g2)) != set(revive.dead_guids(c.gvas)) - gone:
+                raise EditError("verification failed: the fallen list is not what was intended")
+            if set(revive.died_map(g2)) != set(revive.died_map(c.gvas)) - gone:
+                raise EditError("verification failed: the death records are not what was intended")
+            ro = revive.roster_order(g2)
+            if ro[:len(revive.roster_order(c.gvas))] != revive.roster_order(c.gvas) or set(ro[len(revive.roster_order(c.gvas)):]) != gone:
+                raise EditError("verification failed: the roster is not what was intended")
+            rec_before, rec_after = revive.recruited_map(c.gvas), revive.recruited_map(g2)
+            if {k: v for k, v in rec_after.items() if k not in gone} != rec_before or not gone <= set(rec_after):
+                raise EditError("verification failed: the recruited turns are not what was intended")
+            for gid in gone:
+                names = [medbay.effect_name(g2, e) for e in medbay.effects_node(g2, gid).children]
+                if any(n.startswith(revive.DEAD_EFFECTS) for n in names):
+                    raise EditError("verification failed: a death effect is still present")
         if "roster" in cut and roster.order(g2) != cut["roster"]:
             raise EditError("verification failed: roster order is not what was intended")
         if "fact_tags" in cut and coil.tags(g2) != cut["fact_tags"]:

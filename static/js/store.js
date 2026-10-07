@@ -13,6 +13,7 @@ export const S = {
   starts: new Set(),    // upgrade ids to start
   expedites: new Set(), // upgrade ids to expedite
   heals: new Set(),     // injured operator guids to heal
+  revives: new Set(),   // fallen operator guids to bring back
   rosterOrder: null,    // pending roster order (array of guids) or null
   coilChanges: new Map(), // Coil upgrade id -> "Available" | "Prevented" (take it away)
   alsoExpedite: false,
@@ -26,7 +27,7 @@ export const onPending = (fn) => (pendingSubs.add(fn), () => pendingSubs.delete(
 export const emitState = () => stateSubs.forEach((f) => f());
 export const emitPending = () => pendingSubs.forEach((f) => f());
 
-export const pendingCount = () => S.edits.size + S.starts.size + S.expedites.size + S.heals.size + S.coilChanges.size + (S.rosterOrder ? 1 : 0);
+export const pendingCount = () => S.edits.size + S.starts.size + S.expedites.size + S.heals.size + S.revives.size + S.coilChanges.size + (S.rosterOrder ? 1 : 0);
 export const getValue = (ref) => (S.edits.has(ref.id) ? S.edits.get(ref.id) : ref.value);
 export const isChanged = (ref) => S.edits.has(ref.id);
 
@@ -47,7 +48,7 @@ export function valid(ref, value) {
 }
 
 export function discard() {
-  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.coilChanges.clear(); S.rosterOrder = null;
+  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.revives.clear(); S.coilChanges.clear(); S.rosterOrder = null;
   emitState();
 }
 
@@ -86,7 +87,7 @@ export async function loadSaves() {
 
 function adopt(state) {
   S.state = state;
-  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.coilChanges.clear(); S.rosterOrder = null; S.refs.clear();
+  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.revives.clear(); S.coilChanges.clear(); S.rosterOrder = null; S.refs.clear();
   S.fieldIndex = new Map(state.fields.map((f) => [f.id, f]));
 }
 
@@ -112,6 +113,7 @@ export function actionList() {
   return [...S.starts].map(mk(S.alsoExpedite ? "start_expedite_upgrade" : "start_upgrade"))
     .concat([...S.expedites].map(mk("expedite_upgrade")))
     .concat([...S.heals].map((guid) => ({ type: "heal_operator", guid })))
+    .concat([...S.revives].map((guid) => ({ type: "revive_operator", guid })))
     .concat(S.rosterOrder ? [{ type: "reorder_roster", order: S.rosterOrder }] : [])
     .concat(S.coilChanges.size ? [{ type: "remove_coil_upgrades", changes: [...S.coilChanges].map(([id, to]) => ({ id, to })) }] : []);
 }
@@ -125,7 +127,7 @@ export async function submit(copy, force) {
     const r = await api("/api/apply", { changes, actions, copy, force });
     if (copy) {
       S.banner = { text: "Saved a copy: " + r.written, kind: "ok" };
-      S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.coilChanges.clear(); S.rosterOrder = null;
+      S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.revives.clear(); S.coilChanges.clear(); S.rosterOrder = null;
     } else {
       adopt(r.state);
       S.banner = { text: "Applied " + r.count + " change(s). Backup: " + r.backup, kind: "ok" };

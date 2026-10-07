@@ -1,6 +1,6 @@
 // Personnel: roster strip (portraits) + Overview / Bonds / Focus Tree, as in the game.
 import { h, fmtNum } from "../dom.js";
-import { S, getValue, setEdit, isChanged, rosterOrder, moveOperator, moveOperatorTo } from "../store.js";
+import { S, getValue, setEdit, isChanged, rosterOrder, moveOperator, moveOperatorTo, toggle } from "../store.js";
 import { numInput, stepper, pips, face, live } from "../widgets.js";
 import { go } from "../shell.js";
 
@@ -287,6 +287,26 @@ function crossBox(personnel) {
       h("div", { class: "text-xs text-mute" }, "whole roster · sum of every bond")));
 }
 
+// Fallen operators can be brought back onto the roster.
+function reviveBox(cur) {
+  const b = h("button", { type: "button", class: "btn shrink-0" });
+  const paint = () => {
+    const on = S.revives.has(cur.guid);
+    b.textContent = on ? "Queued - undo" : "Bring back";
+    b.classList.toggle("btn-primary", !on);
+    b.setAttribute("aria-pressed", String(on));
+  };
+  b.addEventListener("click", () => { toggle(S.revives, cur.guid); paint(); });
+  paint();
+  return h("div", { class: "panel p-3 space-y-2" },
+    h("div", { class: "caps font-display text-lg leading-none" }, "Memorial"),
+    h("p", { class: "text-xs text-mute" },
+      "Puts " + cur.name + " back on the roster as the last operator, removes the death and injury effects, and records " +
+      "the current turn as their recruited turn. Bonds with operators recruited after their death do not exist yet, " +
+      "and roster stat bonuses are applied by the game. Experimental: apply it to a copy first."),
+    b);
+}
+
 // Roster position: the Personnel strip in the game follows this order.
 function moveBox(cur) {
   const order = rosterOrder(), i = order.indexOf(cur.guid), n = order.length;
@@ -321,7 +341,7 @@ export function render(args) {
       (() => { const b = h("b", { class: "text-3xl font-display text-amber" }); live(b, () => String(unspent(cur))); return b; })(),
       h("div", { class: "caps font-display text-lg leading-none" }, "Focus points remaining")) : null,
     tab === "bonds" ? crossBox(p) : null,
-    cur.dead ? null : moveBox(cur));
+    cur.dead ? reviveBox(cur) : moveBox(cur));
 
   return h("div", { class: "space-y-3" },
     tabs(cur, tab),

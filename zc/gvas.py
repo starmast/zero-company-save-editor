@@ -384,6 +384,37 @@ class Gvas:
         self._grow(buf, arr, -(el.end - el.start))
         return Gvas(bytes(buf))
 
+    def array_append_raw(self, arr: Node, raw: bytes) -> "Gvas":
+        """Append one fixed-size element (given as its raw bytes) to an ArrayProperty; returns a NEW Gvas."""
+        if arr.tname != "ArrayProperty" or arr.count is None or not raw:
+            raise GvasError("not an appendable array")
+        buf = bytearray(self.data)
+        buf[arr.end:arr.end] = raw
+        struct.pack_into("<i", buf, arr.value_offset, arr.count + 1)
+        self._grow(buf, arr, len(raw))
+        return Gvas(bytes(buf))
+
+    def map_remove_entry(self, mp: Node, index: int) -> "Gvas":
+        """Remove entry `index` of a MapProperty; returns a NEW Gvas."""
+        if mp.tname != "MapProperty" or not mp.children or not 0 <= index < len(mp.children):
+            raise GvasError("not a removable map entry")
+        el = mp.children[index]
+        buf = bytearray(self.data)
+        del buf[el.start:el.end]
+        struct.pack_into("<i", buf, mp.value_offset + 4, mp.count - 1)       # after the (zero) removal count
+        self._grow(buf, mp, -(el.end - el.start))
+        return Gvas(bytes(buf))
+
+    def map_append_raw(self, mp: Node, raw: bytes) -> "Gvas":
+        """Append one fixed-size entry (key + value bytes) to a MapProperty; returns a NEW Gvas."""
+        if mp.tname != "MapProperty" or mp.count is None or not raw:
+            raise GvasError("not an appendable map")
+        buf = bytearray(self.data)
+        buf[mp.end:mp.end] = raw
+        struct.pack_into("<i", buf, mp.value_offset + 4, mp.count + 1)
+        self._grow(buf, mp, len(raw))
+        return Gvas(bytes(buf))
+
     @staticmethod
     def _grow(buf: bytearray, node: Node, delta: int) -> None:
         """Add `delta` to the size field of `node` and every ancestor (and to the

@@ -36,6 +36,8 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
   spent follows the game's own cost table, and you choose to spend your unspent focus or have it granted). Hold and drag an operator's icon on the bottom strip (or
   use Earlier / Later) to change the roster order. The game's Personnel strip and
   mission select both follow it.
+- **Memorial** - on a fallen operator's Personnel page, **Bring back** returns them to the roster (experimental, see
+  limitations).
 - **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
   game's Build button does and optionally expedite them so the game finishes them at the next turn change.
 - **Armory** - utility items and weapon mods.
@@ -125,6 +127,9 @@ Please do **not** attach save files, game files or extracted game data to issues
 - Windows only. Built against the 2026 releases of the game; a game update can change the save format.
 - No adding of items or abilities and no computed combat stats (health, damage); those need data this project has not yet
   been able to verify. Healing does not add the game's own treatment history entry.
+- Bringing back a fallen operator is experimental: it was built from comparing a fallen operator with the living roster, not
+  from a save the game wrote itself. The returning operator has no bonds with anyone recruited after their death, and
+  the roster's permanent stat effects are left for the game to apply. Try it on a copy first.
 
 ## Third-party software
 Runtime: [Flask](https://flask.palletsprojects.com/) (BSD-3), [OpenEXR](https://pypi.org/project/OpenEXR/) (BSD-3),
