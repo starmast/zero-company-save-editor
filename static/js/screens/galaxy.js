@@ -55,7 +55,7 @@ function coilPanel() {
   }
   panel.append(h("p", { class: "px-3 py-2 text-xs text-mute" },
     "Upgrades the Coil keep permanently after a Crisis Mission or Operation is failed. Remove puts that crisis back to available, " +
-    "so it can be failed (and the upgrade gained) again. Prevent marks it as prevented, as if you had won it."));
+    "so it can be failed (and the upgrade gained) again. Prevent marks it as prevented, as if you had won it. Neither changes the paired A/B choice of the same crisis."));
   return panel;
 }
 

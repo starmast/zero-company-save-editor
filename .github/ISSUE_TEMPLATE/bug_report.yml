@@ -36,7 +36,7 @@ body:
     attributes:
       label: Editor version
       description: Shown in the console when the app starts, and in CHANGELOG.md.
-      placeholder: "0.1.0"
+      placeholder: "0.2.0"
   - type: input
     id: python
     attributes:

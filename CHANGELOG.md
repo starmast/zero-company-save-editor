@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-06
+
 ### Added
 - **Medbay** screen: beds, bacta tank, costs and injured operators, read from the save. Injured operators get a marker on
   the Personnel roster strip.
@@ -12,7 +14,6 @@ All notable changes to this project are documented here. The format follows
   it uses the bacta tank (verified byte-for-byte against a before/after pair of saves written by the game), and keeps
   the character sizes in the save's metadata consistent. It is instant and free; it does not charge credits or the
   tank charge, and does not add the game's treatment history entry.
-
 - **Coil upgrades** on the Galaxy screen: lists the permanent enemy upgrades (name, unit, description as in the game's
   Active Coil Upgrades panel) and takes any or all of them away, either as **Remove** (the crisis's `.Selected` fact tag
   goes back to `.Available`, so it can be failed again) or **Prevent** (`.Prevented`, as if the crisis had been won).
