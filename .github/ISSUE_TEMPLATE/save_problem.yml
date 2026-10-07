@@ -43,7 +43,7 @@ body:
     id: version
     attributes:
       label: Editor version
-      placeholder: "0.2.0"
+      placeholder: "0.3.0"
   - type: input
     id: game
     attributes:

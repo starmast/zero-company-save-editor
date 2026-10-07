@@ -26,7 +26,7 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 <sub>Screenshots use the `?portraits=off` option, so operators appear as initials; no game artwork is shown.</sub>
 </details>
 
-**Status:** early release (v0.2.0, see [CHANGELOG](CHANGELOG.md)). Tested with saves from game build
+**Status:** early release (v0.3.0, see [CHANGELOG](CHANGELOG.md)). Tested with saves from game build
 `++ProjectBruno+Stable` changelist 197649; a game update can change the save format.
 
 ## Features

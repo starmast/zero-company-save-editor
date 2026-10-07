@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
 ### Added
 - **Complete focus tree**: an operator whose abilities only have their first tier saved (the tutorial operator, Aurelio)
   gets the missing tier records copied from another operator with the same ability (the lists are identical for
