@@ -6,8 +6,15 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- **Medbay** screen: beds, bacta tank, costs and injured operators, read from the save (view-only). Injured operators
-  get a marker on the Personnel roster strip.
+- **Medbay** screen: beds, bacta tank, costs and injured operators, read from the save. Injured operators get a marker on
+  the Personnel roster strip.
+- **Heal** injured operators from the Medbay. It removes the operator's `GE_Injured` effect exactly as the game does when
+  it uses the bacta tank (verified byte-for-byte against a before/after pair of saves written by the game), and keeps
+  the character sizes in the save's metadata consistent. It is instant and free; it does not charge credits or the
+  tank charge, and does not add the game's treatment history entry.
+
+### Fixed
+- Restoring a backup while the game appears to be running no longer dead-ends: the editor asks for confirmation.
 
 ## [0.1.0] - 2026-10-05
 

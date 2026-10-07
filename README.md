@@ -37,7 +37,8 @@ things (Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up 
 - **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
   game's Build button does and optionally expedite them so the game finishes them at the next turn change.
 - **Armory** - utility items and weapon mods. **Galaxy** - influence, contacts and reward tier per region.
-- **Medbay** - beds, the bacta tank, their costs and who is injured, as your save records it (view-only for now).
+- **Medbay** - beds, the bacta tank, their costs and who is injured, as your save records it, with a **Heal** button that
+  removes an operator's injuries the way the bacta tank does (instant and free: no credits or tank charge are used).
 - **Advanced** - every editable value as a flat list, plus a raw property-tree viewer.
 - Edits stay *pending* (with a readable list of what will change) until you press **Apply**.
 
@@ -117,8 +118,8 @@ Please do **not** attach save files, game files or extracted game data to issues
 
 ## Limitations
 - Windows only. Built against the 2026 releases of the game; a game update can change the save format.
-- The Medbay is view-only (healing operators needs one more verified before/after save), and there is no adding of items or
-  abilities and no computed combat stats (health, damage); those need data this project has not yet been able to verify.
+- No adding of items or abilities and no computed combat stats (health, damage); those need data this project has not yet
+  been able to verify. Healing does not add the game's own treatment history entry.
 
 ## Third-party software
 Runtime: [Flask](https://flask.palletsprojects.com/) (BSD-3), [OpenEXR](https://pypi.org/project/OpenEXR/) (BSD-3),

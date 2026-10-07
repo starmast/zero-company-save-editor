@@ -44,7 +44,13 @@ export function render() {
         b.original ? h("span", { class: "ml-2 text-xs text-ok caps" }, "original") : null,
         h("div", { class: "text-xs text-mute" }, fmtTime(b.mtime) + " · " + fmtSize(b.size))),
       h("button", { type: "button", class: "btn",
-        onclick: () => { if (confirm("Restore " + b.file + " over the current save?")) restore(b.file, !!document.getElementById("force")?.checked); } }, "Restore")));
+        onclick: () => {
+          if (!confirm("Restore " + b.file + " over the current save?")) return;
+          let force = !!document.getElementById("force")?.checked;
+          if (!force && S.state.game_running &&
+              !confirm("The game appears to be running (" + S.state.game_running + "). If it has this save loaded it may overwrite the restore. Restore anyway?")) return;
+          restore(b.file, force || !!S.state.game_running);
+        } }, "Restore")));
   }
   grid.append(bk);
   return grid;

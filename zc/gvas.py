@@ -367,6 +367,23 @@ class Gvas:
         self._grow(buf, node, 4)
         return Gvas(bytes(buf))
 
+    def array_remove_element(self, arr: Node, index: int) -> "Gvas":
+        """Remove element `index` of an ArrayProperty of structs; returns a NEW Gvas.
+
+        The array's count drops by one and every ancestor's size field (and nested byte counts) shrink by the
+        removed bytes.  Everything after the element moves up unchanged.
+        """
+        if arr.tname != "ArrayProperty" or not arr.children or not 0 <= index < len(arr.children):
+            raise GvasError("not a removable array element")
+        el = arr.children[index]
+        if el.end <= el.start:
+            raise GvasError("empty element")
+        buf = bytearray(self.data)
+        del buf[el.start:el.end]
+        struct.pack_into("<i", buf, arr.value_offset, arr.count - 1)
+        self._grow(buf, arr, -(el.end - el.start))
+        return Gvas(bytes(buf))
+
     @staticmethod
     def _grow(buf: bytearray, node: Node, delta: int) -> None:
         """Add `delta` to the size field of `node` and every ancestor (and to the

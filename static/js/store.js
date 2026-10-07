@@ -12,6 +12,7 @@ export const S = {
   nolink: new Set(),    // edit ids whose "total follows unspent" link is switched off
   starts: new Set(),    // upgrade ids to start
   expedites: new Set(), // upgrade ids to expedite
+  heals: new Set(),     // injured operator guids to heal
   alsoExpedite: false,
   banner: null,         // {text, kind}
   busy: false,
@@ -23,7 +24,7 @@ export const onPending = (fn) => (pendingSubs.add(fn), () => pendingSubs.delete(
 export const emitState = () => stateSubs.forEach((f) => f());
 export const emitPending = () => pendingSubs.forEach((f) => f());
 
-export const pendingCount = () => S.edits.size + S.starts.size + S.expedites.size;
+export const pendingCount = () => S.edits.size + S.starts.size + S.expedites.size + S.heals.size;
 export const getValue = (ref) => (S.edits.has(ref.id) ? S.edits.get(ref.id) : ref.value);
 export const isChanged = (ref) => S.edits.has(ref.id);
 
@@ -44,7 +45,7 @@ export function valid(ref, value) {
 }
 
 export function discard() {
-  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear();
+  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear();
   emitState();
 }
 
@@ -61,7 +62,7 @@ export async function loadSaves() {
 
 function adopt(state) {
   S.state = state;
-  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.refs.clear();
+  S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear(); S.refs.clear();
   S.fieldIndex = new Map(state.fields.map((f) => [f.id, f]));
 }
 
@@ -85,7 +86,8 @@ export async function refresh() {
 export function actionList() {
   const mk = (type) => (id) => ({ type, id, name: S.state.upgrades.items.find((x) => x.id === id).name });
   return [...S.starts].map(mk(S.alsoExpedite ? "start_expedite_upgrade" : "start_upgrade"))
-    .concat([...S.expedites].map(mk("expedite_upgrade")));
+    .concat([...S.expedites].map(mk("expedite_upgrade")))
+    .concat([...S.heals].map((guid) => ({ type: "heal_operator", guid })));
 }
 
 export async function submit(copy, force) {
@@ -97,7 +99,7 @@ export async function submit(copy, force) {
     const r = await api("/api/apply", { changes, actions, copy, force });
     if (copy) {
       S.banner = { text: "Saved a copy: " + r.written, kind: "ok" };
-      S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear();
+      S.edits.clear(); S.nolink.clear(); S.starts.clear(); S.expedites.clear(); S.heals.clear();
     } else {
       adopt(r.state);
       S.banner = { text: "Applied " + r.count + " change(s). Backup: " + r.backup, kind: "ok" };

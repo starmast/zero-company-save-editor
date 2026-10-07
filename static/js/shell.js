@@ -102,6 +102,10 @@ function actionbar() {
   if (!n) return wrap;
   const edits = [...S.edits.keys()].map(describeEdit);
   const acts = actionList().map((a) => {
+    if (a.type === "heal_operator") {
+      const who = S.state.view.medbay.injured.find((o) => o.guid === a.guid);
+      return { where: "Medbay", label: "Heal " + (who ? who.name : "operator") + " (free, instant)" };
+    }
     const row = S.state.upgrades.items.find((x) => x.id === a.id);
     return { where: "Upgrades", label: ({ start_upgrade: "Start ", start_expedite_upgrade: "Start + expedite ", expedite_upgrade: "Expedite " })[a.type] + (row ? row.title : a.name) };
   });
@@ -128,7 +132,7 @@ function actionbar() {
 async function run(copy, force) {
   const total = pendingCount(), acts = actionList().length;
   if (!copy && !confirm("Apply " + total + " change(s) to " + S.state.name +
-      (acts ? "\n\nThis starts/expedites " + acts + " base upgrade(s); the game finishes them at the next turn change." : "") +
+      (acts ? "\n\nThis includes " + acts + " action(s) such as starting upgrades or healing operators; upgrades finish at the next turn change." : "") +
       "\nA backup is made first.")) return;
   await submit(copy, force);
   window.scrollTo({ top: 0, behavior: "smooth" });

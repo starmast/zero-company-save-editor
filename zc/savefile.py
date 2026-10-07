@@ -112,7 +112,8 @@ def summarize(path: str) -> dict:
     return info
 
 
-def sync_metadata_sizes(loaded: Loaded, sizes: dict[str, int]) -> Optional[bytes]:
+def sync_metadata_sizes(loaded: Loaded, sizes: dict[str, int],
+                        characters: Optional[dict[str, int]] = None) -> Optional[bytes]:
     """Return a new SaveGameMetaData.json with `GameInstanceSize` / `StrategySize` updated.
 
     Only touches a field whose current value matched the old payload (so we never
@@ -129,7 +130,26 @@ def sync_metadata_sizes(loaded: Loaded, sizes: dict[str, int]) -> Optional[bytes
         if m and int(m.group(2)) != new:
             text = text[:m.start(2)] + str(new) + text[m.end(2):]
             changed = True
+    for guid, new in (characters or {}).items():       # each character's `wrappedSize`
+        gi = text.find('"guid": "%s"' % guid)
+        if gi < 0:
+            continue
+        end = text.find("}", gi)
+        m = re.search(r'("wrappedSize"\s*:\s*)(\d+)', text[gi:end])
+        if m and int(m.group(2)) != new:
+            a = gi + m.start(2)
+            text = text[:a] + str(new) + text[gi + m.end(2):]
+            changed = True
     return text.encode("utf-16-le") if changed else None
+
+
+def read_character_sizes(loaded: Loaded) -> tuple[Optional[int], dict[str, int]]:
+    """(characterDataWrapperSize, {guid: wrappedSize}) as recorded in SaveGameMetaData.json."""
+    raw = (loaded.blobs or {}).get("SaveGameMetaData.json")
+    obj = _decode_utf16_json(raw) if raw else None
+    gi = (obj or {}).get("GameInstanceMetaData", {})
+    return gi.get("characterDataWrapperSize"), {c["guid"].upper(): c.get("wrappedSize")
+                                                 for c in gi.get("characterMetaData", []) if "guid" in c}
 
 
 def save_info(loaded: Loaded) -> Optional[dict]:

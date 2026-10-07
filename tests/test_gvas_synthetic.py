@@ -151,3 +151,49 @@ def test_corrupt_inputs_are_rejected_cleanly():
         savefile.load_bytes(b"not a save at all")
     with pytest.raises(savefile.SaveFormatError):
         savefile.load_bytes(b"PK\x03\x04garbage")
+
+
+# ------------------------------------------------------------------ removing an array element
+def obj_prop(name, path):
+    return prop(name, tn("ObjectProperty"), fs(path))
+
+
+def struct_array(name, elems, sname="Elem"):
+    return prop(name, tn("ArrayProperty", tn("StructProperty", tn(sname))),
+                struct.pack("<i", len(elems)) + b"".join(e + NONE for e in elems))
+
+
+def effects_sample():
+    elems = [obj_prop("Def", f"/Game/GE_{n}.GE_{n}") + int_prop("StackCount", i + 1) for i, n in enumerate("ABC")]
+    archive = nested_archive("ArchiveBytes", struct_prop("Data", struct_array("Effects", elems) + int_prop("After", 5)))
+    return gvas(int_prop("Turn", 3) + struct_prop("Wrapper", archive, "ObjectWrapper") + str_prop("Name", "Alpha"))
+
+
+def test_array_remove_element_shrinks_every_ancestor_and_keeps_the_tail():
+    raw = effects_sample()
+    g = Gvas(raw)
+    arr = find(g, "Wrapper", "ArchiveBytes", "Data", "Effects")
+    victim = arr.children[1]
+    cut = victim.end - victim.start
+    g2 = g.array_remove_element(arr, 1)
+    assert len(g2.data) == len(raw) - cut
+    assert g2.opaque_count == 0
+    arr2 = find(g2, "Wrapper", "ArchiveBytes", "Data", "Effects")
+    assert arr2.count == 2 and arr2.size == arr.size - cut
+    assert [g2.get(g2.child(e, "Def")).rsplit(".", 1)[-1] for e in arr2.children] == ["GE_A", "GE_C"]
+    assert g2.get(find(g2, "Wrapper", "ArchiveBytes", "Data", "After")) == 5          # later siblings intact
+    assert g2.get(find(g2, "Name")) == "Alpha" and g2.get(find(g2, "Turn")) == 3
+    for names in (("Wrapper",), ("Wrapper", "ArchiveBytes"), ("Wrapper", "ArchiveBytes", "Data")):
+        assert find(g2, *names).size == find(g, *names).size - cut
+    assert find(g2, "Wrapper", "ArchiveBytes").count == find(g, "Wrapper", "ArchiveBytes").count - cut
+    assert g2.data[victim.start:] == raw[victim.end:]                                  # tail moved up unchanged
+
+
+def test_array_remove_element_rejects_bad_requests():
+    g = Gvas(effects_sample())
+    arr = find(g, "Wrapper", "ArchiveBytes", "Data", "Effects")
+    for bad in (-1, 3, 99):
+        with pytest.raises(GvasError):
+            g.array_remove_element(arr, bad)
+    with pytest.raises(GvasError):
+        g.array_remove_element(find(g, "Turn"), 0)                 # not an array

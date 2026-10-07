@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from . import portraits as portraits_mod, savefile, upgrades, views
+from . import medbay, portraits as portraits_mod, savefile, upgrades, views
 from .domain import SaveModel, TYPE_RANGES, scalar_nodes, validate
 from .gvas import Gvas, GvasError, SCALARS
 
@@ -30,6 +30,9 @@ def _blob_sizes(g: Gvas) -> dict[str, int]:
                 out["GameInstanceSize"] = ab.count
             elif w.name == "StrategySaveGameWrapper":
                 out["StrategySize"] = ab.count
+    total, _ = medbay.character_sizes(g)
+    if total:
+        out["characterDataWrapperSize"] = total
     return out
 
 
@@ -37,13 +40,13 @@ def _flatten(g: Gvas) -> dict:
     """Map structural path -> comparable content for every node (leaf bytes / counts)."""
     out: dict = {}
 
-    def rec(nodes, prefix):
-        for n in nodes:
-            p = prefix + (n.name,)
+    def rec(nodes, prefix, keys=None):
+        for i, n in enumerate(nodes):
+            p = prefix + ((keys[i] if keys else n.name),)
             if n.children is not None:
                 if not n.nested:                 # nested count is a byte length, not elements
                     out[p + ("#count",)] = n.count
-                rec(n.children, p)
+                rec(n.children, p, medbay.effect_keys(g, n) if n.name == medbay.EFFECTS else None)
             else:
                 out[p] = bytes(g.data[n.value_offset:n.end])
     rec(g.root, ())
@@ -279,22 +282,23 @@ class Service:
 
         # 3) structural actions (change sizes; every ancestor size is fixed up)
         expected_paths: set = {tuple(c.gvas.path_of(n)) for n, _ in writes.values()}
+        cut = {"prefixes": set(), "opaque_removed": 0}
         if actions:
-            patched, started = self._run_actions(patched, actions)
+            patched, started, cut = self._run_actions(patched, actions)
             expected_paths |= started
         new_gvas = patched.to_bytes()
         structural = len(new_gvas) != len(c.loaded.gvas)
 
         replace = {}
         if structural and c.loaded.is_zip:
-            meta = savefile.sync_metadata_sizes(c.loaded, _blob_sizes(patched))
+            meta = savefile.sync_metadata_sizes(c.loaded, _blob_sizes(patched), medbay.character_sizes(patched)[1])
             if meta is not None:
                 replace["SaveGameMetaData.json"] = meta
         new_file = savefile.rebuild(c.loaded, new_gvas, replace)
 
         # 4) verify before touching the disk
         if structural or actions:
-            self._verify_semantic(c, new_file, expected_paths)
+            self._verify_semantic(c, new_file, expected_paths, cut)
         else:
             self._verify(c, new_file, new_gvas, edited)
 
@@ -312,11 +316,34 @@ class Service:
         self.open(c.dir_id, c.name)
         return {"written": c.name, "backup": os.path.basename(snap), "count": count}
 
-    def _run_actions(self, g: Gvas, actions: list[dict]) -> tuple[Gvas, set]:
+    def _heal(self, g: Gvas, guid: str, touched: set, cut: dict) -> Gvas:
+        model = self.current.model
+        op = model.operators.get(guid)
+        if op is None or op["dead"] or not op["injuries"]:
+            raise EditError("That operator is not injured (or has fallen); re-open the save.")
+        try:
+            g, info = medbay.heal_operator(g, guid)
+        except GvasError as e:
+            raise EditError(f"{op['name']}: {e}") from e
+        touched |= info["count_paths"]
+        cut["prefixes"] |= info["prefixes"]
+        cut["opaque_removed"] += info["opaque_removed"]
+        return g
+
+    def _run_actions(self, g: Gvas, actions: list[dict]) -> tuple[Gvas, set, dict]:
         touched: set = set()
+        cut: dict = {"prefixes": set(), "opaque_removed": 0}
         seen: set = set()
+        healed: set = set()
         for a in actions:
             kind = a.get("type")
+            if kind == "heal_operator":
+                guid = str(a.get("guid", "")).upper()
+                if not re.fullmatch(r"[0-9A-F]{32}", guid) or guid in healed:
+                    raise EditError("bad operator reference")
+                healed.add(guid)
+                g = self._heal(g, guid, touched, cut)
+                continue
             if kind not in ("start_upgrade", "expedite_upgrade", "start_expedite_upgrade"):
                 raise EditError(f"unknown action {kind!r}")
             rid, name = str(a.get("id", "")), a.get("name")
@@ -349,16 +376,17 @@ class Service:
                 tails += (("TurnStarted",), ("InProgressTurns",))
             for tail in tails:
                 touched.add(base + tail)
-        return g, touched
+        return g, touched, cut
 
-    def _verify_semantic(self, c: OpenSave, new_file: bytes, allowed_paths: set):
+    def _verify_semantic(self, c: OpenSave, new_file: bytes, allowed_paths: set, cut: Optional[dict] = None):
         """For structural edits: reparse, then prove the ONLY differences are the intended ones."""
         try:
             re_loaded = savefile.load_bytes(new_file)
             g2 = Gvas(re_loaded.gvas)
         except Exception as e:
             raise EditError(f"verification failed (rebuilt file unreadable): {e}") from e
-        if g2.opaque_count != c.gvas.opaque_count:
+        cut = cut or {"prefixes": set(), "opaque_removed": 0}
+        if g2.opaque_count != c.gvas.opaque_count - cut["opaque_removed"]:
             raise EditError("verification failed: tree shape changed (size fields inconsistent)")
         if len(g2.data) - g2.props_end != len(c.gvas.data) - c.gvas.props_end:
             raise EditError("verification failed: trailing data changed")
@@ -373,10 +401,17 @@ class Service:
                 m = re.search(r'"%s"\s*:\s*(\d+)' % key, txt)
                 if m and int(m.group(1)) != size:
                     raise EditError(f"verification failed: metadata {key} out of sync")
+            _total, per = medbay.character_sizes(g2)
+            _meta_total, meta_per = savefile.read_character_sizes(re_loaded)
+            for gid, size in per.items():
+                if meta_per.get(gid) not in (None, size):
+                    raise EditError("verification failed: a character's recorded size is out of sync")
         a, b = _flatten(c.gvas), _flatten(g2)
         diff = {k for k in set(a) | set(b) if a.get(k) != b.get(k)}
+        prefixes = cut["prefixes"]
         stray = sorted(k for k in diff
-                       if k not in allowed_paths and k[:-1] not in allowed_paths)
+                       if k not in allowed_paths and k[:-1] not in allowed_paths
+                       and not any(k[:len(p)] == p for p in prefixes))
         if stray:
             raise EditError("verification failed: unexpected change at " + "/".join(stray[0][-6:]))
 
