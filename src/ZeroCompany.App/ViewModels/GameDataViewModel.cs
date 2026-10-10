@@ -24,6 +24,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         _gameDir = s.GameDir.Length > 0 ? s.GameDir : AppEnvironment.GuessGameDirs().FirstOrDefault() ?? GameExtractor.DefaultGameDir;
         _usmapPath = s.UsmapPath.Length > 0 ? s.UsmapPath : GuessUsmap();
         RefreshStatus();
+        _log.Append(main.Memory.GameDataLog);                     // the log survives the screen reload that follows an extraction
+        _logText = main.Memory.GameDataLog;
     }
 
     [ObservableProperty] string _gameDir;
@@ -32,6 +34,9 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     [ObservableProperty] string _logText = "";
     [ObservableProperty] bool _isRunning;
     [ObservableProperty] bool _hasData;
+
+    public bool HasLog => LogText.Length > 0;
+    partial void OnLogTextChanged(string value) => OnPropertyChanged(nameof(HasLog));
 
     public bool CanExtract => !IsRunning;
     public bool NotRunning => !IsRunning;
@@ -67,6 +72,7 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     {
         _log.AppendLine(line);
         LogText = _log.ToString();
+        _main.Memory.GameDataLog = LogText;
     }
 
     [RelayCommand]
@@ -92,7 +98,7 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         var s = _main.Session;
         s.Settings.GameDir = GameDir; s.Settings.UsmapPath = UsmapPath;
         s.SaveSettings();
-        _log.Clear(); LogText = "";
+        _log.Clear(); LogText = ""; _main.Memory.GameDataLog = "";
         IsRunning = true;
         _cts = new CancellationTokenSource();
         var progress = new Progress<string>(Append);                 // created on the UI thread: reports marshal back to it
@@ -104,8 +110,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
             }, progress, _cts.Token);
             s.UseDatabase(db);
             RefreshStatus();
+            _main.OnDatabaseChanged();                            // reloads the screens first, which clears the banner
             _main.SetBanner("Game data extracted.", "ok");
-            _main.OnDatabaseChanged();
         }
         catch (OperationCanceledException) { Append("Cancelled."); }
         catch (ExtractionException e) { Append("Failed: " + e.Message); _main.SetBanner(e.Message, "err"); }
@@ -124,8 +130,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         if (db == null || db.IsEmpty) { _main.SetBanner("That file is not a usable game database (or is from a different editor version).", "err"); return; }
         _main.Session.UseDatabase(db);
         RefreshStatus();
-        _main.SetBanner("Game data imported.", "ok");
         _main.OnDatabaseChanged();
+        _main.SetBanner("Game data imported.", "ok");
     }
 
     [RelayCommand]

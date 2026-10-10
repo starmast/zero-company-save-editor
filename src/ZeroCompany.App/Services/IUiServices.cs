@@ -13,8 +13,10 @@ public interface IUiServices
 public sealed class NullUiServices : IUiServices
 {
     public bool ConfirmResult { get; set; } = true;
-    public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(null);
-    public Task<string?> PickFileAsync(string title, string label, params string[] patterns) => Task.FromResult<string?>(null);
+    public string? PickedFolder { get; set; }
+    public string? PickedFile { get; set; }
+    public Task<string?> PickFolderAsync(string title) => Task.FromResult(PickedFolder);
+    public Task<string?> PickFileAsync(string title, string label, params string[] patterns) => Task.FromResult(PickedFile);
     public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(ConfirmResult);
     public Task CopyToClipboardAsync(string text) => Task.CompletedTask;
 }

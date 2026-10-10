@@ -38,7 +38,7 @@
       </StackPanel>
     </Border>
 
-    <Border Classes="panel" IsVisible="{Binding LogText.Length}">
+    <Border Classes="panel" IsVisible="{Binding HasLog}">
       <StackPanel>
         <Border Classes="panelh"><TextBlock Classes="caps h2" Text="LOG" /></Border>
         <TextBox Text="{Binding LogText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="140" MaxHeight="320" Margin="10"

@@ -21,6 +21,7 @@ public sealed class UiMemory
     public string ArmoryFilter { get; set; } = "";
     public string AdvancedTab { get; set; } = "";
     public string AdvancedFilter { get; set; } = "";
+    public string GameDataLog { get; set; } = "";
 }
 
 public sealed partial class NavItemViewModel : ViewModelBase
