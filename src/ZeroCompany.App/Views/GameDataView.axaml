@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.GameDataView"
+             x:DataType="vm:GameDataViewModel">
+  <StackPanel Spacing="12">
+    <Border Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="GAME DATA" /></Border>
+        <StackPanel Margin="14,10" Spacing="6">
+          <TextBlock Text="{Binding Status}" Classes.ok="{Binding HasData}" Classes.amber="{Binding !HasData}" TextWrapping="Wrap" />
+          <TextBlock Classes="mute small" TextWrapping="Wrap"
+                     Text="The editor can read your own Star Wars Zero Company install (read-only) to show real item names, upgrade costs, focus costs and Coil descriptions. Nothing is written to the game, and the data stays on this computer. Without it everything still works, with plainer names." />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="EXTRACT FROM YOUR INSTALL" /></Border>
+        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,8,Auto" ColumnSpacing="10">
+          <TextBlock Grid.Row="0" Text="Game folder" VerticalAlignment="Center" />
+          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding GameDir}" IsEnabled="{Binding NotRunning}" />
+          <Button Grid.Row="0" Grid.Column="2" Content="Browse…" Command="{Binding BrowseGameCommand}" IsEnabled="{Binding NotRunning}" />
+          <TextBlock Grid.Row="2" Text="Mappings (.usmap)" VerticalAlignment="Center" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UsmapPath}" IsEnabled="{Binding NotRunning}" />
+          <Button Grid.Row="2" Grid.Column="2" Content="Browse…" Command="{Binding BrowseUsmapCommand}" IsEnabled="{Binding NotRunning}" />
+        </Grid>
+        <TextBlock Classes="mute small" Margin="14,0,14,10" TextWrapping="Wrap"
+                   Text="The mappings file is a community-made description of the game's data layout for your game version; it is not included. The first extraction also downloads the Oodle decompression library (through CUE4Parse) next to the editor's data." />
+        <TextBlock Classes="amber small" Margin="14,0,14,10" TextWrapping="Wrap" Text="{Binding PathsHint}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="14,0,14,14">
+          <Button Classes="primary" Content="Extract game data" Command="{Binding ExtractCommand}" IsEnabled="{Binding CanExtract}" />
+          <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" />
+          <Button Content="Import database…" Command="{Binding ImportCommand}" IsEnabled="{Binding NotRunning}" />
+          <Button Content="Where is my database?" Command="{Binding ExportCommand}" IsEnabled="{Binding HasData}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="panel" IsVisible="{Binding LogText.Length}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="LOG" /></Border>
+        <TextBox Text="{Binding LogText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="140" MaxHeight="320" Margin="10"
+                 FontFamily="Consolas, Menlo, monospace" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

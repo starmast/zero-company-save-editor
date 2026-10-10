@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
+             x:Class="ZeroCompany.App.Views.CommandView"
+             x:DataType="vm:CommandViewModel">
+  <UserControl.Resources>
+    <DataTemplate x:Key="FieldRow" x:DataType="vm:FieldRowViewModel">
+      <Border Classes="hairline" Padding="12,8">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Label}" />
+            <TextBlock Classes="mute small" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" />
+          </StackPanel>
+          <c:NumField Grid.Column="1" DataContext="{Binding Field}" Width="150" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,12,Auto,12,Auto">
+    <!-- save info -->
+    <Border Grid.Row="0" Grid.Column="0" Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="SAVE" /></Border>
+        <StackPanel Margin="14,10" Spacing="3">
+          <TextBlock Classes="title" Text="{Binding Title}" FontSize="26" TextWrapping="Wrap" />
+          <TextBlock Classes="mute" Text="{Binding Where}" />
+          <TextBlock Text="{Binding Line1}" />
+          <TextBlock Classes="mute" Text="{Binding Line2}" />
+          <TextBlock Classes="mute" Text="{Binding Line3}" />
+          <TextBlock Classes="mute small" Margin="0,8,0,0" Text="{Binding Summary}" TextWrapping="Wrap" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- campaign -->
+    <Border Grid.Row="0" Grid.Column="2" Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="CAMPAIGN" /></Border>
+        <ItemsControl ItemsSource="{Binding Campaign}" ItemTemplate="{StaticResource FieldRow}" />
+      </StackPanel>
+    </Border>
+
+    <!-- stockpile -->
+    <Border Grid.Row="2" Grid.ColumnSpan="3" Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="STOCKPILE" /></Border>
+        <ItemsControl ItemsSource="{Binding Stockpile}" ItemTemplate="{StaticResource FieldRow}" />
+      </StackPanel>
+    </Border>
+
+    <!-- backups -->
+    <Border Grid.Row="4" Grid.ColumnSpan="3" Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="BACKUPS" /></Border>
+        <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"
+                   Text="A backup is made before every write and the very first version is kept as the original. Restoring first saves the current file as a new backup, so nothing is lost." />
+        <ItemsControl ItemsSource="{Binding Backups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:BackupRowViewModel">
+              <Border Classes="hairline" Padding="14,8" BorderThickness="0,1,0,0">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding File}" />
+                      <TextBlock Classes="caps ok small" Text="ORIGINAL" IsVisible="{Binding IsOriginal}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Classes="mute small" Text="{Binding Detail}" />
+                  </StackPanel>
+                  <Button Grid.Column="1" Content="Restore" Command="{Binding RestoreCommand}" VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

@@ -22,18 +22,20 @@ public sealed class SaveService
     static readonly Regex RecipeIdRx = new(@"^r\d+$", RegexOptions.Compiled);
     static readonly string[] GameProcessHints = { "swzerocompany", "bruno" };
 
-    readonly IReadOnlyDictionary<string, string> _dirs;
     readonly string _backupRoot;
     readonly Func<string?> _gameRunning;
     readonly object _lock = new();
 
     public GameDatabase Db { get; set; }
+
+    /// <summary>Save folders (id -> path); can be replaced while a save is open.</summary>
+    public IReadOnlyDictionary<string, string> Dirs { get; set; }
     public OpenSave? Current { get; private set; }
 
     public SaveService(IReadOnlyDictionary<string, string> saveDirs, string backupRoot, GameDatabase? db = null,
                        Func<string?>? gameRunning = null)
     {
-        _dirs = saveDirs;
+        Dirs = saveDirs;
         _backupRoot = backupRoot;
         Db = db ?? GameDatabase.Empty;
         _gameRunning = gameRunning ?? DefaultGameRunning;
@@ -61,7 +63,7 @@ public sealed class SaveService
     // -- path safety -------------------------------------------------------
     public string Resolve(string dirId, string name)
     {
-        if (!_dirs.TryGetValue(dirId, out var dir)) throw new EditException("unknown save folder");
+        if (!Dirs.TryGetValue(dirId, out var dir)) throw new EditException("unknown save folder");
         if (Path.GetFileName(name) != name || !SafeName.IsMatch(name)) throw new EditException("invalid file name");
         var path = Path.Combine(dir, name);
         if (!File.Exists(path)) throw new EditException("file not found");
@@ -72,7 +74,7 @@ public sealed class SaveService
     public string BackupDir(string name, string? dirId = null)
     {
         dirId ??= Current?.DirId;
-        if (dirId == null || !_dirs.ContainsKey(dirId)) throw new EditException("unknown save folder");
+        if (dirId == null || !Dirs.ContainsKey(dirId)) throw new EditException("unknown save folder");
         var d = Path.Combine(_backupRoot, dirId, Path.GetFileNameWithoutExtension(name));
         Directory.CreateDirectory(d);
         return d;
@@ -85,7 +87,7 @@ public sealed class SaveService
     public List<SaveEntry> ListSaves()
     {
         var @out = new List<SaveEntry>();
-        foreach (var (id, dir) in _dirs)
+        foreach (var (id, dir) in Dirs)
         {
             if (!Directory.Exists(dir)) continue;
             foreach (var fi in new DirectoryInfo(dir).GetFiles().OrderByDescending(f => f.LastWriteTimeUtc))

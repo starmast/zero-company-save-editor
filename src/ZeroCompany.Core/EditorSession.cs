@@ -15,7 +15,7 @@ public sealed class EditorSession
     public AppEnvironment Env { get; }
     public AppSettings Settings { get; }
     public GameDatabase Db { get; private set; }
-    public SaveService Service { get; private set; }
+    public SaveService Service { get; }
     public PendingChanges Pending { get; } = new();
 
     public EditorSession(AppEnvironment env, Func<string?>? gameRunning = null)
@@ -32,12 +32,12 @@ public sealed class EditorSession
 
     SaveService BuildService() => new(Env.DiscoverSaveDirs(Settings.SaveDirs), Env.BackupsDir, Db, _gameRunning);
 
-    /// <summary>Re-read the save folders (after the user adds one) and the game database (after an extraction).</summary>
+    /// <summary>Re-read the save folders (after the user adds one) and the game database. An open save stays open.</summary>
     public void Refresh()
     {
         Db = GameDatabase.TryLoad(Env.GameDbPath) ?? GameDatabase.Empty;
-        Service = BuildService();
-        Pending.Clear();
+        Service.Dirs = Env.DiscoverSaveDirs(Settings.SaveDirs);
+        Service.Db = Db;
     }
 
     public void SaveSettings() => Settings.Save(Env);

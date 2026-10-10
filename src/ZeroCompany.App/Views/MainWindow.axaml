@@ -1,0 +1,122 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ZeroCompany.App.ViewModels"
+        xmlns:v="using:ZeroCompany.App.Views"
+        xmlns:c="using:ZeroCompany.App.Controls"
+        x:Class="ZeroCompany.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Zero Company Editor" Width="1280" Height="860" MinWidth="900" MinHeight="600">
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:SavesViewModel"><v:SavesView /></DataTemplate>
+    <DataTemplate DataType="vm:CommandViewModel"><v:CommandView /></DataTemplate>
+    <DataTemplate DataType="vm:GameDataViewModel"><v:GameDataView /></DataTemplate>
+    <DataTemplate DataType="vm:PlaceholderViewModel"><v:PlaceholderView /></DataTemplate>
+  </Window.DataTemplates>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <!-- top bar: brand, save name, resource chips -->
+    <Border Grid.Row="0" Classes="panel" Margin="12,12,12,0" Padding="16,8">
+      <Grid ColumnDefinitions="Auto,Auto,*">
+        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0">
+          <TextBlock Classes="title" Text="Zero Company" />
+          <TextBlock Classes="caps mute small" Text="SAVE EDITOR" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,24,0" IsVisible="{Binding HasSave}">
+          <TextBlock Classes="h2" Text="{Binding Header.Title}" />
+          <TextBlock Classes="mute small" Text="{Binding Header.Subtitle}" />
+        </StackPanel>
+        <ItemsControl Grid.Column="2" ItemsSource="{Binding Header.Chips}" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ChipViewModel">
+              <Button Classes="chip" Classes.changed="{Binding IsChanged}" Margin="3,2" ToolTip.Tip="{Binding Label}">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <TextBlock Classes="ice" Text="{Binding Icon}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Display}" VerticalAlignment="Center" Classes.amber="{Binding IsChanged}" />
+                </StackPanel>
+                <Button.Flyout>
+                  <Flyout Placement="Bottom">
+                    <StackPanel Spacing="6" Width="160">
+                      <TextBlock Classes="caps mute" Text="{Binding Label}" />
+                      <c:NumField DataContext="{Binding Field}" />
+                    </StackPanel>
+                  </Flyout>
+                </Button.Flyout>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </Border>
+
+    <!-- facility navigation -->
+    <Grid Grid.Row="1" Margin="12,8,12,0" ColumnDefinitions="*,Auto">
+      <ItemsControl Grid.Column="0" ItemsSource="{Binding Nav}" IsVisible="{Binding HasSave}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:NavItemViewModel">
+            <Button Classes="nav" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button Classes="nav" Classes.active="{Binding DataNav.IsActive}" Command="{Binding DataNav.Command}" Content="Game data" />
+        <Button Classes="nav" Classes.active="{Binding SavesNav.IsActive}" Command="{Binding SavesNav.Command}" Content="{Binding ChangeSaveLabel}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- banner -->
+    <Border Grid.Row="2" Classes="panel" Margin="12,8,12,0" Padding="16,8" IsVisible="{Binding HasBanner}">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding BannerText}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Classes.bad="{Binding BannerIsError}" Classes.ok="{Binding BannerIsOk}" Classes.ice="{Binding BannerIsInfo}" />
+        <Button Grid.Column="1" Classes="link" Content="✕" Command="{Binding DismissBannerCommand}" ToolTip.Tip="Dismiss" />
+      </Grid>
+    </Border>
+
+    <!-- the current screen -->
+    <ScrollViewer Grid.Row="3" Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
+      <ContentControl Content="{Binding Screen}" Margin="12,0,12,12" />
+    </ScrollViewer>
+
+    <!-- pending changes -->
+    <Border Grid.Row="4" Classes="panel" Margin="12,0,12,12" Padding="0" IsVisible="{Binding PendingBar.HasChanges}">
+      <StackPanel>
+        <ScrollViewer MaxHeight="220" IsVisible="{Binding PendingBar.IsOpen}">
+          <ItemsControl ItemsSource="{Binding PendingBar.Lines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PendingLineViewModel">
+                <Border Classes="hairline" Padding="12,4">
+                  <Grid ColumnDefinitions="180,*,Auto,Auto">
+                    <TextBlock Classes="mute" Text="{Binding Where}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" Classes.amber="{Binding IsAction}" />
+                    <TextBlock Grid.Column="2" Classes="mute" Text="{Binding From}" Margin="12,0,6,0" />
+                    <TextBlock Grid.Column="3" Classes="amber" Text="{Binding To}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="16,8">
+          <Button Grid.Column="0" Classes="link" Command="{Binding PendingBar.ToggleCommand}" VerticalAlignment="Center">
+            <TextBlock Classes="amber h2" Text="{Binding PendingBar.Summary}" />
+          </Button>
+          <CheckBox Grid.Column="1" Margin="16,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    IsVisible="{Binding PendingBar.ShowGameWarning}" IsChecked="{Binding PendingBar.Force}"
+                    Content="Game seems to be running - override" Foreground="{StaticResource BadBrush}" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+            <Button Content="Discard" Command="{Binding PendingBar.DiscardCommand}" />
+            <Button Content="Save as copy" Command="{Binding PendingBar.ApplyCopyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
+            <Button Classes="primary" Content="{Binding PendingBar.ApplyLabel}" Command="{Binding PendingBar.ApplyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>
