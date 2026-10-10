@@ -5,6 +5,33 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-10
+
+### Changed
+- **One native desktop application.** The Python/Flask web editor and the separate console extractor are replaced by a
+  single C# (.NET 10) application with an [Avalonia](https://avaloniaui.net/) interface: no Python, virtual environment,
+  browser or CDN access is needed any more, and it ships as one self-contained file per platform.
+- **Runs on Windows, Linux and macOS.** Save folders are discovered per OS (including Steam/Heroic/Lutris Wine prefixes on
+  Linux) and any folder can be added from the app. Data (backups, game data, settings) lives in the per-user data folder
+  instead of next to the source.
+- **The extractor is built in.** The new **Game data** tab extracts your own game install straight into a small typed
+  database (items, effects, upgrade recipes, focus costs, Coil text and names) instead of large raw JSON dumps, shows the
+  progress and log, and can import a database produced on another machine (needed on macOS).
+- Operator portraits are decoded in the app (OpenEXR, DWAA-compressed) and cached.
+- Same screens and behaviour as 0.3.0 (Command, Personnel, Armory, Upgrades, Medbay, Galaxy, Advanced), with the same
+  edit pipeline: pending changes, backups, atomic writes and post-write verification.
+
+### Verified
+- The C# core was checked against the Python editor on the same save: identical fields and screen views, and
+  byte-identical files for every scripted edit (scalar edits, linked focus, start/expedite upgrades, Bring back, focus
+  tree completion, roster reorder and Coil removal).
+
+### Fixed
+- The Advanced raw tree could address the wrong node when a property and its first child started at the same byte.
+
+### Removed
+- The local web server, the browser UI and the Python code. They remain in git history under the v0.1.0 to v0.3.0 tags.
+
 ## [0.3.0] - 2026-10-07
 
 ### Added

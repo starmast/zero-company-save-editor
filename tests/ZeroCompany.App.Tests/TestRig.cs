@@ -78,11 +78,12 @@ public sealed class TestRig : IDisposable
     }
 
     /// <summary>Create the window (on the UI thread) and optionally open the sample save.</summary>
-    public void Start(bool openSave = true, int width = 1280, int height = 860)
+    public void Start(bool openSave = true, int width = 1280, int height = 860, bool portraits = true)
     {
         Headless.Run(() =>
         {
             Main = new MainViewModel(Session);
+            Main.Portraits.Enabled = portraits;
             Window = new MainWindow { DataContext = Main, Width = width, Height = height };
             Main.Ui = Ui;
             Window.Show();

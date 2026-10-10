@@ -11,16 +11,21 @@ namespace ZeroCompany.Tests;
 /// </summary>
 public class ExtractorIntegrationTests
 {
+    /// <summary>Folders where a developer may have left the (git-ignored) mappings file and Oodle library.</summary>
+    static IEnumerable<string> LocalToolDirs() =>
+        new[] { "gamedata", Path.Combine("tools", "extract") }.Select(d => Path.Combine(Repo.Root, d)).Where(Directory.Exists);
+
     static string? Usmap() =>
         Environment.GetEnvironmentVariable("ZC_USMAP")
-        ?? Directory.GetFiles(Path.Combine(Repo.Root, "tools", "extract"), "*.usmap").FirstOrDefault();
+        ?? LocalToolDirs().SelectMany(d => Directory.GetFiles(d, "*.usmap")).FirstOrDefault();
 
     [SkippableFact]
     public void Extractor_output_matches_the_legacy_dumps()
     {
         var game = Environment.GetEnvironmentVariable("ZC_GAME_DIR") ?? GameExtractor.DefaultGameDir;
         var usmap = Usmap();
-        var oodleDir = Environment.GetEnvironmentVariable("ZC_OODLE_DIR") ?? Path.Combine(Repo.Root, "tools", "extract");
+        var oodleDir = Environment.GetEnvironmentVariable("ZC_OODLE_DIR")
+                       ?? LocalToolDirs().FirstOrDefault(d => File.Exists(Path.Combine(d, "oodle-data-shared.dll"))) ?? "";
         Skip.If(GameExtractor.FindPaksDir(game) == null, "game not installed");
         Skip.If(usmap == null, "no .usmap");
         Skip.IfNot(File.Exists(Path.Combine(oodleDir, "oodle-data-shared.dll")), "no local Oodle library");

@@ -16,7 +16,7 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <TextBox Grid.Column="1" Width="230" Watermark="Search items…" Text="{Binding Filter}" />
+      <TextBox Grid.Column="1" Width="230" PlaceholderText="Search items…" Text="{Binding Filter}" />
     </Grid>
 
     <TextBlock Classes="mute" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" />

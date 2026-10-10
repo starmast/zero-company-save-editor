@@ -15,11 +15,11 @@ This repository contains only original source code written for this project. It 
 **not** add to it or redistribute:
 
 - game files, assets, textures, audio, portraits, text, or any data extracted from the game;
-- the `gamedata/` folder produced by the optional extractor in `tools/extract` (it is git-ignored on purpose);
+- the game database produced by the editor's built-in extractor (a file in the editor's per-user data folder), or any `gamedata/` dump (git-ignored on purpose);
 - save files (they contain your own progress and may embed game content);
 - type-mapping (`.usmap`) files or the Oodle compression library, which are third-party works with their own terms.
 
-The optional extractor only reads the installation **you** own, on **your** machine, and writes its output to a local
+The built-in extractor only reads the installation **you** own, on **your** machine, and writes its output to a local
 folder. You are responsible for making sure that your use of the game's files complies with the game's end-user license
 agreement, the platform's terms of service, and the laws that apply to you. This is not legal advice.
 
@@ -43,9 +43,9 @@ are reproduced only to illustrate how the tool works.
 ## What the tool does and does not do
 - It reads and writes **save files only**. It does not inject into, attach to, or modify the running game or its
   memory, and it does not modify, patch or bypass the game's installation, DRM, licensing or anti-cheat systems.
-- The local web server binds to `127.0.0.1` and is not meant to be exposed to a network.
-- The web page loads Tailwind CSS and web fonts from public CDNs (Google Fonts), so your browser contacts those
-  services when the page is opened. No save data is sent anywhere by this software.
+- It is a desktop application: it runs no web server and loads nothing from the internet while you edit.
+- The only network access is the first game-data extraction, which downloads the Oodle decompression library (through
+  CUE4Parse) so the game's compressed files can be read. No save data is sent anywhere by this software.
 
 ## Rights holders
 If you are a rights holder and believe something in this repository should not be here, please open an issue or contact

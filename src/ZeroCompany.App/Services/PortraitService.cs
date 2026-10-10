@@ -19,11 +19,15 @@ public sealed class PortraitService
 
     public PortraitService(string cacheDir) { _cacheDir = cacheDir; }
 
+    /// <summary>Show initials instead of saved portraits (set ZC_PORTRAITS=off; used for the README screenshots).</summary>
+    public bool Enabled { get; set; } = !string.Equals(Environment.GetEnvironmentVariable("ZC_PORTRAITS"), "off", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Forget in-memory pictures (a different save is open).</summary>
     public void Reset() => _mem.Clear();
 
     public Bitmap? Get(OpenSave save, string guid)
     {
+        if (!Enabled) return null;
         guid = guid.ToUpperInvariant();
         var key = save.Path + "|" + guid;
         if (_mem.TryGetValue(key, out var hit)) return hit;

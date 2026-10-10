@@ -28,6 +28,9 @@ public sealed class SaveService
 
     public GameDatabase Db { get; set; }
 
+    /// <summary>Test hook: skip rewriting SaveGameMetaData.json sizes, to prove the verifier refuses the resulting file.</summary>
+    internal bool SkipMetadataSync { get; set; }
+
     /// <summary>Save folders (id -> path); can be replaced while a save is open.</summary>
     public IReadOnlyDictionary<string, string> Dirs { get; set; }
     public OpenSave? Current { get; private set; }
@@ -255,7 +258,7 @@ public sealed class SaveService
         bool structural = newGvas.Length != c.Container.Gvas.Length;
 
         var replace = new Dictionary<string, byte[]>();
-        if (structural && c.Container.IsZip)
+        if (structural && c.Container.IsZip && !SkipMetadataSync)
         {
             var meta = c.Container.SyncMetadataSizes(BlobSizes(patched), MedbayOps.CharacterSizes(patched).PerCharacter);
             if (meta != null) replace["SaveGameMetaData.json"] = meta;

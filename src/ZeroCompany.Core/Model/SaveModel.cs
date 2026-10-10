@@ -53,7 +53,7 @@ public sealed class Operator
     public string Guid { get; init; } = "";
     public string Name { get; set; } = "";
     public string Class { get; init; } = "";
-    public bool Dead { get; init; }
+    public bool Dead { get; set; }
     public string Role { get; init; } = "";
     public Field? Focus { get; set; }
     public long? TotalFocus { get; set; }
