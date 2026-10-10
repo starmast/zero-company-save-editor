@@ -1,0 +1,232 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="using:ZeroCompany.App.ViewModels"
+                    xmlns:c="using:ZeroCompany.App.Controls">
+  <!-- Data templates for the three Personnel tabs (merged into PersonnelView). -->
+
+  <!-- overview -->
+  <DataTemplate x:Key="OverviewTab" DataType="vm:OverviewTabViewModel" x:DataType="vm:OverviewTabViewModel">
+    <StackPanel Spacing="12">
+      <Border Classes="panel" Padding="16">
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <ContentControl Content="{Binding Face}" Width="96" Height="96" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Classes="title" FontSize="30" Text="{Binding Name}" />
+            <TextBlock Classes="caps ice" Text="{Binding RoleLine}" />
+            <TextBlock Classes="caps bad small" Text="{Binding InjuredLine}" IsVisible="{Binding IsInjured}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel" IsVisible="{Binding HasFocus}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="FOCUS POINTS" /></Border>
+          <Grid ColumnDefinitions="*,Auto" Margin="14,12">
+            <StackPanel>
+              <TextBlock FontSize="17" Text="Unspent focus points" />
+              <TextBlock Classes="mute small" Text="Total focus moves with it, so points spent stay the same." />
+            </StackPanel>
+            <c:NumField Grid.Column="1" DataContext="{Binding Unspent}" Width="100" VerticalAlignment="Center" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,0,14,12">
+            <TextBlock Classes="mute" Text="Total earned:" />
+            <TextBlock Foreground="{StaticResource CreamBrush}" FontWeight="Bold" Text="{Binding TotalText}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="TRAINING &amp; STAT EFFECTS" /></Border>
+          <TextBlock Classes="mute" Margin="14,10" Text="No stat effects yet." IsVisible="{Binding NoEffects}" />
+          <ItemsControl ItemsSource="{Binding Effects}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:EffectRowViewModel">
+                <Border Classes="hairline" Padding="14,8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                      <TextBlock Classes="mute small" Text="{Binding Description}" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" />
+                      <Expander Classes="mini" Header="Value per stack (experimental)" IsVisible="{Binding HasMagnitudes}" Padding="0" Margin="0,4,0,0" FontSize="12">
+                        <ItemsControl ItemsSource="{Binding Magnitudes}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EditableField">
+                              <c:NumField DataContext="{Binding}" Width="100" Margin="0,4,8,0" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </Expander>
+                    </StackPanel>
+                    <Panel Grid.Column="1" IsVisible="{Binding HasStacks}" VerticalAlignment="Top">
+                      <c:StepperField DataContext="{Binding Stacks}" />
+                    </Panel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </DataTemplate>
+
+  <!-- bonds -->
+  <DataTemplate x:Key="BondsTab" DataType="vm:BondsTabViewModel" x:DataType="vm:BondsTabViewModel">
+    <StackPanel Spacing="12">
+      <Border Classes="panel" Padding="12,16,12,10">
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding Columns}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:BondColumnViewModel">
+                <StackPanel MinHeight="150" VerticalAlignment="Bottom">
+                  <ItemsControl ItemsSource="{Binding Faces}" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:BondFaceViewModel">
+                        <Button Classes="bondface" Classes.sel="{Binding IsSelected}" Classes.changed="{Binding IsChanged}"
+                                Command="{Binding SelectCommand}" ToolTip.Tip="{Binding Name}" Margin="0,0,0,6">
+                          <ContentControl Content="{Binding Face}" Width="52" Height="52" IsHitTestVisible="False" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Height="3" Margin="0,6,0,0" CornerRadius="2">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Color="#f2a93b" Offset="0" />
+                <GradientStop Color="#f2a93b" Offset="0.4" />
+                <GradientStop Color="#9aa7b4" Offset="0.5" />
+                <GradientStop Color="#5fd0a0" Offset="0.6" />
+                <GradientStop Color="#5fd0a0" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+          <ItemsControl ItemsSource="{Binding Columns}" Margin="0,6,0,0">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:BondColumnViewModel">
+                <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" Classes="mute" Classes.cream="{Binding IsNeutral}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid ColumnDefinitions="*,*,*" Margin="0,2,0,0">
+            <TextBlock Classes="caps amber small" Text="VERY LOW" HorizontalAlignment="Left" />
+            <TextBlock Grid.Column="1" Classes="caps small" Foreground="{StaticResource CreamBrush}" Text="NEUTRAL" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Classes="caps ok small" Text="VERY HIGH" HorizontalAlignment="Right" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="{Binding DetailTitle}" /></Border>
+          <TextBlock Classes="mute" Margin="14,10" Text="Click a face on the scale to edit that bond." IsVisible="{Binding NoSelection}" />
+          <StackPanel IsVisible="{Binding HasSelection}">
+            <Border Classes="hairline" Padding="14,8">
+              <Grid ColumnDefinitions="170,*,40">
+                <TextBlock Text="Bond level (0–8)" VerticalAlignment="Center" />
+                <Slider Grid.Column="1" Minimum="0" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding Level.Value}" Foreground="{StaticResource AmberBrush}" />
+                <TextBlock Grid.Column="2" Text="{Binding Level.IntValue}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontWeight="Bold" Foreground="{StaticResource CreamBrush}" />
+              </Grid>
+            </Border>
+            <Border Classes="hairline" Padding="14,8">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Progress to next level" VerticalAlignment="Center" />
+                <c:NumField Grid.Column="1" DataContext="{Binding Progress}" Width="100" />
+              </Grid>
+            </Border>
+            <Border Classes="hairline" Padding="14,8">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Cross training available" VerticalAlignment="Center" />
+                <c:NumField Grid.Column="1" DataContext="{Binding Cross}" Width="100" />
+              </Grid>
+            </Border>
+            <Grid ColumnDefinitions="*,Auto" Margin="14,8" IsVisible="{Binding HasHighest}">
+              <StackPanel>
+                <TextBlock Text="Highest level reached" />
+                <TextBlock Classes="mute small" Text="Game scale 0–8 = this + 4" />
+              </StackPanel>
+              <c:NumField Grid.Column="1" DataContext="{Binding Highest}" Width="100" VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </DataTemplate>
+
+  <!-- focus tree -->
+  <DataTemplate x:Key="FocusTab" DataType="vm:FocusTabViewModel" x:DataType="vm:FocusTabViewModel">
+    <StackPanel Spacing="12">
+      <Border Classes="panel" Padding="14,8">
+        <WrapPanel>
+          <TextBlock Classes="caps mute" Text="LEVELLING" VerticalAlignment="Center" Margin="0,0,16,0" />
+          <RadioButton GroupName="focusmode" IsChecked="{Binding SpendMode}" Content="Spend unspent focus" Margin="0,0,16,0" />
+          <RadioButton GroupName="focusmode" IsChecked="{Binding GrantMode}" Content="Grant the focus" Margin="0,0,16,0" />
+          <TextBlock Classes="mute" Text="{Binding Totals}" VerticalAlignment="Center" />
+        </WrapPanel>
+      </Border>
+      <TextBlock Classes="amber" Text="{Binding Notice}" TextWrapping="Wrap" MinHeight="20" />
+      <TextBlock Classes="mute" Text="No focus tree data for this operator." IsVisible="{Binding NoAbilities}" />
+      <ItemsControl ItemsSource="{Binding Groups}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:AbilityGroupViewModel">
+            <Border Classes="panel" Margin="0,0,0,12">
+              <StackPanel>
+                <Border Classes="panelh"><TextBlock Classes="caps h2" Text="{Binding Name}" /></Border>
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AbilityRowViewModel">
+                      <Border Classes="hairline" Padding="14,8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="14">
+                          <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                          <ItemsControl Grid.Column="1" ItemsSource="{Binding Pips}" IsVisible="{Binding !IsFixed}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:PipViewModel">
+                                <Button Classes="pipbtn" Command="{Binding Command}" ToolTip.Tip="{Binding Tooltip}">
+                                  <Border Classes="pip" Classes.on="{Binding IsOn}" Classes.changed="{Binding IsChanged}" IsHitTestVisible="False">
+                                    <Border.RenderTransform><RotateTransform Angle="45" /></Border.RenderTransform>
+                                  </Border>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock Grid.Column="1" Classes="mute small" Text="{Binding FixedText}" IsVisible="{Binding IsFixed}" VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="2" Width="170" VerticalAlignment="Center">
+                            <StackPanel IsVisible="{Binding IsLevelled}">
+                              <TextBlock Classes="mute small" Text="{Binding Info1}" HorizontalAlignment="Right" />
+                              <TextBlock Classes="mute small" Text="{Binding Info2}" HorizontalAlignment="Right" />
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding IsIndependent}" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                              <TextBlock Classes="mute small" Text="spent" VerticalAlignment="Center" />
+                              <Panel><c:NumField DataContext="{Binding Spent}" Width="70" /></Panel>
+                            </StackPanel>
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </DataTemplate>
+</ResourceDictionary>

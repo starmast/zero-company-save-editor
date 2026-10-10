@@ -210,5 +210,74 @@
   <Style Selector="Border.node.sel"><Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" /><Setter Property="BoxShadow" Value="0 0 14 2 #8086b9db" /></Style>
   <Style Selector="TextBlock.dark"><Setter Property="Foreground" Value="#07131c" /></Style>
 
+  <!-- roster strip, bond faces, level pips -->
+  <Style Selector="Button.rosterchip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,6" />
+    <Setter Property="Opacity" Value="0.8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Button.rosterchip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#1a2838" />
+  </Style>
+  <Style Selector="Button.rosterchip.sel"><Setter Property="Opacity" Value="1" /></Style>
+  <Style Selector="Button.rosterchip.sel /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#1f2e42" />
+    <Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+  <Style Selector="Button.rosterchip.dragging"><Setter Property="Opacity" Value="0.3" /></Style>
+  <Style Selector="Button.rosterchip.dropbefore /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{StaticResource IceBrush}" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+  </Style>
+  <Style Selector="Button.rosterchip.dropafter /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{StaticResource IceBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,3,0" />
+  </Style>
+
+  <Style Selector="Button.bondface">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="30" />
+  </Style>
+  <Style Selector="Button.bondface.sel /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" /></Style>
+  <Style Selector="Button.bondface.changed /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" /></Style>
+  <Style Selector="TextBlock.cream"><Setter Property="Foreground" Value="{StaticResource CreamBrush}" /></Style>
+
+  <Style Selector="Button.pipbtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Button.pipbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Border.pip">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Margin" Value="3" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="#3a5069" />
+    <Setter Property="Background" Value="#0d141d" />
+  </Style>
+  <Style Selector="Border.pip.on"><Setter Property="Background" Value="{StaticResource IceBrush}" /><Setter Property="BorderBrush" Value="#cfe0ee" /></Style>
+  <Style Selector="Border.pip.on.changed"><Setter Property="Background" Value="{StaticResource AmberBrush}" /><Setter Property="BorderBrush" Value="#ffd9a0" /></Style>
+
+  <Style Selector="Expander.mini">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Expander.mini /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0,2" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource MuteBrush}" />
+  </Style>
   <Style Selector="ScrollViewer"><Setter Property="AllowAutoHide" Value="False" /></Style>
 </Styles>

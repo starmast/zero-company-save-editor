@@ -121,6 +121,7 @@ public sealed partial class MainViewModel : ViewModelBase
             "armory" when open != null => new ArmoryViewModel(this, open, args.FirstOrDefault()),
             "upgrades" when open != null => new UpgradesViewModel(this, open, args.FirstOrDefault()),
             "advanced" when open != null => new AdvancedViewModel(this, open, args.FirstOrDefault()),
+            "personnel" when open != null => new PersonnelViewModel(this, open, args.ElementAtOrDefault(0), args.ElementAtOrDefault(1)),
             "medbay" when open != null => new MedbayViewModel(this, open),
             "galaxy" when open != null => new GalaxyViewModel(this, open),
             _ => new PlaceholderViewModel(key),

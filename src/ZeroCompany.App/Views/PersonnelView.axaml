@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.PersonnelView"
+             x:DataType="vm:PersonnelViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ZeroCompanyEditor/Views/PersonnelTabViews.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.DataTemplates>
+    <StaticResource ResourceKey="OverviewTab" />
+    <StaticResource ResourceKey="BondsTab" />
+    <StaticResource ResourceKey="FocusTab" />
+  </UserControl.DataTemplates>
+
+  <StackPanel Spacing="12">
+    <TextBlock Classes="mute" Text="No operators found in this save." IsVisible="{Binding NoOperators}" />
+    <StackPanel Spacing="12" IsVisible="{Binding HasOperators}">
+      <ItemsControl ItemsSource="{Binding Tabs}" HorizontalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:TabViewModel">
+            <Button Classes="tab" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="*,12,300">
+        <StackPanel Spacing="12">
+          <Border Classes="panel" Padding="14,10" IsVisible="{Binding TreeIncomplete}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+              <TextBlock Text="{Binding TreeText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+              <ContentControl Grid.Column="1" Content="{Binding TreeToggle}" />
+            </Grid>
+          </Border>
+          <ContentControl Content="{Binding Content}" />
+        </StackPanel>
+
+        <!-- side panel -->
+        <StackPanel Grid.Column="2" Spacing="12">
+          <Border Classes="panel" Padding="14">
+            <StackPanel HorizontalAlignment="Center" Spacing="4">
+              <ContentControl Content="{Binding SelectedFace}" Width="190" Height="190" />
+              <TextBlock Classes="title" Text="{Binding SelectedName}" HorizontalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Classes="caps ice" Text="{Binding SelectedRole}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="14,10" IsVisible="{Binding ShowUnspent}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="title amber" FontSize="34" Text="{Binding UnspentText}" />
+              <TextBlock Classes="caps h2" Text="FOCUS POINTS REMAINING" TextWrapping="Wrap" VerticalAlignment="Center" MaxWidth="170" />
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="14,10" IsVisible="{Binding ShowCross}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="title" FontSize="34" Text="{Binding CrossText}" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Classes="caps h2" Text="CROSS TRAINING AVAILABLE" TextWrapping="Wrap" MaxWidth="170" />
+                <TextBlock Classes="mute small" Text="whole roster · sum of every bond" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="14,10" IsVisible="{Binding SelectedIsDead}">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="caps h2" Text="MEMORIAL" />
+              <TextBlock Classes="mute small" Text="{Binding ReviveText}" TextWrapping="Wrap" />
+              <ContentControl Content="{Binding ReviveToggle}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <Border Classes="panel" Padding="14,10" IsVisible="{Binding SelectedIsLive}">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="caps h2" Text="ROSTER POSITION" />
+              <TextBlock Classes="mute small" Text="{Binding PositionText}" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="◀ Earlier" Command="{Binding MoveEarlierCommand}" IsEnabled="{Binding CanMoveEarlier}" />
+                <Button Content="Later ▶" Command="{Binding MoveLaterCommand}" IsEnabled="{Binding CanMoveLater}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <!-- roster strip: hold a living operator and drag sideways to reorder -->
+      <Border Classes="panel" Padding="12,12">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ItemsControl Name="LiveStrip" ItemsSource="{Binding Live}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:OperatorChipViewModel">
+                  <Button Classes="rosterchip" Classes.sel="{Binding IsSelected}" Classes.dragging="{Binding IsDragging}"
+                          Classes.dropbefore="{Binding DropBefore}" Classes.dropafter="{Binding DropAfter}"
+                          Command="{Binding SelectCommand}" ToolTip.Tip="Hold and drag to change the roster order">
+                    <Grid Width="92">
+                      <StackPanel HorizontalAlignment="Center">
+                        <ContentControl Content="{Binding Face}" Width="76" Height="76" IsHitTestVisible="False" />
+                        <TextBlock Classes="caps" FontSize="13" Text="{Binding Name}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="88" Margin="0,4,0,0" />
+                      </StackPanel>
+                      <Border Background="{StaticResource AmberBrush}" CornerRadius="2" Padding="5,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,2,0" IsVisible="{Binding HasFocus}" ToolTip.Tip="Unspent focus points">
+                        <TextBlock Text="{Binding Unspent}" Foreground="#150e02" FontWeight="Bold" FontSize="12" />
+                      </Border>
+                      <Border Background="{StaticResource BadBrush}" CornerRadius="10" Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Top"
+                              Margin="2,-2,0,0" IsVisible="{Binding IsInjured}" ToolTip.Tip="Injured">
+                        <TextBlock Text="+" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasMemorial}">
+              <Border Width="1" Background="{StaticResource LineBrush}" Margin="6,0" />
+              <TextBlock Classes="caps mute small" Text="MEMORIAL" VerticalAlignment="Center" />
+              <ItemsControl ItemsSource="{Binding Memorial}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:OperatorChipViewModel">
+                    <Button Classes="rosterchip" Classes.sel="{Binding IsSelected}" Opacity="0.7" Command="{Binding SelectCommand}">
+                      <StackPanel Width="92" HorizontalAlignment="Center">
+                        <ContentControl Content="{Binding Face}" Width="76" Height="76" IsHitTestVisible="False" />
+                        <TextBlock Classes="caps" FontSize="13" Text="{Binding Name}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="88" Margin="0,4,0,0" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </StackPanel>
+  </StackPanel>
+</UserControl>
