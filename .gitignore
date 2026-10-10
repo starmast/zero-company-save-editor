@@ -40,3 +40,8 @@ obj/
 *.user
 .vs/
 artifacts/
+
+# --- stray Python bytecode (the app is C# now; never commit these)
+__pycache__/
+*.py[cod]
+.venv/
