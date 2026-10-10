@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
+             x:Class="ZeroCompany.App.Views.ArmoryView"
+             x:DataType="vm:ArmoryViewModel">
+  <StackPanel Spacing="12">
+    <Grid ColumnDefinitions="*,Auto">
+      <ItemsControl ItemsSource="{Binding Tabs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:TabViewModel">
+            <Button Classes="tab" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBox Grid.Column="1" Width="230" Watermark="Search items…" Text="{Binding Filter}" />
+    </Grid>
+
+    <TextBlock Classes="mute" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" />
+
+    <ItemsControl ItemsSource="{Binding Visible}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:ArmoryCardViewModel">
+          <Border Classes="panel" Width="372" Margin="0,0,12,12" Padding="14,10">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="h2" FontSize="19" Text="{Binding Name}" TextWrapping="Wrap" />
+                <TextBlock Classes="caps ice small" Text="{Binding Meta}" />
+                <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2" HorizontalAlignment="Right">
+                <TextBlock Classes="caps mute small" Text="OWNED" HorizontalAlignment="Right" />
+                <Panel IsVisible="{Binding UseStepper}"><c:StepperField DataContext="{Binding Count}" /></Panel>
+                <Panel IsVisible="{Binding UseNumber}"><c:NumField DataContext="{Binding Count}" Width="90" /></Panel>
+              </StackPanel>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

@@ -93,6 +93,21 @@ public class PendingAndEnvTests : IDisposable
     }
 
     [Fact]
+    public void Upgrade_queue_helpers_batch_and_notify_once()
+    {
+        var p = new PendingChanges();
+        int raised = 0; p.Changed += () => raised++;
+        p.QueueUpgrades(new[] { "r1", "r2" }, new[] { "r3" });
+        Assert.Equal(3, p.Count); Assert.Equal(1, raised);
+        p.QueueUpgrades(new[] { "r1" }, Array.Empty<string>());      // already queued: no duplicates
+        Assert.Equal(3, p.Count);
+        p.AlsoExpedite = true; p.AlsoExpedite = true;                 // only a real change notifies
+        Assert.Equal(3, raised);
+        p.ClearUpgradeQueue();
+        Assert.Equal(0, p.Count);
+    }
+
+    [Fact]
     public void Proton_prefixes_are_found_under_a_home_folder()
     {
         var save = Path.Combine(_tmp, ".local", "share", "Steam", "steamapps", "compatdata", "123", "pfx", "drive_c", "users",
@@ -121,6 +136,26 @@ public class PendingAndEnvTests : IDisposable
         Assert.Equal("G", back.GameDir); Assert.Equal(new[] { "x" }, back.SaveDirs);
         File.WriteAllText(env.SettingsPath, "{nope");
         Assert.Equal("", AppSettings.Load(env).GameDir);
+    }
+
+    [SkippableFact]
+    public void Raw_tree_ids_are_unique_and_every_row_resolves_to_its_own_node()
+    {
+        var src = Repo.SampleSave();
+        Skip.If(src == null, "no sample save");
+        var env = new AppEnvironment(Path.Combine(_tmp, "data")) { UseSystemSaveDirs = false };
+        var saves = Path.Combine(_tmp, "saves"); Directory.CreateDirectory(saves);
+        File.Copy(src!, Path.Combine(saves, Path.GetFileName(src!)));
+        var s = new EditorSession(env, () => null);
+        s.Settings.SaveDirs.Add(saves); s.Refresh();
+        var open = s.Open(s.Service.ListSaves().Single().Dir, Path.GetFileName(src!));
+        var ids = open.Gvas.Walk().Select(OpenSave.TreeId).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());                          // used to collide on shared start offsets
+        foreach (var row in s.Service.Tree(null))
+            Assert.Equal(row.Name, open.NodeIndex[row.Id].Name);
+        var parent = open.Gvas.Root[0];
+        foreach (var row in s.Service.Tree(OpenSave.TreeId(parent)).Take(20))
+            Assert.Same(parent, open.NodeIndex[row.Id].Parent);
     }
 
     [SkippableFact]

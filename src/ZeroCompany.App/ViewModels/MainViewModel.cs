@@ -118,6 +118,11 @@ public sealed partial class MainViewModel : ViewModelBase
             "saves" => new SavesViewModel(this),
             "gamedata" => new GameDataViewModel(this),
             "command" when open != null => new CommandViewModel(this, open),
+            "armory" when open != null => new ArmoryViewModel(this, open, args.FirstOrDefault()),
+            "upgrades" when open != null => new UpgradesViewModel(this, open, args.FirstOrDefault()),
+            "advanced" when open != null => new AdvancedViewModel(this, open, args.FirstOrDefault()),
+            "medbay" when open != null => new MedbayViewModel(this, open),
+            "galaxy" when open != null => new GalaxyViewModel(this, open),
             _ => new PlaceholderViewModel(key),
         };
     }

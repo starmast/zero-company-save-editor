@@ -11,6 +11,11 @@
     <DataTemplate DataType="vm:SavesViewModel"><v:SavesView /></DataTemplate>
     <DataTemplate DataType="vm:CommandViewModel"><v:CommandView /></DataTemplate>
     <DataTemplate DataType="vm:GameDataViewModel"><v:GameDataView /></DataTemplate>
+    <DataTemplate DataType="vm:ArmoryViewModel"><v:ArmoryView /></DataTemplate>
+    <DataTemplate DataType="vm:UpgradesViewModel"><v:UpgradesView /></DataTemplate>
+    <DataTemplate DataType="vm:AdvancedViewModel"><v:AdvancedView /></DataTemplate>
+    <DataTemplate DataType="vm:MedbayViewModel"><v:MedbayView /></DataTemplate>
+    <DataTemplate DataType="vm:GalaxyViewModel"><v:GalaxyView /></DataTemplate>
     <DataTemplate DataType="vm:PlaceholderViewModel"><v:PlaceholderView /></DataTemplate>
   </Window.DataTemplates>
 

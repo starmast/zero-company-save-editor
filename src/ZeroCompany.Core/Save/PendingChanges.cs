@@ -20,8 +20,14 @@ public sealed class PendingChanges
 
     public event Action? Changed;
 
+    bool _alsoExpedite;
+
     /// <summary>Starting an upgrade also expedites it (one tick to finish).</summary>
-    public bool AlsoExpedite { get; set; }
+    public bool AlsoExpedite
+    {
+        get => _alsoExpedite;
+        set { if (_alsoExpedite != value) { _alsoExpedite = value; Raise(); } }
+    }
 
     /// <summary>Pending roster order, or null when it matches the save.</summary>
     public IReadOnlyList<string>? RosterOrderOverride { get; private set; }
@@ -93,6 +99,20 @@ public sealed class PendingChanges
     public void ToggleHeal(string guid, bool? on = null) { Toggle(_heals, guid, on); Raise(); }
     public void ToggleTreeFix(string guid, bool? on = null) { Toggle(_treeFixes, guid, on); Raise(); }
     public void ToggleRevive(string guid, bool? on = null) { Toggle(_revives, guid, on); Raise(); }
+
+    /// <summary>Queue many upgrade starts / expedites at once (one change notification).</summary>
+    public void QueueUpgrades(IEnumerable<string> starts, IEnumerable<string> expedites)
+    {
+        foreach (var id in starts) Toggle(_starts, id, true);
+        foreach (var id in expedites) Toggle(_expedites, id, true);
+        Raise();
+    }
+
+    public void ClearUpgradeQueue()
+    {
+        _starts.Clear(); _expedites.Clear();
+        Raise();
+    }
 
     /// <summary>Take a Coil upgrade away ("Available" or "Prevented"), or pass null to keep it.</summary>
     public void SetCoil(string id, string? to)

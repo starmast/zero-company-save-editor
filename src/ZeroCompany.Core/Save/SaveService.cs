@@ -607,7 +607,7 @@ public sealed class SaveService
             try { value = g.Get(n); } catch (Exception) { }
         }
         else if (n.TName == "BoolProperty") value = g.Get(n);
-        return new TreeRow($"n{n.Start}", n.Name, n.Type.ToString(), n.Size, n.Children is { Count: > 0 }, n.Count, n.Opaque || n.Native,
+        return new TreeRow(OpenSave.TreeId(n), n.Name, n.Type.ToString(), n.Size, n.Children is { Count: > 0 }, n.Count, n.Opaque || n.Native,
                            value, field, kind);
     }
 }

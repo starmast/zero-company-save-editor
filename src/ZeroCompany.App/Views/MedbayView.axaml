@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.MedbayView"
+             x:DataType="vm:MedbayViewModel">
+  <StackPanel Spacing="12">
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Spacing="12">
+        <!-- slots -->
+        <Border Classes="panel">
+          <StackPanel>
+            <Border Classes="panelh"><TextBlock Classes="caps h2" Text="SLOTS" /></Border>
+            <ItemsControl ItemsSource="{Binding Slots}" Margin="12,12,12,4">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SlotViewModel">
+                  <Border Width="56" Height="56" Margin="0,0,8,8" CornerRadius="8" BorderThickness="2"
+                          BorderBrush="{StaticResource LineBrush}" ToolTip.Tip="{Binding Tip}"
+                          Classes.busy="{Binding Busy}">
+                    <TextBlock Text="{Binding Letter}" Classes="caps" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Classes.amber="{Binding Busy}" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="mute small" Margin="14,0,14,12" Text="{Binding SlotNote}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <!-- injured -->
+        <Border Classes="panel">
+          <StackPanel>
+            <Border Classes="panelh"><TextBlock Classes="caps h2" Text="INJURED" /></Border>
+            <TextBlock Classes="mute" Margin="14,12" Text="Nobody on the roster is injured." IsVisible="{Binding NobodyInjured}" />
+            <ItemsControl ItemsSource="{Binding Injured}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:InjuredRowViewModel">
+                  <Border Classes="hairline" Padding="12,8">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Button Classes="link" Command="{Binding OpenCommand}" HorizontalContentAlignment="Left" Padding="0">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                          <ContentControl Content="{Binding Face}" Width="56" Height="56" />
+                          <StackPanel VerticalAlignment="Center">
+                            <TextBlock Classes="title" Text="{Binding Name}" />
+                            <TextBlock Classes="caps bad" Text="{Binding Detail}" />
+                          </StackPanel>
+                        </StackPanel>
+                      </Button>
+                      <ContentControl Grid.Column="1" Content="{Binding Heal}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- in treatment -->
+        <Border Classes="panel" IsVisible="{Binding AnyTreating}">
+          <StackPanel>
+            <Border Classes="panelh"><TextBlock Classes="caps h2" Text="IN TREATMENT" /></Border>
+            <ItemsControl ItemsSource="{Binding Treating}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TreatingRowViewModel">
+                  <Border Classes="hairline" Padding="12,8">
+                    <Grid ColumnDefinitions="100,*,Auto">
+                      <TextBlock Classes="caps amber" Text="{Binding Slot}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Who}" />
+                      <TextBlock Grid.Column="2" Classes="mute" Text="{Binding Since}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Grid.Column="2" Spacing="12">
+        <Border Classes="panel">
+          <StackPanel>
+            <Border Classes="panelh"><Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caps h2" Text="MEDICAL BED" /><TextBlock Grid.Column="1" Classes="ice small" Text="Takes a cycle" /></Grid></Border>
+            <StackPanel Margin="14,10" Spacing="8">
+              <TextBlock TextWrapping="Wrap" Text="Heals all injuries on one operator. Uses a bed slot and one cycle; the operator can't go on missions or operations that cycle." />
+              <TextBlock Classes="ice h2" Text="{Binding BedCost}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="panel">
+          <StackPanel>
+            <Border Classes="panelh"><Grid ColumnDefinitions="*,Auto"><TextBlock Classes="caps h2" Text="BACTA TANK" /><TextBlock Grid.Column="1" Classes="ice small" Text="Instant" /></Grid></Border>
+            <StackPanel Margin="14,10" Spacing="8">
+              <TextBlock TextWrapping="Wrap" Text="Instantly heals all injuries on one operator, using this cycle's bacta tank charge." />
+              <TextBlock Classes="ice h2" Text="{Binding TankCost}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+    <TextBlock Classes="mute small" TextWrapping="Wrap"
+               Text="Heal removes the operator's injuries the way the game's bacta tank does, instantly. It is free: the editor does not charge credits or use up the tank's charge, and it does not add the game's treatment history entry. Apply from the bar below." />
+  </StackPanel>
+</UserControl>

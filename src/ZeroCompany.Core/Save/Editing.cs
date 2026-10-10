@@ -58,8 +58,19 @@ public sealed class OpenSave
 
     Dictionary<string, GvasNode>? _index;
 
-    /// <summary>Node lookup by tree-row id ("n&lt;start offset&gt;"), built on first use.</summary>
-    public Dictionary<string, GvasNode> NodeIndex => _index ??= Gvas.Walk().ToDictionary(n => $"n{n.Start}");
+    /// <summary>Node lookup by tree-row id (see <see cref="TreeId"/>), built on first use.</summary>
+    public Dictionary<string, GvasNode> NodeIndex => _index ??= Gvas.Walk().ToDictionary(TreeId);
+
+    /// <summary>
+    /// A parent and its first child can start at the same byte, so the offset alone is not unique;
+    /// the nesting depth makes it so.
+    /// </summary>
+    public static string TreeId(GvasNode n)
+    {
+        int depth = 0;
+        for (var p = n.Parent; p != null; p = p.Parent) depth++;
+        return $"n{n.Start}-{depth}";
+    }
 
     public int ParsedNodes => Gvas.Walk().Count();
     public int OpaqueNodes => Gvas.OpaqueCount;

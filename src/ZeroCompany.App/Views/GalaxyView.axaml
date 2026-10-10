@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
+             x:Class="ZeroCompany.App.Views.GalaxyView"
+             x:DataType="vm:GalaxyViewModel">
+  <StackPanel Spacing="12">
+    <TextBlock Classes="mute small" Text="Influence in each region of the galaxy map, as shown on the Holotable." IsVisible="{Binding HasRegions}" />
+    <TextBlock Classes="mute" Text="No galaxy regions in this save." IsVisible="{Binding NoRegions}" />
+    <ItemsControl ItemsSource="{Binding Regions}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:RegionCardViewModel">
+          <Border Classes="panel" Width="300" Margin="0,0,12,12">
+            <StackPanel>
+              <Border Classes="panelh"><TextBlock Classes="caps h2" Text="{Binding Name}" /></Border>
+              <StackPanel Margin="12,8" Spacing="6">
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasInfluence}">
+                  <TextBlock Text="Influence" VerticalAlignment="Center" />
+                  <c:NumField Grid.Column="1" DataContext="{Binding Influence}" Width="100" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasContacts}">
+                  <TextBlock Text="Contacts" VerticalAlignment="Center" />
+                  <c:NumField Grid.Column="1" DataContext="{Binding Contacts}" Width="100" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasReward}">
+                  <StackPanel>
+                    <TextBlock Text="Reward tier claimed" />
+                    <TextBlock Classes="mute small" Text="-1 = none yet" />
+                  </StackPanel>
+                  <c:StepperField Grid.Column="1" DataContext="{Binding Reward}" VerticalAlignment="Center" />
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Coil upgrades -->
+    <Border Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh">
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBlock Classes="caps h2" Text="{Binding CoilHeading}" VerticalAlignment="Center" />
+            <ContentControl Grid.Column="1" Content="{Binding RemoveAll}" IsVisible="{Binding HasCoil}" Margin="0,0,8,0" />
+            <ContentControl Grid.Column="2" Content="{Binding PreventAll}" IsVisible="{Binding HasCoil}" />
+          </Grid>
+        </Border>
+        <TextBlock Classes="mute" Margin="14,12" Text="The Coil have no permanent upgrades." IsVisible="{Binding NoCoil}" />
+        <ItemsControl ItemsSource="{Binding Coil}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CoilRowViewModel">
+              <Border Classes="hairline" Padding="14,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="caps mute small" Text="{Binding Heading}" />
+                    <TextBlock Classes="title" FontSize="19" Text="{Binding Name}" />
+                    <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <ContentControl Content="{Binding Remove}" />
+                    <ContentControl Content="{Binding Prevent}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
+                   Text="Upgrades the Coil keep permanently after a Crisis Mission or Operation is failed. Remove puts that crisis back to available, so it can be failed (and the upgrade gained) again. Prevent marks it as prevented, as if you had won it. Neither changes the paired A/B choice of the same crisis." />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

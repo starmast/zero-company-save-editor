@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Controls.FaceView"
+             x:DataType="vm:FaceViewModel">
+  <!-- DataContext is a FaceViewModel. Size it with Width/Height; the circle follows. -->
+  <Border Name="Ring" Background="#0d141d" BorderBrush="{StaticResource LineBrush}" BorderThickness="2" ClipToBounds="True">
+    <Panel>
+      <Image Source="{Binding Image}" Stretch="UniformToFill" IsVisible="{Binding HasImage}" />
+      <TextBlock Text="{Binding Initials}" Classes="caps ice" FontSize="22" FontWeight="Bold"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding NoImage}" />
+    </Panel>
+  </Border>
+</UserControl>

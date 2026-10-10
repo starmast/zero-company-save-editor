@@ -1,7 +1,19 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
              x:Class="ZeroCompany.App.App"
              RequestedThemeVariant="Dark">
+  <Application.DataTemplates>
+    <!-- shared presentations: put the view-model in a ContentControl and it draws itself -->
+    <DataTemplate DataType="vm:FaceViewModel">
+      <c:FaceView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ToggleActionViewModel">
+      <Button Command="{Binding Command}" Content="{Binding Label}" Classes.primary="{Binding IsOff}"
+              ToolTip.Tip="{Binding Tooltip}" VerticalAlignment="Center" />
+    </DataTemplate>
+  </Application.DataTemplates>
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://ZeroCompanyEditor/Assets/Theme.axaml" />
