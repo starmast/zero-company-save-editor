@@ -20,21 +20,40 @@ permissions:
   contents: write
 
 jobs:
+  plan:
+    # Builds the platform matrix (all four, or just the one asked for in a manual run).
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        shell: bash
+        env:
+          ONLY: ${{ inputs.only_rid }}
+        run: |
+          all='[
+            {"os":"windows-latest","rid":"win-x64","archive":"zip"},
+            {"os":"ubuntu-latest","rid":"linux-x64","archive":"tar.gz"},
+            {"os":"macos-latest","rid":"osx-arm64","archive":"tar.gz"},
+            {"os":"macos-latest","rid":"osx-x64","archive":"tar.gz"}
+          ]'
+          # Intel macOS is cross-published from the Apple Silicon runner (the old Intel runner image is retired).
+          if [ -n "$ONLY" ]; then
+            list=$(echo "$all" | jq -c --arg r "$ONLY" '[.[] | select(.rid == $r)]')
+          else
+            list=$(echo "$all" | jq -c '.')
+          fi
+          [ "$list" != "[]" ] || { echo "unknown platform '$ONLY'"; exit 1; }
+          echo "matrix={\"include\":$list}" >> "$GITHUB_OUTPUT"
+
   publish:
-    # Manual runs may be limited to one platform.
-    if: ${{ inputs.only_rid == '' || inputs.only_rid == matrix.rid }}
+    needs: plan
     runs-on: ${{ matrix.os }}
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { os: windows-latest, rid: win-x64, archive: zip }
-          - { os: ubuntu-latest, rid: linux-x64, archive: tar.gz }
-          - { os: macos-latest, rid: osx-arm64, archive: tar.gz }
-          # Intel macOS: cross-published from the Apple Silicon runner (the old Intel runner image is retired).
-          - { os: macos-latest, rid: osx-x64, archive: tar.gz }
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
         with:
