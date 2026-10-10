@@ -3,157 +3,58 @@
 [![tests](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml/badge.svg)](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A desktop app for viewing and editing **Star Wars: Zero Company** save files, laid out the way the game presents things
-(Command, Personnel, Armory, Upgrades, Galaxy). Every write is backed up and verified first. It runs on Windows, Linux and
-macOS, and includes the game-data extractor, so there is nothing else to install or run.
+Edit your **Star Wars: Zero Company** save: credits, focus points, bonds, upgrades, the roster and more, in an app that
+looks like the game. Every change is backed up and checked before it is written.
 
-> **Unofficial fan project.** Not affiliated with or endorsed by Disney, Lucasfilm, Electronic Arts or Bit Reactor.
-> No game content is included. Editing saves is at your own risk: **read [DISCLAIMER.md](DISCLAIMER.md)** before use,
-> and keep your own backups. Intended for offline, single-player use.
+> **Unofficial fan project**, not affiliated with Disney, Lucasfilm, Electronic Arts or Bit Reactor. No game content is
+> included. Editing saves is at your own risk: please read the [disclaimer](DISCLAIMER.md) and keep your own backups.
+> For offline, single-player use.
 
 <p align="center">
-  <img src="docs/screenshots/personnel-bonds.png" alt="Personnel > Bonds: partners placed on the game's 0-8 bond scale with an editor for the selected bond" width="900">
+  <img src="docs/screenshots/personnel-bonds.png" alt="Personnel > Bonds screen" width="900">
 </p>
 
-<details>
-<summary>More screenshots</summary>
+## Get started
+1. **Download** the file for your system from the [Releases](https://github.com/starmast/zero-company-save-editor/releases)
+   page, unpack it and run `ZeroCompanyEditor`. Nothing needs installing.
+2. **Close the game**, then pick a save. On Windows your saves are found automatically; otherwise use **Add folder**.
+3. **Make your changes** and press **Apply to save**. Edits stay pending until then, and a backup is made first.
 
-**Upgrades** - Den Level timeline, build slots and a detail panel
-<img src="docs/screenshots/upgrades.png" alt="Upgrades screen: Facilities rows on the Den Level 1-10 timeline" width="900">
+Tip: copy a save somewhere first and try your edits on the copy. Load it in the game, and only then edit the real one.
 
-**Focus Tree** - set ability levels using the game's own focus costs
-<img src="docs/screenshots/focus-tree.png" alt="Personnel > Focus Tree: ability level pips with spent and next-level focus costs" width="900">
+Optional but nice: open the **Game data** tab once to show real item names and upgrade costs instead of internal names
+([how](docs/game-data.md)).
 
-**Command** - campaign, stockpile and backups
-<img src="docs/screenshots/command.png" alt="Command screen: save info, campaign values, stockpile and backups" width="900">
+## What you can do
+- **Command** - turn, level, XP, credits and other resources; restore any backup.
+- **Personnel** - focus points, bonds, ability levels, roster order, bring back fallen operators.
+- **Upgrades** - start base upgrades and optionally finish them at the next turn change.
+- **Armory**, **Galaxy** (influence, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
 
-<sub>Screenshots show operators as initials; no game artwork is shown.</sub>
-</details>
+See the [user guide](docs/user-guide.md) for each screen in detail.
 
-**Status:** v0.4.0, a rewrite of the earlier Python/web editor as a single C# application (see [CHANGELOG](CHANGELOG.md)).
-Tested with saves from game build `++ProjectBruno+Stable` changelist 197649; a game update can change the save format.
+## Staying safe
+Before anything is written the editor keeps an untouched copy of your save, snapshots the current file, and checks the
+result. It won't write while the game is running or if the save changed since you opened it. "Save as copy" never touches
+the original. Details are in [docs/safety.md](docs/safety.md).
 
-## Features
-- **Command** - save info, campaign progress (turn, level/XP), stockpile, and backups with one-click restore.
-- **Personnel** - roster strip with the real operator portraits stored in your save; Overview (focus points, training and
-  stat effects), Bonds (the game's 0-8 scale and roster-wide cross training) and Focus Tree (set ability levels; focus
-  spent follows the game's own cost table, and you choose to spend your unspent focus or have it granted). Hold and drag an
-  operator's icon on the bottom strip (or use Earlier / Later) to change the roster order. The game's Personnel strip and
-  mission select both follow it.
-- **Memorial** - on a fallen operator's Personnel page, **Bring back** returns them to the roster (see limitations) and
-  completes their focus tree if its higher tiers are missing.
-- **Upgrades** - Facilities / Crew / Weapons rows on the Den Level timeline with Build Slots. Start upgrades the way the
-  game's Build button does and optionally expedite them so the game finishes them at the next turn change.
-- **Armory** - utility items and weapon mods.
-- **Galaxy** - influence, contacts and reward tier per region, plus the permanent **Coil upgrades** the enemy has gained
-  from failed Crisis missions. Each one can be removed (the crisis becomes available again) or set to prevented (as if
-  you had won it), individually or all at once.
-- **Medbay** - beds, the bacta tank, their costs and who is injured, as your save records it, with a **Heal** button that
-  removes an operator's injuries the way the bacta tank does (instant and free: no credits or tank charge are used).
-- **Game data** - reads your own game install (read-only) to show real item names, upgrade costs and descriptions. See below.
-- **Advanced** - every editable value as a flat list, plus a raw property-tree viewer.
-- Edits stay *pending* (with a readable list of what will change) until you press **Apply**.
+## Windows, Linux and macOS
+Windows is the main platform. Linux and macOS builds exist but are less tested, and macOS can't extract game data itself.
+See [docs/platforms.md](docs/platforms.md).
 
-## Install
-Download the archive for your system from the [Releases](https://github.com/starmast/zero-company-save-editor/releases)
-page, unpack it and run `ZeroCompanyEditor` (`ZeroCompanyEditor.exe` on Windows). It is a single self-contained file: no
-.NET install is needed. Or build it yourself:
-
-```
-dotnet run --project src/ZeroCompany.App -c Release          # needs the .NET 10 SDK
-```
-
-| System | Notes |
+## More
+| | |
 |---|---|
-| Windows 10/11 | Primary platform. Saves are found automatically in `%LOCALAPPDATA%\SWZeroCompany\Saved\SaveGames`. |
-| Linux | Runs natively. For a Proton/Wine install the editor looks inside Steam, Heroic and Lutris prefixes; otherwise use **Add folder**. Extraction works if you point it at the game's files. |
-| macOS | Runs natively (unsigned: right-click > Open, or `xattr -dr com.apple.quarantine <folder>`). Copy saves over and use **Add folder**. The extractor's decompression library is not available for macOS, so extract on another machine and use **Import database**. |
+| [User guide](docs/user-guide.md) | every screen and feature |
+| [Game data](docs/game-data.md) | extracting names and costs from your own install |
+| [Safety and how it works](docs/safety.md) | backups, verification, what gets edited |
+| [Platforms](docs/platforms.md) | Windows, Linux, macOS notes and data folders |
+| [Limitations](docs/limitations.md) | what it can't do yet |
+| [Development](docs/development.md) | building, testing, project layout, credits |
+| [Changelog](CHANGELOG.md) | what changed in each version |
 
-Linux and macOS builds are tested by CI, but the maintainers can only try them by hand on Windows; reports are welcome.
-
-**Recommended workflow:** close the game, copy a save into a folder you add with **Add folder**, open the copy, make your
-edits, load it in the game, and only then edit your real save.
-
-## Game data (optional but recommended)
-Out of the box the editor works from the save alone and shows internal names. For game-accurate item names, descriptions,
-upgrade costs and durations, Den Level requirements, focus costs and Coil text, open the **Game data** tab and press
-**Extract game data**. It reads **your own game installation** (read-only) and writes one small file next to the editor's
-settings. You need:
-
-- the game installed (or its `Paks` folder copied somewhere);
-- a community-made **`.usmap`** mappings file matching your game version (for example "Star Wars Zero Company Unreal
-  Mappings" on Nexus Mods). Download it yourself; it is not included;
-- internet access on the first extraction: the extractor ([CUE4Parse](https://github.com/FabianFG/CUE4Parse)) downloads
-  the Oodle decompression library, which is proprietary and never part of this project.
-
-The result is the game's own content: it stays on your computer and must never be published (see
-[DISCLAIMER.md](DISCLAIMER.md)). The data folder is `%LOCALAPPDATA%\ZeroCompanyEditor` on Windows,
-`~/.local/share/ZeroCompanyEditor` on Linux and `~/Library/Application Support/ZeroCompanyEditor` on macOS.
-
-## Safety
-- The first time a save is opened, an untouched copy is stored in the data folder under `backups/<folder>/<save>/` as
-  `*.orig.sav`.
-- Every write first snapshots the current file (the last 20 are kept). Restore any of them from **Command**.
-- Writes go to a temp file, are verified (the file re-opens cleanly, only the intended values differ, sizes and metadata
-  are consistent, edited values read back correctly), and only then replace the save atomically.
-- The app refuses to write while the game appears to be running, or if the file changed since you opened it.
-- "Save as copy" writes `<name>.edited-HHMMSS.sav` and leaves the original untouched.
-- The app makes no network connections except the Oodle download during the first extraction.
-
-## How it works
-A save is a ZIP containing an Unreal Engine 5 `GVAS` file whose data sits in nested byte blobs. The editor indexes the
-property tree with byte offsets and edits fixed-size numbers in place, so everything it does not understand is preserved
-byte-for-byte. Structural edits (starting an upgrade, healing, bringing someone back, completing a focus tree, Coil
-changes) splice bytes, and every enclosing size field and the sizes recorded in the save's metadata are fixed up; the write
-is refused unless a full re-parse shows nothing else changed. Adding or removing characters, recipes or items is not
-supported.
-
-Upgrade behaviour was checked against saves written by the game itself: starting an upgrade reproduces the game's own
-recipe entry byte-for-byte, and the game then completes it (applying its real effects) on the next turn change.
-
-## Development
-```
-dotnet build
-dotnet test
-dotnet run --project src/ZeroCompany.App
-```
-Tests that need a real save, extracted game data or the game install skip themselves when those are absent (they are never
-committed), so a fresh clone runs the synthetic tests and the UI smoke tests only. To run everything, put a save in
-`saves/` (tests only ever write to temporary copies) and extract game data once. See [`tools/golden`](tools/golden/README.md)
-for the optional comparison against the original Python editor.
-
-```
-src/ZeroCompany.Core/      GVAS reader/patcher, save container, editable model, actions, apply/verify/backup service, view models
-src/ZeroCompany.GameData/  game-data extractor (CUE4Parse) and the typed game database
-src/ZeroCompany.App/       Avalonia desktop UI (MVVM): screens, theme, portraits
-tests/ZeroCompany.Tests/       core, game-data and service tests (synthetic + parity with the Python editor)
-tests/ZeroCompany.App.Tests/   headless UI tests that also render screenshots
-```
-The earlier Python/web implementation (v0.1.0 to v0.3.0) is kept in git history under those tags.
-
-## Feedback
 Found a problem or have an idea? [Open an issue](https://github.com/starmast/zero-company-save-editor/issues/new/choose).
-Please do **not** attach save files, game files or extracted game data to issues.
-
-## Limitations
-- Built against the 2026 releases of the game; a game update can change the save format.
-- No adding of items or abilities and no computed combat stats (health, damage); those need data this project has not yet
-  been able to verify. Healing does not add the game's own treatment history entry.
-- A fallen operator brought back works in the Personnel screens, the Den and on missions (tested in the game with the tutorial
-  operator), but it was built by comparing a fallen operator with the living roster, not from a save the game wrote
-  itself. They have no bonds with anyone recruited after their death and none of the roster's permanent health
-  progression, so their Health can read lower than the others'.
-
-## Third-party software
-[Avalonia](https://avaloniaui.net/) (MIT), [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) (MIT),
-[Magick.NET](https://github.com/dlemstra/Magick.NET) (Apache-2.0, decodes the OpenEXR portraits in saves),
-[CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0, used by the extractor), which downloads Oodle (proprietary,
-Epic Games Tools / RAD) at run time, and a community-made `.usmap` mappings file you obtain yourself. Tests: xUnit (Apache-2.0).
-The UI is styled to use the Barlow Condensed font family (SIL OFL) when it is installed.
-
-## Acknowledgements
-The earlier [Zero_Company_Save_Editor](https://github.com/jpatrickp512/Zero_Company_Save_Editor) by jpatrickp512 was a
-useful reference for which save properties matter; no code was copied from it.
+Please do **not** attach save files, game files or extracted game data.
 
 ## License
 Source code: [MIT](LICENSE). The license covers this repository's code only; see [DISCLAIMER.md](DISCLAIMER.md) for
