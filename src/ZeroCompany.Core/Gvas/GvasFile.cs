@@ -271,9 +271,9 @@ public sealed class GvasFile
         }
     }
 
-    public static GvasNode? Child(GvasNode node, string name)
+    public static GvasNode? Child(GvasNode? node, string name)
     {
-        if (node.Children == null) return null;
+        if (node?.Children == null) return null;
         foreach (var c in node.Children) if (c.Name == name) return c;
         return null;
     }
@@ -405,6 +405,17 @@ public sealed class GvasFile
         var buf = Splice(Data, mp.End, mp.End, raw);
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(mp.ValueOffset + 4), mp.Count.Value + 1);
         Grow(buf, mp, raw.Length);
+        return new GvasFile(buf);
+    }
+
+    /// <summary>
+    /// Replace the value bytes of <paramref name="node"/> with <paramref name="newValue"/> and fix every ancestor's
+    /// size (and nested archive counts). Returns a NEW GvasFile; old node refs are invalid.
+    /// </summary>
+    public GvasFile ReplaceValue(GvasNode node, byte[] newValue)
+    {
+        var buf = Splice(Data, node.ValueOffset, node.End, newValue);
+        Grow(buf, node, newValue.Length - node.Size);
         return new GvasFile(buf);
     }
 
