@@ -18,9 +18,12 @@ public sealed record UsmapInfo(UsmapStatus Status, string Message, string? Engin
 
     static readonly Regex NameVersion = new(@"(?<!\d)(\d+)\.(\d+)(?:\.(\d+))?-(\d+)(?!\d)", RegexOptions.Compiled);
 
+    /// <summary>The community mappings download page.</summary>
+    public const string DownloadUrl = "https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description";
+
     public const string WhereToGetIt =
-        "A .usmap is a community-made description of the game's data layout for your game version. Search for "
-        + "\"Star Wars Zero Company Unreal Mappings\" on Nexus Mods, download it (unzip it if it came as an archive), then pick the .usmap file here.";
+        "A .usmap is a community-made description of the game's data layout for your game version. Press \"Get mappings file\" "
+        + "to open the download page on Nexus Mods, download it (unzip it if it came as an archive), then pick the .usmap file here.";
 
     public static UsmapInfo Inspect(string? path)
     {

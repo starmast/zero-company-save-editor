@@ -23,7 +23,8 @@ looks like the game. Every change is backed up and checked before it is written.
 Tip: copy a save somewhere first and try your edits on the copy. Load it in the game, and only then edit the real one.
 
 Optional but nice: open the **Game data** tab once to show real item names and upgrade costs instead of internal names
-([how](docs/game-data.md)).
+([how](docs/game-data.md); you also need a
+free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
 
 ## What you can do
 - **Command** - turn, level, XP, credits and other resources; restore any backup.

@@ -132,6 +132,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         finally { IsRunning = false; _cts?.Dispose(); _cts = null; }
     }
 
+    [RelayCommand] Task GetMappings() => _main.Ui.OpenUrlAsync(UsmapInfo.DownloadUrl);
+
     [RelayCommand] void Cancel() => _cts?.Cancel();
 
     [RelayCommand]

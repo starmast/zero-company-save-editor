@@ -117,4 +117,17 @@ public class GameDataScreenTests
         Assert.True(vm.UsmapOk);
         Assert.Contains("5.6.1", vm.UsmapNote);
     }
+
+    [SkippableFact]
+    public void The_get_mappings_button_opens_the_download_page()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var rig = new TestRig(withGameData: false);
+        rig.Start();
+        Headless.Run(() => rig.Main.Navigate("gamedata"));
+        var vm = (GameDataViewModel)rig.Main.Screen!;
+        Headless.RunAsync(async () => await vm.GetMappingsCommand.ExecuteAsync(null)).GetAwaiter().GetResult();
+        Assert.Equal("https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description", rig.Ui.OpenedUrl);
+        Assert.StartsWith("https://", ZeroCompany.GameData.Extractor.UsmapInfo.DownloadUrl);
+    }
 }

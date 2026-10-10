@@ -40,6 +40,12 @@ public partial class MainWindow : Window, IUiServices
         if (Clipboard != null) await Clipboard.SetTextAsync(text);
     }
 
+    public async Task OpenUrlAsync(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
+            await Launcher.LaunchUriAsync(uri);
+    }
+
     public async Task<bool> ConfirmAsync(string title, string message)
     {
         var dlg = new Window

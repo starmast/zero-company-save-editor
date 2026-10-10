@@ -11,9 +11,9 @@ Open the **Game data** tab and press **Extract game data**. You need:
 
 1. **The game installed**, or its `Paks` folder copied somewhere. The tab fills in the usual install location when it finds it.
    Otherwise press **Browse...** and pick the folder that contains `SWZeroCompany`.
-2. **A `.usmap` mappings file** for your game version. This is a community-made description of the game's data layout (search
-   for "Star Wars Zero Company Unreal Mappings" on Nexus Mods). Download it yourself; it is not included. Press **Browse...**
-   and pick it.
+2. **A `.usmap` mappings file** for your game version. This is a community-made description of the game's data layout (download it from [Nexus Mods](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description); the
+   **Get mappings file** button opens that page). Download it yourself and unzip it if needed; it is not included. Press
+   **Browse...** and pick the `.usmap`.
 3. **Internet access the first time.** The extractor ([CUE4Parse](https://github.com/FabianFG/CUE4Parse)) downloads the Oodle
    decompression library, which is proprietary and never part of this project.
 

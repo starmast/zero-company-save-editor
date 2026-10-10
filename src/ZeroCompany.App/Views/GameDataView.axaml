@@ -33,6 +33,7 @@
         <TextBlock Classes="amber small" Margin="14,0,14,10" TextWrapping="Wrap" Text="{Binding PathsHint}" />
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="14,0,14,14">
           <Button Classes="primary" Content="Extract game data" Command="{Binding ExtractCommand}" IsEnabled="{Binding CanExtract}" />
+          <Button Content="Get mappings file" Command="{Binding GetMappingsCommand}" ToolTip.Tip="Opens the download page on Nexus Mods" />
           <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" />
           <Button Content="Import database…" Command="{Binding ImportCommand}" IsEnabled="{Binding NotRunning}" />
           <Button Content="Where is my database?" Command="{Binding ExportCommand}" IsEnabled="{Binding HasData}" />
