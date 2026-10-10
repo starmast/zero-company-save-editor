@@ -1,16 +1,31 @@
 name: release
 
 # Publishes a self-contained single-file build per platform when a version tag is pushed (e.g. v0.4.0).
+# It can also be started by hand for an existing tag (Actions > release > Run workflow), optionally for one platform only,
+# to attach a missing archive without moving the tag.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build, e.g. v0.4.0"
+        required: true
+      only_rid:
+        description: "Only this platform (win-x64, linux-x64, osx-arm64, osx-x64); empty = all"
+        required: false
+        default: ""
 
 permissions:
   contents: write
 
 jobs:
   publish:
+    # Manual runs may be limited to one platform.
+    if: ${{ inputs.only_rid == '' || inputs.only_rid == matrix.rid }}
     runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     strategy:
       fail-fast: false
       matrix:
@@ -18,23 +33,28 @@ jobs:
           - { os: windows-latest, rid: win-x64, archive: zip }
           - { os: ubuntu-latest, rid: linux-x64, archive: tar.gz }
           - { os: macos-latest, rid: osx-arm64, archive: tar.gz }
-          - { os: macos-13, rid: osx-x64, archive: tar.gz }
+          # Intel macOS: cross-published from the Apple Silicon runner (the old Intel runner image is retired).
+          - { os: macos-latest, rid: osx-x64, archive: tar.gz }
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
       - name: Test
+        # The Intel build can't run on the Apple Silicon runner; the osx-arm64 job already ran the same tests there.
+        if: ${{ matrix.rid != 'osx-x64' }}
         run: dotnet test ZeroCompany.sln -c Release
       - name: Publish
         shell: bash
         run: >
           dotnet publish src/ZeroCompany.App -c Release -r ${{ matrix.rid }} --self-contained
-          -p:PublishSingleFile=true -o publish/ZeroCompanyEditor-${{ github.ref_name }}-${{ matrix.rid }}
+          -p:PublishSingleFile=true -o publish/ZeroCompanyEditor-${{ env.TAG }}-${{ matrix.rid }}
       - name: Package
         shell: bash
         run: |
-          name="ZeroCompanyEditor-${{ github.ref_name }}-${{ matrix.rid }}"
+          name="ZeroCompanyEditor-${{ env.TAG }}-${{ matrix.rid }}"
           cp README.md LICENSE DISCLAIMER.md "publish/$name/"
           cd publish
           if [ "${{ matrix.archive }}" = "zip" ]; then
@@ -47,5 +67,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "${{ github.ref_name }}" > /dev/null 2>&1 || gh release create "${{ github.ref_name }}" --generate-notes
-          gh release upload "${{ github.ref_name }}" ZeroCompanyEditor-${{ github.ref_name }}-${{ matrix.rid }}.* --clobber
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --generate-notes
+          gh release upload "$TAG" ZeroCompanyEditor-${{ env.TAG }}-${{ matrix.rid }}.* --clobber
