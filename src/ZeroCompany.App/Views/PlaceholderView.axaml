@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.PlaceholderView"
+             x:DataType="vm:PlaceholderViewModel">
+  <Border Classes="panel" Padding="20">
+    <TextBlock Classes="mute" Text="{Binding Key, StringFormat='This screen ({0}) is not built yet.'}" />
+  </Border>
+</UserControl>

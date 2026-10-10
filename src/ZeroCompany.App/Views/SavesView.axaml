@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.SavesView"
+             x:DataType="vm:SavesViewModel">
+  <StackPanel Spacing="6">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Classes="mute" TextWrapping="Wrap" VerticalAlignment="Center"
+                 Text="Pick a save to open. Every write is backed up first. Tip: copy a save into an added folder and try it there before your real save." />
+      <Button Grid.Column="1" Content="Add folder…" Command="{Binding AddFolderCommand}" Margin="12,0,0,0" />
+    </Grid>
+    <TextBlock IsVisible="{Binding NoFolders}" Classes="amber" Margin="0,12"
+               Text="No save folders were found. Use “Add folder…” to point the editor at the folder that holds your .sav files." />
+    <ItemsControl ItemsSource="{Binding Groups}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:SaveGroupViewModel">
+          <StackPanel Margin="0,12,0,0" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="title amber" Text="{Binding Name}" />
+              <TextBlock Classes="mute small" Text="{Binding Path}" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+            </StackPanel>
+            <TextBlock IsVisible="{Binding Empty}" Classes="mute" Text="No saves here." />
+            <ItemsControl ItemsSource="{Binding Cards}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SaveCardViewModel">
+                  <Button Command="{Binding OpenCommand}" Padding="0" Margin="0,0,12,12" Width="250" HorizontalContentAlignment="Stretch"
+                          CornerRadius="4">
+                    <StackPanel>
+                      <Border Height="140" Background="#0d141d" ClipToBounds="True" CornerRadius="4,4,0,0">
+                        <Panel>
+                          <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding HasThumbnail}" />
+                          <TextBlock Classes="caps mute" Text="NO SCREENSHOT" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="{Binding !HasThumbnail}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Margin="12,10" Spacing="2">
+                        <TextBlock Classes="h2" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="caps ice small" Text="{Binding Kind}" />
+                        <TextBlock Classes="mute small" Text="{Binding FileName}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                        <TextBlock Classes="mute small" Text="{Binding When}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock IsVisible="{Binding HasOthers}" Classes="mute small" Text="{Binding Others}" TextWrapping="Wrap" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

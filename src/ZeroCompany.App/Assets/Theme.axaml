@@ -1,0 +1,283 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Game-style theme: dark steel, cream active tab, amber = pending/building, ice-blue = done. Ported from the web UI's game.css. -->
+  <Styles.Resources>
+    <Color x:Key="BgColor">#070c12</Color>
+    <Color x:Key="PanelTopColor">#121c28</Color>
+    <Color x:Key="PanelBottomColor">#0d141d</Color>
+    <Color x:Key="LineColor">#25364a</Color>
+    <Color x:Key="CreamColor">#ece5d2</Color>
+    <Color x:Key="AmberColor">#f2a93b</Color>
+    <Color x:Key="IceColor">#86b9db</Color>
+    <Color x:Key="TextColor">#cfe0ee</Color>
+    <Color x:Key="MuteColor">#8aa0b6</Color>
+    <Color x:Key="OkColor">#5fd0a0</Color>
+    <Color x:Key="BadColor">#e5636f</Color>
+
+    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#0f1822" />
+    <SolidColorBrush x:Key="PanelHeaderBrush" Color="#18263a" />
+    <SolidColorBrush x:Key="InsetBrush" Color="#0b121a" />
+    <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
+    <SolidColorBrush x:Key="CreamBrush" Color="{StaticResource CreamColor}" />
+    <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}" />
+    <SolidColorBrush x:Key="AmberFaintBrush" Color="#1af2a93b" />
+    <SolidColorBrush x:Key="IceBrush" Color="{StaticResource IceColor}" />
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
+    <SolidColorBrush x:Key="MuteBrush" Color="{StaticResource MuteColor}" />
+    <SolidColorBrush x:Key="OkBrush" Color="{StaticResource OkColor}" />
+    <SolidColorBrush x:Key="BadBrush" Color="{StaticResource BadColor}" />
+    <SolidColorBrush x:Key="NavBrush" Color="#121c28" />
+    <SolidColorBrush x:Key="NavHoverBrush" Color="#1a2838" />
+    <SolidColorBrush x:Key="ButtonBrush" Color="#1a2838" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#233549" />
+    <FontFamily x:Key="DisplayFont">Barlow Condensed, Bahnschrift, Arial Narrow, Segoe UI, sans-serif</FontFamily>
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource BgBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+  </Style>
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+  </Style>
+
+  <!-- text roles -->
+  <Style Selector="TextBlock.caps">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="Foreground" Value="{StaticResource CreamBrush}" />
+  </Style>
+  <Style Selector="TextBlock.h2">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource CreamBrush}" />
+  </Style>
+  <Style Selector="TextBlock.mute"><Setter Property="Foreground" Value="{StaticResource MuteBrush}" /></Style>
+  <Style Selector="TextBlock.small"><Setter Property="FontSize" Value="12" /></Style>
+  <Style Selector="TextBlock.amber"><Setter Property="Foreground" Value="{StaticResource AmberBrush}" /></Style>
+  <Style Selector="TextBlock.ice"><Setter Property="Foreground" Value="{StaticResource IceBrush}" /></Style>
+  <Style Selector="TextBlock.ok"><Setter Property="Foreground" Value="{StaticResource OkBrush}" /></Style>
+  <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{StaticResource BadBrush}" /></Style>
+
+  <!-- panels -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Border.panelh">
+    <Setter Property="Background" Value="{StaticResource PanelHeaderBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="12,6" />
+  </Style>
+  <Style Selector="Border.inset">
+    <Setter Property="Background" Value="{StaticResource InsetBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+  <Style Selector="Border.changed">
+    <Setter Property="Background" Value="{StaticResource AmberFaintBrush}" />
+  </Style>
+  <Style Selector="Border.busy">
+    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+  </Style>
+  <Style Selector="Border.hairline">
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+
+  <!-- buttons -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{StaticResource ButtonBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Padding" Value="14,5" />
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource ButtonHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource IceBrush}" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{StaticResource AmberBrush}" />
+    <Setter Property="Foreground" Value="#150e02" />
+    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#ffbb55" />
+    <Setter Property="Foreground" Value="#150e02" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#6b4d1c" />
+    <Setter Property="Foreground" Value="#a08c66" />
+  </Style>
+  <Style Selector="Button.nav">
+    <Setter Property="Background" Value="{StaticResource NavBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource MuteBrush}" />
+    <Setter Property="Padding" Value="18,7" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Margin" Value="0,0,3,0" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource NavHoverBrush}" />
+    <Setter Property="Foreground" Value="#e6eef5" />
+  </Style>
+  <Style Selector="Button.nav.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource CreamBrush}" />
+    <Setter Property="Foreground" Value="#0b1118" />
+  </Style>
+  <Style Selector="Button.chip">
+    <Setter Property="Background" Value="#1186b9db" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="FontSize" Value="16" />
+  </Style>
+  <Style Selector="Button.chip.changed">
+    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AmberBrush}" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,2" />
+    <Setter Property="Foreground" Value="{StaticResource IceBrush}" />
+  </Style>
+  <Style Selector="Button.tab">
+    <Setter Property="Background" Value="{StaticResource NavBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource MuteBrush}" />
+    <Setter Property="Padding" Value="14,5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Margin" Value="0,0,3,0" />
+  </Style>
+  <Style Selector="Button.tab.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource CreamBrush}" />
+    <Setter Property="Foreground" Value="#0b1118" />
+  </Style>
+
+  <!-- number / text inputs -->
+  <Style Selector="TextBox.num">
+    <Setter Property="Background" Value="{StaticResource BgBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource CreamBrush}" />
+    <Setter Property="TextAlignment" Value="Right" />
+    <Setter Property="MinWidth" Value="76" />
+    <Setter Property="Padding" Value="6,3" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="2" />
+  </Style>
+  <Style Selector="TextBox.num.changed">
+    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AmberBrush}" />
+  </Style>
+  <Style Selector="TextBox.num.invalid">
+    <Setter Property="BorderBrush" Value="{StaticResource BadBrush}" />
+  </Style>
+
+  <!-- upgrade timeline nodes -->
+  <Style Selector="Button.nodebtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+  <Style Selector="Button.nodebtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.node">
+    <Setter Property="Background" Value="#0d141d" />
+    <Setter Property="BorderBrush" Value="#4a6580" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.node.done"><Setter Property="Background" Value="{StaticResource IceBrush}" /><Setter Property="BorderBrush" Value="#cfe0ee" /></Style>
+  <Style Selector="Border.node.building"><Setter Property="Background" Value="{StaticResource AmberBrush}" /><Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" /></Style>
+  <Style Selector="Border.node.locked"><Setter Property="BorderBrush" Value="#2a3b4e" /><Setter Property="Opacity" Value="0.55" /></Style>
+  <Style Selector="Border.node.queued"><Setter Property="BorderBrush" Value="{StaticResource OkBrush}" /></Style>
+  <Style Selector="Border.node.sel"><Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" /><Setter Property="BoxShadow" Value="0 0 14 2 #8086b9db" /></Style>
+  <Style Selector="TextBlock.dark"><Setter Property="Foreground" Value="#07131c" /></Style>
+
+  <!-- roster strip, bond faces, level pips -->
+  <Style Selector="Button.rosterchip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,6" />
+    <Setter Property="Opacity" Value="0.8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Button.rosterchip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#1a2838" />
+  </Style>
+  <Style Selector="Button.rosterchip.sel"><Setter Property="Opacity" Value="1" /></Style>
+  <Style Selector="Button.rosterchip.sel /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#1f2e42" />
+    <Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+  <Style Selector="Button.rosterchip.dragging"><Setter Property="Opacity" Value="0.3" /></Style>
+  <Style Selector="Button.rosterchip.dropbefore /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{StaticResource IceBrush}" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+  </Style>
+  <Style Selector="Button.rosterchip.dropafter /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{StaticResource IceBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,3,0" />
+  </Style>
+
+  <Style Selector="Button.bondface">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="30" />
+  </Style>
+  <Style Selector="Button.bondface.sel /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{StaticResource CreamBrush}" /></Style>
+  <Style Selector="Button.bondface.changed /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" /></Style>
+  <Style Selector="TextBlock.cream"><Setter Property="Foreground" Value="{StaticResource CreamBrush}" /></Style>
+
+  <Style Selector="Button.pipbtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Button.pipbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Border.pip">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Margin" Value="3" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="#3a5069" />
+    <Setter Property="Background" Value="#0d141d" />
+  </Style>
+  <Style Selector="Border.pip.on"><Setter Property="Background" Value="{StaticResource IceBrush}" /><Setter Property="BorderBrush" Value="#cfe0ee" /></Style>
+  <Style Selector="Border.pip.on.changed"><Setter Property="Background" Value="{StaticResource AmberBrush}" /><Setter Property="BorderBrush" Value="#ffd9a0" /></Style>
+
+  <Style Selector="Expander.mini">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Expander.mini /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0,2" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource MuteBrush}" />
+  </Style>
+  <Style Selector="ScrollViewer"><Setter Property="AllowAutoHide" Value="False" /></Style>
+</Styles>

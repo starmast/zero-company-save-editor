@@ -1,13 +1,3 @@
-# --- Python
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-*.egg-info/
-
 # --- Runtime data created by the app (contains your save files and conversions of them)
 backups/
 cache/
@@ -29,9 +19,7 @@ gamedata/
 *.utoc
 *.ucas
 
-# --- .NET extractor build output and third-party binaries fetched at build/run time
-tools/extract/bin/
-tools/extract/obj/
+# --- third-party binaries fetched at run time
 tools/extract/*.dll
 *.dll
 *.pdb
@@ -45,3 +33,10 @@ Thumbs.db
 desktop.ini
 .env
 *.log
+
+# --- .NET build output
+bin/
+obj/
+*.user
+.vs/
+artifacts/

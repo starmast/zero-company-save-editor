@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
+             x:Class="ZeroCompany.App.Views.AdvancedView"
+             x:DataType="vm:AdvancedViewModel">
+  <StackPanel Spacing="10">
+    <TextBlock Classes="mute small" Text="Advanced: every editable value, grouped the way the save stores it." />
+    <Grid ColumnDefinitions="*,Auto">
+      <ItemsControl ItemsSource="{Binding Tabs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:TabViewModel">
+            <Button Classes="tab" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBox Grid.Column="1" Width="240" PlaceholderText="Filter…" Text="{Binding Filter}" IsVisible="{Binding IsFields}" />
+    </Grid>
+
+    <!-- flat fields -->
+    <StackPanel IsVisible="{Binding IsFields}" Spacing="10">
+      <TextBlock Classes="mute" Text="Nothing matches." IsVisible="{Binding NothingMatches}" />
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:AdvancedSectionViewModel">
+            <Border Classes="panel" Margin="0,0,0,10">
+              <StackPanel>
+                <Border Classes="panelh"><TextBlock Classes="caps h2" Text="{Binding Name}" /></Border>
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AdvancedFieldRowViewModel">
+                      <Border Classes="hairline" Padding="12,6">
+                        <Grid ColumnDefinitions="*,120,160">
+                          <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                            <TextBlock Classes="mute small" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1" Classes="mute small" Text="{Binding Now}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" />
+                          <c:NumField Grid.Column="2" DataContext="{Binding Field}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <!-- raw tree -->
+    <StackPanel IsVisible="{Binding IsRaw}" Spacing="8">
+      <TextBlock Classes="mute small" TextWrapping="Wrap"
+                 Text="Raw property tree. Numbers (int/float) can be edited in place; the file size never changes. Use with care." />
+      <Border Classes="panel" Padding="6">
+        <TreeView ItemsSource="{Binding RawRoots}" Background="Transparent" FontFamily="Consolas, Menlo, monospace" FontSize="12">
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem" x:DataType="vm:RawNodeViewModel">
+              <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            </Style>
+          </TreeView.Styles>
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:RawNodeViewModel">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="{Binding Name}" Classes="amber" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Meta}" Classes="mute" VerticalAlignment="Center" />
+                <Panel IsVisible="{Binding HasField}"><c:NumField DataContext="{Binding Field}" Width="150" /></Panel>
+                <TextBlock Text="{Binding ValueText}" Classes="ok" MaxWidth="600" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasValueText}" VerticalAlignment="Center" />
+              </StackPanel>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+      </Border>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

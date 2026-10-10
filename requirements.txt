@@ -1,4 +1,0 @@
-Flask>=3.0,<4
-OpenEXR>=3.3,<4
-numpy>=1.26
-Pillow>=10.0

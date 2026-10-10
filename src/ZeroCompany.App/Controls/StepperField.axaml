@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Controls.StepperField"
+             x:DataType="vm:EditableField">
+  <!-- DataContext is an EditableField: - [n] + for small whole numbers (stacks, counts, levels). -->
+  <Border Classes="inset" Classes.changed="{Binding IsChanged}" BorderThickness="1" Padding="0">
+    <StackPanel Orientation="Horizontal">
+      <Button Name="Minus" Padding="9,2" CornerRadius="0" BorderThickness="0" Content="−" Click="OnMinus" />
+      <TextBlock Text="{Binding IntValue}" MinWidth="34" TextAlignment="Center" VerticalAlignment="Center"
+                 Classes.amber="{Binding IsChanged}" />
+      <Button Name="Plus" Padding="9,2" CornerRadius="0" BorderThickness="0" Content="+" Click="OnPlus" />
+    </StackPanel>
+  </Border>
+</UserControl>
