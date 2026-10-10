@@ -45,3 +45,9 @@ Thumbs.db
 desktop.ini
 .env
 *.log
+
+# --- .NET build output
+bin/
+obj/
+*.user
+.vs/
