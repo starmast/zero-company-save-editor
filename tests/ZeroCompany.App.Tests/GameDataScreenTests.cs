@@ -79,4 +79,42 @@ public class GameDataScreenTests
         Assert.True(rig.Session.HasGameData);
         Assert.Equal("ok", rig.Main.BannerKind);
     }
+
+    [SkippableFact]
+    public void The_mappings_field_explains_the_chosen_file_and_extraction_refuses_a_bad_one_before_starting()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var rig = new TestRig(withGameData: false);
+        rig.Start();
+        // a folder that looks like a game install (extraction only needs a .utoc to accept it)
+        var paks = Path.Combine(rig.Tmp, "game", "SWZeroCompany", "Content", "Paks");
+        Directory.CreateDirectory(paks);
+        File.WriteAllBytes(Path.Combine(paks, "x.utoc"), new byte[8]);
+        Headless.Run(() => rig.Main.Navigate("gamedata"));
+        var vm = (GameDataViewModel)rig.Main.Screen!;
+
+        Headless.Run(() => { vm.GameDir = Path.Combine(rig.Tmp, "game"); vm.UsmapPath = ""; });
+        Assert.True(vm.UsmapWarn);
+        Assert.Contains("Nexus Mods", vm.UsmapNote);                       // says what it is and where to get it
+        Headless.RunAsync(async () => await vm.ExtractCommand.ExecuteAsync(null)).GetAwaiter().GetResult();
+        Assert.Equal("err", rig.Main.BannerKind);
+        Assert.Contains("mappings", rig.Main.BannerText);
+        Assert.False(vm.IsRunning);
+        Assert.Equal("", vm.LogText);                                       // refused up front: nothing was started
+
+        var notAMap = Path.Combine(rig.Tmp, "mappings.zip");
+        File.WriteAllBytes(notAMap, new byte[] { 0x50, 0x4B, 3, 4 });
+        Headless.Run(() => vm.UsmapPath = notAMap);
+        Assert.True(vm.UsmapBad);
+        Assert.Contains("unzip", vm.UsmapNote);
+        rig.Shot("32-gamedata-badmap");
+        Headless.RunAsync(async () => await vm.ExtractCommand.ExecuteAsync(null)).GetAwaiter().GetResult();
+        Assert.Contains("unzip", rig.Main.BannerText);
+
+        var good = Path.Combine(rig.Tmp, "SWZeroCompany-5.6.1-196320+++ProjectBruno+Stable-abc.usmap");
+        File.WriteAllBytes(good, new byte[] { 0xC4, 0x30, 4, 0, 0, 0, 0 });
+        Headless.Run(() => vm.UsmapPath = good);
+        Assert.True(vm.UsmapOk);
+        Assert.Contains("5.6.1", vm.UsmapNote);
+    }
 }

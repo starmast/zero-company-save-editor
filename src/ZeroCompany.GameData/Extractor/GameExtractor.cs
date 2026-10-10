@@ -62,8 +62,8 @@ public static class GameExtractor
     {
         var paks = FindPaksDir(opt.GameDir)
             ?? throw new ExtractionException($"Could not find the game's Paks folder under '{opt.GameDir}'.");
-        if (!File.Exists(opt.UsmapPath))
-            throw new ExtractionException("A .usmap mappings file is required (the data assets use unversioned properties).");
+        var usmap = UsmapInfo.Inspect(opt.UsmapPath);
+        if (!usmap.IsUsable) throw new ExtractionException(usmap.Message);
 
         log.Report($"Mounting {paks}");
         var provider = Mount(paks, opt.UsmapPath, opt.OodleDir, log, ct);
@@ -93,6 +93,7 @@ public static class GameExtractor
 
         log.Report("Building database");
         var db = Distiller.Distill(raw, opt.GameDir);
+        if (db.Upgrades.Count == 0 && db.Items.Count == 0) throw new ExtractionException(UsmapInfo.NothingReadable);
         log.Report($"Done: {db.Upgrades.Count} upgrades, {db.Items.Count} items, {db.Effects.Count} effects, "
                    + $"{db.FocusThresholds.Count} abilities, {db.CoilEffects.Count} Coil upgrades");
         return db;
@@ -117,13 +118,18 @@ public static class GameExtractor
             p.Initialize();
             p.SubmitKey(new FGuid(), new FAesKey(new byte[32]));    // containers are not encrypted
             p.PostMount();
-            p.MappingsContainer = new FileUsmapTypeMappingsProvider(usmap);
+            try { p.MappingsContainer = new FileUsmapTypeMappingsProvider(usmap); }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                throw new ExtractionException("The mappings file couldn't be read: it looks damaged, incomplete or made for a different "
+                                              + "version of the game. Download it again, or get the newest one for your game version.", e);
+            }
             log.Report($"Mounted {p.MountedVfs.Count} containers, {p.Files.Count} files");
             return p;
         }
         catch (Exception e) when (e is not OperationCanceledException and not ExtractionException)
         {
-            throw new ExtractionException($"Could not open the game files: {e.Message}", e);
+            throw new ExtractionException($"Could not open the game files: {e.Message}. If you just picked a mappings file, it may be for a different game version.", e);
         }
     }
 

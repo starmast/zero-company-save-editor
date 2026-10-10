@@ -44,6 +44,18 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         ? "The extractor reads Windows/Linux game files and its decompressor is not available on macOS: extract on another machine and use Import."
         : "";
 
+    /// <summary>Live feedback under the mappings field: what the chosen file is, or what to do about it.</summary>
+    public string UsmapNote => UsmapInfo.Inspect(UsmapPath).Message;
+    public bool UsmapOk => UsmapInfo.Inspect(UsmapPath).Status == UsmapStatus.Ok;
+    public bool UsmapWarn => UsmapInfo.Inspect(UsmapPath).Status is UsmapStatus.OkWithWarning or UsmapStatus.Missing;
+    public bool UsmapBad => UsmapInfo.Inspect(UsmapPath).Status is UsmapStatus.NotFound or UsmapStatus.NotAMappingsFile;
+
+    partial void OnUsmapPathChanged(string value)
+    {
+        OnPropertyChanged(nameof(UsmapNote)); OnPropertyChanged(nameof(UsmapOk));
+        OnPropertyChanged(nameof(UsmapWarn)); OnPropertyChanged(nameof(UsmapBad));
+    }
+
     partial void OnIsRunningChanged(bool value) { OnPropertyChanged(nameof(CanExtract)); OnPropertyChanged(nameof(NotRunning)); }
 
     string GuessUsmap()
@@ -94,7 +106,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     {
         if (IsRunning) return;
         if (GameExtractor.FindPaksDir(GameDir) == null) { _main.SetBanner("Could not find the game's Paks folder there. Pick the folder that contains SWZeroCompany.", "err"); return; }
-        if (!File.Exists(UsmapPath)) { _main.SetBanner("Pick the .usmap mappings file first (the game's data assets cannot be read without it).", "err"); return; }
+        var map = UsmapInfo.Inspect(UsmapPath);
+        if (!map.IsUsable) { _main.SetBanner(map.Message, "err"); return; }
         var s = _main.Session;
         s.Settings.GameDir = GameDir; s.Settings.UsmapPath = UsmapPath;
         s.SaveSettings();

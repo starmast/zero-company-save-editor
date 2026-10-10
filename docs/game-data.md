@@ -28,7 +28,16 @@ The extractor can't run on macOS. Extract on a Windows or Linux machine, copy `g
 **Import database...**. Only do this with a file you made yourself from your own install.
 
 ## If it fails
+The mappings box checks your file as soon as you pick it and tells you what it found:
+
+- *Green: "Mappings for Unreal Engine 5.6.1 (game build ...)"* - good to go.
+- *Amber: "This file is for Unreal Engine X, but the game uses 5.6"* - it's for a different Unreal version and probably won't work.
+- *Red: "That doesn't look like a .usmap..."* - you picked something else, often an archive that still needs unzipping.
+
+Other messages you may see:
+
 - *Could not find the game's Paks folder* - pick the folder that contains `SWZeroCompany` (or `SWZeroCompany/Content/Paks`).
-- *A .usmap mappings file is required* - the game's data assets can't be read without one that matches your game version.
+- *The mappings file couldn't be read* or *no upgrade data could be read* - the mappings file is damaged or made for another
+  version of the game (this is the usual result after a game update). Get the newest `.usmap` for your game version.
 - Failures during the Oodle download usually mean no internet or a blocked connection; try again, or copy the library next
   to the editor's data folder.

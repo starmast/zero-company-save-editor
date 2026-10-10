@@ -26,6 +26,8 @@
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UsmapPath}" IsEnabled="{Binding NotRunning}" />
           <Button Grid.Row="2" Grid.Column="2" Content="Browse…" Command="{Binding BrowseUsmapCommand}" IsEnabled="{Binding NotRunning}" />
         </Grid>
+        <TextBlock Margin="14,0,14,8" TextWrapping="Wrap" Text="{Binding UsmapNote}"
+                   Classes.ok="{Binding UsmapOk}" Classes.amber="{Binding UsmapWarn}" Classes.bad="{Binding UsmapBad}" />
         <TextBlock Classes="mute small" Margin="14,0,14,10" TextWrapping="Wrap"
                    Text="The mappings file is a community-made description of the game's data layout for your game version; it is not included. The first extraction also downloads the Oodle decompression library (through CUE4Parse) next to the editor's data." />
         <TextBlock Classes="amber small" Margin="14,0,14,10" TextWrapping="Wrap" Text="{Binding PathsHint}" />
