@@ -141,4 +141,29 @@ public class ScreenTests
         Assert.NotEqual("…", root.Children[0].Name);
         rig.Shot("16-advanced-raw");
     }
+
+    [SkippableFact]
+    public void Without_game_data_upgrade_tiers_spread_across_the_timeline_and_a_hint_is_shown()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var rig = new TestRig(withGameData: false);
+        rig.Start();
+        Headless.Run(() => rig.Main.Navigate("upgrades"));
+        var vm = (UpgradesViewModel)rig.Main.Screen!;
+        Assert.True(vm.NeedsGameData);
+        var row = vm.Rows.First(r => r.Cells.SelectMany(c => c.Nodes).Count() > 1);
+        var columns = row.Cells.Where(c => c.Nodes.Count > 0).Select(c => c.Den).ToList();
+        Assert.True(columns.Count > 1, "tiers of one line must not all sit in the same column");
+        rig.Shot("17-upgrades-nodata");
+    }
+
+    [SkippableFact]
+    public void Upgrade_timeline_fits_a_wide_window_without_stretching()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var rig = new TestRig(withGameData: false);
+        rig.Start(width: 1980, height: 900);
+        Headless.Run(() => rig.Main.Navigate("upgrades"));
+        rig.Shot("18-upgrades-wide");
+    }
 }

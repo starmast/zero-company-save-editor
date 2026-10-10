@@ -111,6 +111,8 @@ public sealed partial class UpgradesViewModel : ScreenViewModel
     public ObservableCollection<BuildSlotViewModel> Slots { get; } = new();
     public bool NoRows => Rows.Count == 0;
     public bool NoSlots => Slots.Count == 0;
+    /// <summary>Den Levels, costs and prerequisites come from extracted game data.</summary>
+    public bool NeedsGameData => !_view.Gamedata;
     public string SlotsHeading => $"{_view.InProgress} in progress";
 
     // ---- toolbar
@@ -187,7 +189,8 @@ public sealed partial class UpgradesViewModel : ScreenViewModel
             {
                 var vm = new UpgradeNodeViewModel(r.Nodes[i], i, n => Selected = n);
                 _nodes.Add(vm);
-                row.Cells[Math.Clamp(r.Nodes[i].Den ?? 1, 1, Cols) - 1].Nodes.Add(vm);
+                // Without game data the Den Level is unknown: spread the tiers across the timeline in order instead of piling them on level 1.
+                row.Cells[Math.Clamp(r.Nodes[i].Den ?? i + 1, 1, Cols) - 1].Nodes.Add(vm);
             }
             Rows.Add(row);
         }

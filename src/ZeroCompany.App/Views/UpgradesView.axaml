@@ -16,6 +16,11 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
+    <Border Classes="panel" Padding="14,8" IsVisible="{Binding NeedsGameData}">
+      <TextBlock Classes="amber" TextWrapping="Wrap"
+                 Text="Den Levels, costs and prerequisites aren't known yet, so upgrades are shown in tier order and every Available upgrade can be started. Open the Game data tab and extract your game data to see the real levels." />
+    </Border>
+
     <!-- toolbar -->
     <Border Classes="panel" Padding="14,8">
       <WrapPanel>
@@ -31,7 +36,7 @@
     <Grid ColumnDefinitions="*,12,340">
       <!-- timeline -->
       <Border Classes="panel">
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
           <StackPanel MinWidth="620">
             <Border Classes="hairline" Height="40">
               <Grid ColumnDefinitions="124,*">
