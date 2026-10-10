@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ZeroCompany.Core\ZeroCompany.Core.csproj" />
+    <ProjectReference Include="..\..\src\ZeroCompany.GameData\ZeroCompany.GameData.csproj" />
   </ItemGroup>
 
 </Project>
