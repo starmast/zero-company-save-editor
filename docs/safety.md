@@ -12,7 +12,10 @@
   overwrite your edit. A checkbox lets you override this if the check is wrong. It also refuses if the file changed since
   you opened it (for example after an autosave): reopen it first.
 - **Save as copy** writes `<name>.edited-HHMMSS.sav` and never touches the original.
-- **No network use** except the Oodle download during the first game-data extraction.
+- **No network use** except the Oodle download during the first game-data extraction. That library is loaded into the editor, so
+  it is checked against a pinned SHA-256 first, and anything else is deleted and refused.
+- **Saves are treated as untrusted.** A save can be someone else's, so portraits are decoded only as OpenEXR (never by format
+  detection) with a size cap, and oversized entries in the portrait archive are skipped.
 
 ## How it works
 A save is a ZIP containing an Unreal Engine 5 `GVAS` file whose data sits in nested byte blobs. The editor indexes the

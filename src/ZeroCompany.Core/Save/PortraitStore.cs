@@ -11,6 +11,7 @@ namespace ZeroCompany.Core.Save;
 public sealed class PortraitStore
 {
     public const string Entry = "SaveGamePortraits.zip";
+    const long MaxBin = 16 << 20;
 
     readonly Dictionary<string, byte[]> _bins = new();
 
@@ -25,6 +26,7 @@ public sealed class PortraitStore
                 var stem = e.FullName.Contains('.') ? e.FullName[..e.FullName.LastIndexOf('.')] : e.FullName;
                 var parts = stem.Split('-');
                 if (parts.Length < 2 || parts[^2].Length != 32) continue;        // <class>-<GUID>-<hash>.bin
+                if (e.Length > MaxBin) continue;                                    // a save may be someone else's: skip oversized entries
                 using var s = e.Open();
                 using var ms = new MemoryStream();
                 s.CopyTo(ms);
