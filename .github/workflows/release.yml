@@ -26,6 +26,14 @@ jobs:
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
+      - name: Make sure the release exists
+        # Created here, once, so the four platform jobs below only upload to it (they used to race to create it).
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --verify-tag --generate-notes
       - id: m
         shell: bash
         env:
@@ -74,6 +82,8 @@ jobs:
         shell: bash
         run: |
           name="ZeroCompanyEditor-${{ env.TAG }}-${{ matrix.rid }}"
+          # Debug symbols (including the native libraries' own .pdb files) are not needed to run the app and make up ~30% of the zip.
+          rm -f "publish/$name/"*.pdb
           cp README.md LICENSE DISCLAIMER.md "publish/$name/"
           cd publish
           if [ "${{ matrix.archive }}" = "zip" ]; then
@@ -86,5 +96,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --generate-notes
           gh release upload "$TAG" ZeroCompanyEditor-${{ env.TAG }}-${{ matrix.rid }}.* --clobber
