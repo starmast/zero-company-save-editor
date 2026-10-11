@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-11
+
 ### Added
 - **Combat tab.** Open a save made during a fight (a combat autosave such as `Autosave_EncounterStart_*.sav`, or a manual save
   made in one) and edit it in sub-tabs. Edits go through the same verified, backed-up apply as the rest of the editor.
