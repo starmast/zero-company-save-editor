@@ -50,6 +50,16 @@ identical fields and screen views, and byte-identical files for scripted edits. 
 `Regenerate_readme_screenshots` test to refresh `docs/screenshots/` (portraits are switched off so no game artwork is shown).
 Set `ZC_PORTRAITS=off` to run the app itself with initials instead of portraits.
 
+## Dependencies and supply chain
+Dependabot (`.github/dependabot.yml`) opens weekly pull requests for NuGet packages and for the GitHub Actions, which the
+workflows pin to exact commits (the version is in a comment beside each). `dotnet list package --vulnerable --include-transitive`
+should stay clean.
+
+The extractor's Oodle download is pinned in `src/ZeroCompany.GameData/Extractor/OodleCheck.cs`. When CUE4Parse is updated to a
+newer Oodle build, `The_pins_are_for_the_oodle_release_the_referenced_cue4parse_downloads` fails on purpose: download the release
+assets named in CUE4Parse (`clang-cl-x64-release.zip` for Windows, `gcc-x64-release.zip` for Linux), take the SHA-256 of
+`oodle-data-shared.dll` / `liboodle-data-shared.so` inside them, and update the pins and the release tag in that test.
+
 ## Third-party software
 [Avalonia](https://avaloniaui.net/) (MIT), [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) (MIT),
 [Magick.NET](https://github.com/dlemstra/Magick.NET) (Apache-2.0, decodes the OpenEXR portraits in saves),

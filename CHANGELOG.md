@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+- The Oodle library that the game-data extractor downloads is checked against a pinned SHA-256 before it is loaded; anything else
+  is deleted and refused. A copy you place yourself is not checked.
+- Portraits in saves (which may be someone else's) are decoded only as OpenEXR, never by format detection, with a size cap, and
+  oversized entries in the portrait archive are skipped.
+- Magick.NET updated to 15.0.0.
+- The GitHub Actions are pinned to exact commits, and Dependabot now proposes weekly updates for NuGet packages and Actions.
+
 ## [0.5.0] - 2026-10-11
 
 ### Added

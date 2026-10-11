@@ -111,6 +111,7 @@ public static class GameExtractor
                 oodle = Path.Combine(dir, OodleHelper.OodleFileName);
                 log.Report("Fetching Oodle via CUE4Parse...");
                 OodleHelper.DownloadOodleDllAsync(ct).GetAwaiter().GetResult();
+                if (File.Exists(oodle)) OodleCheck.VerifyDownloaded(oodle);       // never load a build we didn't check
             }
             OodleHelper.Initialize(oodle);
             var p = new DefaultFileProvider(paksDir, SearchOption.TopDirectoryOnly,

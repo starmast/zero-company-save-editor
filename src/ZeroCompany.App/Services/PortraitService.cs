@@ -60,15 +60,31 @@ public sealed class PortraitService
     }
 }
 
-/// <summary>EXR to 8-bit sRGB RGBA, matching the original editor's conversion exactly.</summary>
+/// <summary>
+/// EXR to 8-bit sRGB RGBA, matching the original editor's conversion exactly. The bytes come from a save file, which may be
+/// someone else's, so only the OpenEXR decoder is ever used (never format auto-detection) and the picture size is capped.
+/// </summary>
 public static class ExrDecoder
 {
+    /// <summary>Longest side accepted; portraits are a few hundred pixels across.</summary>
+    public const int MaxSide = 4096;
+
+    static readonly byte[] ExrMagic = { 0x76, 0x2f, 0x31, 0x01 };
+
+    static ExrDecoder()
+    {
+        ResourceLimits.Width = MaxSide;
+        ResourceLimits.Height = MaxSide;
+        ResourceLimits.Memory = 1UL << 30;
+    }
+
     public static bool TryDecode(byte[] exr, out int width, out int height, out byte[] rgba)
     {
         width = height = 0; rgba = Array.Empty<byte>();
+        if (exr.Length < ExrMagic.Length || !exr.AsSpan(0, ExrMagic.Length).SequenceEqual(ExrMagic)) return false;
         try
         {
-            using var img = new MagickImage(exr);
+            using var img = new MagickImage(exr, new MagickReadSettings { Format = MagickFormat.Exr });
             width = (int)img.Width; height = (int)img.Height;
             var px = img.GetPixels().ToArray();
             if (px == null) return false;

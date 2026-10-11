@@ -28,7 +28,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Magick.NET-Q16-HDRI-AnyCPU" Version="14.17.2" />
+    <PackageReference Include="Magick.NET-Q16-HDRI-AnyCPU" Version="15.0.0" />
   </ItemGroup>
 
   <ItemGroup>

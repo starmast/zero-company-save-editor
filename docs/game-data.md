@@ -15,7 +15,8 @@ Open the **Game data** tab and press **Extract game data**. You need:
    **Get mappings file** button opens that page). Download it yourself and unzip it if needed; it is not included. Press
    **Browse...** and pick the `.usmap`.
 3. **Internet access the first time.** The extractor ([CUE4Parse](https://github.com/FabianFG/CUE4Parse)) downloads the Oodle
-   decompression library, which is proprietary and never part of this project.
+   decompression library, which is proprietary and never part of this project. The editor checks the download against a known
+   SHA-256 before loading it, and deletes and refuses anything else.
 
 It takes a few seconds, shows a log, and then every screen picks up the real names. If the game updates, extract again.
 
@@ -41,3 +42,6 @@ Other messages you may see:
   version of the game (this is the usual result after a game update). Get the newest `.usmap` for your game version.
 - Failures during the Oodle download usually mean no internet or a blocked connection; try again, or copy the library next
   to the editor's data folder.
+- *The Oodle library that was downloaded ... is not the build this version of the editor was checked against* - the download
+  did not match, so it was deleted and not loaded. Put your own copy of `oodle-data-shared.dll` (Windows) or
+  `liboodle-data-shared.so` (Linux) next to the editor's data folder and extract again. A copy you place yourself is not checked.

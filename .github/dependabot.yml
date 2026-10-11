@@ -1,0 +1,17 @@
+# Keeps the NuGet packages and the GitHub Actions (pinned to commit SHAs) up to date, one weekly batch of pull requests each.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      avalonia:
+        patterns: ["Avalonia*"]
+      test-tools:
+        patterns: ["xunit*", "Xunit*", "Microsoft.NET.Test.Sdk", "coverlet*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
