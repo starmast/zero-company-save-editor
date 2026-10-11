@@ -46,6 +46,18 @@ public static class Repo
         return Directory.Exists(dir) ? Directory.GetFiles(dir, "HUB_Root*.sav").OrderBy(x => x).FirstOrDefault() : null;
     }
 
+    public static string? CombatSave()
+    {
+        var dir = Path.Combine(Root, "saves");
+        return Directory.Exists(dir) ? Directory.GetFiles(dir, "Combat_*.sav").OrderBy(x => x).FirstOrDefault() : null;
+    }
+
+    public static string? CombatSaveNamed(string file)
+    {
+        var p = Path.Combine(Root, "saves", file);
+        return File.Exists(p) ? p : null;
+    }
+
     public static string ShotsDir { get { var d = Path.Combine(Root, "artifacts", "shots"); Directory.CreateDirectory(d); return d; } }
 }
 
@@ -59,12 +71,12 @@ public sealed class TestRig : IDisposable
     public NullUiServices Ui { get; } = new();
     public string SaveName { get; }
 
-    public TestRig(bool withGameData = true)
+    public TestRig(bool withGameData = true, bool combat = false, string? combatFile = null)
     {
         var env = new AppEnvironment(Path.Combine(Tmp, "data")) { UseSystemSaveDirs = false };
         var saves = Path.Combine(Tmp, "saves");
         Directory.CreateDirectory(saves);
-        var src = Repo.SampleSave() ?? throw new InvalidOperationException("no sample save");
+        var src = (combatFile != null ? Repo.CombatSaveNamed(combatFile) : combat ? Repo.CombatSave() : Repo.SampleSave()) ?? throw new InvalidOperationException("no sample save");
         SaveName = Path.GetFileName(src);
         File.Copy(src, Path.Combine(saves, SaveName));
         if (withGameData)

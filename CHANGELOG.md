@@ -5,6 +5,29 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Combat tab.** Open a save made during a fight (a combat autosave such as `Autosave_EncounterStart_*.sav`, or a manual save
+  made in one) and edit it in sub-tabs. Edits go through the same verified, backed-up apply as the rest of the editor.
+  - **Allies, Enemies, Friendly AI:** per unit, health, action points, advantage, position, every other base stat, the dead
+    flag, and active effects (remove, change stacks, or copy one from another unit). Quick actions: *Heal allies to full* and
+    *Enemies to 1 HP*.
+  - **Team** (experimental): a per-unit dropdown (Ally you control, Friendly AI the game controls, Enemy) that switches a unit
+    the way the game does when a rescued civilian joins your squad: team tag, friendly flag, the tag inside the unit, its
+    player / enemy behaviour, and the game's second copy of that behaviour in the save's spawned-actors file. A unit turned Enemy
+    also gets the AI area / faction tags and action-point refresh values of the nearest enemy. Heroes turned Enemy or Friendly AI
+    skip their turn, and the editor warns about it.
+  - **Objectives:** mark succeeded or set back to active; editable counters (occupy-region points, interactions); countdown
+    timers (turns left before an objective fails).
+  - **Reinforcements:** queued waves (round, spawn group, *Cancel wave*), the encounter's wave definitions (delay, how often
+    they may spawn, group) and triggers (switch off).
+  - Not all of it has been tried in the game yet; see [limitations](docs/limitations.md#combat-tab).
+- A Combat screenshot in the user guide, and updated screenshots (the navigation bar has a Combat tab).
+
+### Changed
+- Inside a combat save a unit's `Transform` is read as a property list, so its position can be edited; elsewhere it is still read
+  as before.
+- Edits that change a save's size no longer make an extra full copy of the payload, which makes them faster on large saves.
+
 ## [0.4.0] - 2026-10-10
 
 ### Changed

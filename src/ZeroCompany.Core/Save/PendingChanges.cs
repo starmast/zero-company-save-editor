@@ -17,6 +17,13 @@ public sealed class PendingChanges
     readonly HashSet<string> _noLink = new();
     readonly List<string> _starts = new(), _expedites = new(), _heals = new(), _treeFixes = new(), _revives = new();
     readonly Dictionary<string, string> _coil = new();
+    readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
+    readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
+    readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
+    readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
+    readonly Dictionary<int, string> _objectives = new();              // combat: objective index -> wanted status (only when it differs)
+    readonly HashSet<(int Unit, int Index)> _effectRemovals = new();
+    readonly List<(int Unit, int FromUnit, int FromIndex)> _effectCopies = new();
 
     public event Action? Changed;
 
@@ -39,12 +46,19 @@ public sealed class PendingChanges
     public IReadOnlyList<string> TreeFixes => _treeFixes;
     public IReadOnlyList<string> Revives => _revives;
     public IReadOnlyDictionary<string, string> CoilChanges => _coil;
+    public IReadOnlyDictionary<int, bool> DeadChanges => _dead;
+    public IReadOnlyDictionary<int, string> ObjectiveChanges => _objectives;
+    public IReadOnlyDictionary<int, string> TeamChanges => _teams;
+    public IReadOnlyDictionary<(string Kind, int Logic, int Index), string> GroupChanges => _groups;
+    public IReadOnlyDictionary<int, bool> TriggerChanges => _triggers;
+    public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
+    public IReadOnlyList<(int Unit, int FromUnit, int FromIndex)> EffectCopies => _effectCopies;
 
-    public int Count => _edits.Count + _starts.Count + _expedites.Count + _heals.Count + _revives.Count
-                        + _treeFixes.Count + _coil.Count + (RosterOrderOverride != null ? 1 : 0);
+    public int Count => _edits.Count + ActionCount;
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
-                              + _coil.Count + (RosterOrderOverride != null ? 1 : 0);
+                              + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -59,6 +73,19 @@ public sealed class PendingChanges
     /// <summary>Record an edit in save units. A value equal to the original removes the pending edit.</summary>
     public void SetEdit(FieldRef r, double value, bool link = true)
     {
+        Store(r, value, link);
+        Raise();
+    }
+
+    /// <summary>Record many edits at once; listeners are told once.</summary>
+    public void SetEdits(IEnumerable<(FieldRef Ref, double Value)> edits)
+    {
+        foreach (var (r, v) in edits) Store(r, v, true);
+        Raise();
+    }
+
+    void Store(FieldRef r, double value, bool link)
+    {
         _refs[r.Id] = r;
         if (value == r.Value) { _edits.Remove(r.Id); _noLink.Remove(r.Id); }
         else
@@ -66,7 +93,6 @@ public sealed class PendingChanges
             _edits[r.Id] = value;
             if (link) _noLink.Remove(r.Id); else _noLink.Add(r.Id);
         }
-        Raise();
     }
 
     public void Revert(FieldRef r)
@@ -86,6 +112,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -119,6 +146,46 @@ public sealed class PendingChanges
     {
         if (to == null) _coil.Remove(id); else _coil[id] = to;
         Raise();
+    }
+
+    // ---- combat ----------------------------------------------------------------------
+    /// <summary>A wanted value equal to the saved one is no change, so it is dropped rather than stored.</summary>
+    static void SetOrClear<K, V>(Dictionary<K, V> d, K key, V wanted, V saved) where K : notnull
+    {
+        if (EqualityComparer<V>.Default.Equals(wanted, saved)) d.Remove(key); else d[key] = wanted;
+    }
+
+    public void SetDead(int unit, bool wanted, bool saved) { SetOrClear(_dead, unit, wanted, saved); Raise(); }
+    public bool WantsDead(int unit, bool saved) => _dead.GetValueOrDefault(unit, saved);
+
+    public void SetGroup(string kind, int logic, int index, string wanted, string saved) { SetOrClear(_groups, (kind, logic, index), wanted, saved); Raise(); }
+    public string GroupWanted(string kind, int logic, int index, string saved) => _groups.GetValueOrDefault((kind, logic, index), saved);
+
+    public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
+    public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
+
+    public void SetTeam(int unit, string wanted, string saved) { SetOrClear(_teams, unit, wanted, saved); Raise(); }
+    public string TeamWanted(int unit, string saved) => _teams.GetValueOrDefault(unit, saved);
+
+    public void SetObjective(int index, string wanted, string? saved) { SetOrClear(_objectives, index, wanted, saved!); Raise(); }
+    public string? ObjectiveWanted(int index, string? saved) => _objectives.TryGetValue(index, out var s) ? s : saved;
+
+    public void ToggleEffectRemoval(int unit, int index, bool? on = null)
+    {
+        bool want = on ?? !_effectRemovals.Contains((unit, index));
+        if (want) _effectRemovals.Add((unit, index)); else _effectRemovals.Remove((unit, index));
+        Raise();
+    }
+
+    public void AddEffectCopy(int unit, int fromUnit, int fromIndex)
+    {
+        _effectCopies.Add((unit, fromUnit, fromIndex));
+        Raise();
+    }
+
+    public void RemoveEffectCopy(int copyIndex)
+    {
+        if (copyIndex >= 0 && copyIndex < _effectCopies.Count) { _effectCopies.RemoveAt(copyIndex); Raise(); }
     }
 
     // ---- roster order ----------------------------------------------------------------
@@ -171,6 +238,25 @@ public sealed class PendingChanges
         return @out;
     }
 
+    /// <summary>Combat actions, ordered so each index is still valid when it runs: flags, then copies, then removals (highest index first).</summary>
+    public List<SaveAction> BuildCombatActions(CombatView combat)
+    {
+        var @out = new List<SaveAction>();
+        @out.AddRange(_dead.OrderBy(kv => kv.Key).Select(kv => new SaveAction.SetUnitDead(kv.Key, kv.Value)));
+        string Def(int u, int i) => combat.Units[u].Effects[i].Def;
+        @out.AddRange(_effectCopies.Select(x => new SaveAction.CopyUnitEffect(x.Unit, x.FromUnit, x.FromIndex, Def(x.FromUnit, x.FromIndex))));
+        @out.AddRange(_effectRemovals.OrderBy(x => x.Unit).ThenByDescending(x => x.Index)
+            .Select(x => new SaveAction.RemoveUnitEffect(x.Unit, x.Index, Def(x.Unit, x.Index))));
+        @out.AddRange(_teams.OrderBy(kv => kv.Key).Select(kv => new SaveAction.SetUnitTeam(kv.Key, kv.Value)));
+        @out.AddRange(_groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Logic).ThenBy(kv => kv.Key.Index)
+            .Select(kv => new SaveAction.SetSpawnGroup(kv.Key.Kind, kv.Key.Logic, kv.Key.Index, kv.Value)));
+        @out.AddRange(_triggers.OrderBy(kv => kv.Key).Select(kv =>
+            new SaveAction.SetTriggerActive(kv.Key, combat.Reinforcements.Triggers.First(t => t.Logic == kv.Key).Name, kv.Value)));
+        @out.AddRange(_objectives.OrderBy(kv => kv.Key).Select(kv =>
+            new SaveAction.SetObjectiveStatus(kv.Key, combat.Objectives.First(o => o.Index == kv.Key).Name, kv.Value)));
+        return @out;
+    }
+
     /// <summary>Human-readable list of everything pending, for the action bar.</summary>
     public List<PendingLine> Describe(OpenSave save)
     {
@@ -198,6 +284,22 @@ public sealed class PendingChanges
             var names = v.Personnel.Roster.ToDictionary(o => o.Guid, o => o.Name);
             @out.Add(new PendingLine("Personnel", "", null, null,
                 "Roster order: " + string.Join(", ", RosterOrderOverride.Select(g => names.GetValueOrDefault(g, "?")))));
+        }
+        if (save.Combat is { } cb)
+        {
+            string U(int i) => i >= 0 && i < cb.Units.Count ? $"{cb.Units[i].Name} ({cb.Units[i].Team})" : "unit";
+            string E(int u, int i) => cb.Units[u].Effects[i].Title;
+            void Add(string text) => @out.Add(new PendingLine("Combat", "", null, null, text));
+            foreach (var (u, d) in _dead.OrderBy(kv => kv.Key)) Add(d ? $"Kill {U(u)}" : $"Revive {U(u)}");
+            foreach (var x in _effectCopies) Add($"Give {U(x.Unit)} the effect {E(x.FromUnit, x.FromIndex)}");
+            foreach (var x in _effectRemovals.OrderBy(x => x.Unit).ThenBy(x => x.Index)) Add($"Remove effect {E(x.Unit, x.Index)} from {U(x.Unit)}");
+            foreach (var (k, grp) in _groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Index))
+                Add($"Reinforcement {(k.Kind == "wave" ? "wave" : "definition")} {k.Index + 1}: group {CombatOps.GroupLabel(grp)}");
+            foreach (var (logic, on) in _triggers.OrderBy(kv => kv.Key))
+                Add($"Reinforcement trigger {cb.Reinforcements.Triggers.FirstOrDefault(t => t.Logic == logic)?.Title ?? "?"}: {(on ? "on" : "off")}");
+            foreach (var (u, t) in _teams.OrderBy(kv => kv.Key)) Add($"Team: {U(u)} -> {t} (experimental)");
+            foreach (var (i, st) in _objectives.OrderBy(kv => kv.Key))
+                Add($"Objective {cb.Objectives.FirstOrDefault(o => o.Index == i)?.Title ?? "?"}: {st}");
         }
         if (_coil.Count > 0)
         {

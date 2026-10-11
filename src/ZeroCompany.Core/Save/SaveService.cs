@@ -120,6 +120,7 @@ public sealed class SaveService
                 Scalars = SaveModel.ScalarNodes(gv), DiskHash = Sha(raw), Portraits = portraits, Info = info,
                 Upgrades = upgrades,
                 View = ViewBuilder.Build(model, info, portraits.Guids, upgrades),
+                Combat = CombatOps.IsCombatSave(gv) ? CombatOps.Build(gv, info?["comment"]?.ToString() ?? "") : null,
             };
         }
         catch (Exception e) when (e is SaveFormatException or GvasException)
@@ -263,6 +264,7 @@ public sealed class SaveService
             var meta = c.Container.SyncMetadataSizes(BlobSizes(patched), MedbayOps.CharacterSizes(patched).PerCharacter);
             if (meta != null) replace["SaveGameMetaData.json"] = meta;
         }
+        if (cut.SpawnedActorTeams.Count > 0) replace["SaveGameSpawnedActors"] = cut.SpawnedActors!.ToBytes();
         var newFile = c.Container.Rebuild(newGvas, replace);
 
         // 4) verify before touching the disk
@@ -359,11 +361,69 @@ public sealed class SaveService
                 case SaveAction.StartExpediteUpgrade se:
                     g = RunUpgrade(c, g, se.Id, se.Name, start: true, expedite: true, seen, touched);
                     break;
+                case SaveAction.CombatAction:
+                    g = RunCombatAction(c, g, a, seen, cut);
+                    break;
                 default:
                     throw new EditException($"unknown action {a.GetType().Name}");
             }
         }
         return g;
+    }
+
+    /// <summary>
+    /// Combat edits. Unit and effect indexes refer to the open save; callers queue copies before removals and removals from the
+    /// highest index down, so each index is still right when its turn comes. The expected end state goes into <paramref name="cut"/>.
+    /// </summary>
+    GvasFile RunCombatAction(OpenSave c, GvasFile g, SaveAction a, HashSet<string> seen, CutInfo cut)
+    {
+        if (c.Combat == null) throw new EditException("This is not a combat save.");
+        int units = CombatOps.Units(c.Gvas).Count;
+        int Count(int u) => cut.EffectCounts.TryGetValue(u, out var n) ? n : CombatOps.EffectsNode(c.Gvas, u)?.Children?.Count ?? 0;
+        void CheckUnit(int u) { if (u < 0 || u >= units) throw new EditException("unknown unit; re-open the save"); }
+        try
+        {
+            switch (a)
+            {
+                case SaveAction.SetUnitDead d:
+                    CheckUnit(d.Unit);
+                    cut.UnitDead[d.Unit] = d.Dead;
+                    return CombatOps.SetDead(g, d.Unit, d.Dead);
+                case SaveAction.RemoveUnitEffect r:
+                    CheckUnit(r.Unit);
+                    if (!seen.Add($"rm{r.Unit}/{r.Index}")) throw new EditException("duplicate effect removal");
+                    g = CombatOps.RemoveEffect(g, r.Unit, r.Index, r.Def, cut);
+                    cut.EffectCounts[r.Unit] = Count(r.Unit) - 1;
+                    return g;
+                case SaveAction.SetUnitTeam t:
+                    CheckUnit(t.Unit);
+                    if (!seen.Add($"team{t.Unit}")) throw new EditException("duplicate team change");
+                    if (cut.SpawnedActors == null && c.Container.Blobs.TryGetValue("SaveGameSpawnedActors", out var spawnedBytes))
+                    {
+                        // a team switch must patch this copy too, so an unreadable one is an error rather than a silent skip
+                        try { cut.SpawnedActors = new GvasFile(spawnedBytes); }
+                        catch (GvasException e) { throw new EditException("The save's spawned-actors file could not be read, so a team cannot be switched safely.", e); }
+                    }
+                    return CombatOps.SetTeam(g, t.Unit, t.Team, cut);
+                case SaveAction.SetSpawnGroup sg:
+                    if (!seen.Add($"grp{sg.Kind}/{sg.Logic}/{sg.Index}")) throw new EditException("duplicate spawn group change");
+                    return CombatOps.SetSpawnGroup(g, sg.Kind, sg.Logic, sg.Index, sg.Group, cut);
+                case SaveAction.SetTriggerActive ta:
+                    if (!seen.Add($"trg{ta.Logic}")) throw new EditException("duplicate trigger change");
+                    return CombatOps.SetTriggerActive(g, ta.Logic, ta.Name, ta.Active, cut);
+                case SaveAction.SetObjectiveStatus o:
+                    if (!seen.Add($"obj{o.Index}")) throw new EditException("duplicate objective change");
+                    cut.ObjectiveStatuses[o.Index] = o.Status;
+                    return CombatOps.SetObjectiveStatus(g, o.Index, o.Name, o.Status, cut);
+                case SaveAction.CopyUnitEffect x:
+                    CheckUnit(x.Unit); CheckUnit(x.FromUnit);
+                    g = CombatOps.CopyEffect(g, x.Unit, x.FromUnit, x.FromIndex, x.Def, cut);
+                    cut.EffectCounts[x.Unit] = Count(x.Unit) + 1;
+                    return g;
+            }
+        }
+        catch (GvasException e) { throw new EditException($"Combat: {e.Message}", e); }
+        throw new EditException($"unknown action {a.GetType().Name}");
     }
 
     GvasFile Heal(OpenSave c, GvasFile g, string guid, HashSet<string> touched, CutInfo cut)
@@ -479,6 +539,7 @@ public sealed class SaveService
         {
             foreach (var (k, v) in c.Container.Blobs)
                 if (k != SaveContainer.MainEntry && k != "SaveGameMetaData.json"
+                    && !(k == "SaveGameSpawnedActors" && cut.SpawnedActorTeams.Count > 0)
                     && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
             var txt = Encoding.Unicode.GetString(re.Blobs["SaveGameMetaData.json"]);
@@ -522,6 +583,34 @@ public sealed class SaveService
                 if (!have.TryGetValue(tag, out var h) || h.Count != recs.Count || !h.Zip(recs).All(p => p.First.AsSpan().SequenceEqual(p.Second)))
                     throw new EditException("verification failed: the focus tree tiers are not what was intended");
         }
+        foreach (var (u, dead) in cut.UnitDead)
+            if (u >= CombatOps.Units(g2).Count || CombatOps.IsDead(g2, u) != dead)
+                throw new EditException("verification failed: a unit's dead flag is not what was intended");
+        if (cut.SpawnedActorTeams.Count > 0) VerifySpawned(c, re, cut);
+        foreach (var (u, (team, friendly)) in cut.UnitTeams)
+        {
+            if (u >= CombatOps.Units(g2).Count || CombatOps.TeamOf(g2, u) != team || CombatOps.IsFriendly(g2, u) != friendly)
+                throw new EditException("verification failed: the team of a unit is not what was intended");
+            if (!CombatOps.BehaviorMatches(g2, u, team)) throw new EditException("verification failed: a unit's behaviour does not match its team");
+            var tags = CombatOps.UnitTags(g2, u);
+            if (tags != null && (!tags.Contains(CombatOps.TeamTagOf(g2, u)) || tags.Count(t => t.StartsWith("BitReactor.Team.", StringComparison.Ordinal)) != 1))
+                throw new EditException("verification failed: a unit's tag container does not match its team");
+        }
+        foreach (var (key, group) in cut.SpawnGroups)
+        {
+            var p = key.Split('/');
+            var nodes = CombatOps.SpawnGroupOf(g2, p[0], int.Parse(p[1]), int.Parse(p[2]));
+            if (nodes != group) throw new EditException("verification failed: a spawn group is not what was intended");
+        }
+        foreach (var (logic, active) in cut.TriggerActive)
+            if (CombatOps.TriggerActiveOf(g2, logic) != active)
+                throw new EditException("verification failed: a reinforcement trigger is not what was intended");
+        foreach (var (i, st) in cut.ObjectiveStatuses)
+            if (CombatOps.ObjectiveStatus(g2, i) != st)
+                throw new EditException("verification failed: an objective's status is not what was intended");
+        foreach (var (u, n) in cut.EffectCounts)
+            if ((CombatOps.EffectsNode(g2, u)?.Children?.Count ?? -1) != n)
+                throw new EditException("verification failed: a unit's effect list is not what was intended");
         if (cut.Roster != null && !RosterOps.Order(g2).SequenceEqual(cut.Roster)) throw new EditException("verification failed: roster order is not what was intended");
         if (cut.FactTags != null && !CoilOps.Tags(g2).SequenceEqual(cut.FactTags)) throw new EditException("verification failed: fact tags are not what was intended");
 
@@ -536,6 +625,23 @@ public sealed class SaveService
         }
         if (stray != null)
             throw new EditException("verification failed: unexpected change at " + string.Join("/", stray.Split(PathKey.Sep).TakeLast(6)));
+    }
+
+    /// <summary>The spawned-actors entry may differ only in the behaviour of the units whose team changed.</summary>
+    static void VerifySpawned(OpenSave c, SaveContainer re, CutInfo cut)
+    {
+        GvasFile before, after;
+        try { before = new GvasFile(c.Container.Blobs["SaveGameSpawnedActors"]); after = new GvasFile(re.Blobs["SaveGameSpawnedActors"]); }
+        catch (Exception e) when (e is GvasException or KeyNotFoundException) { throw new EditException("verification failed: the spawned-actors entry is unreadable", e); }
+        var a = CombatOps.SpawnedElements(before); var b = CombatOps.SpawnedElements(after);
+        if (!a.Keys.ToHashSet().SetEquals(b.Keys)) throw new EditException("verification failed: the spawned-actors list changed");
+        foreach (var (name, el) in a)
+            if (!cut.SpawnedActorTeams.ContainsKey(name)
+                && !before.Data.AsSpan(el.Start, el.End - el.Start).SequenceEqual(after.Data.AsSpan(b[name].Start, b[name].End - b[name].Start)))
+                throw new EditException("verification failed: an unrelated spawned actor changed");
+        foreach (var (name, team) in cut.SpawnedActorTeams)
+            if (CombatOps.SpawnedBehavior(after, name) is { } bc && !bc.Contains(CombatOps.BehaviorToken(team), StringComparison.Ordinal))
+                throw new EditException("verification failed: a spawned unit's behaviour does not match its team");
     }
 
     /// <summary>For scalar-only edits: same size, only the edited bytes differ, every edited value reads back.</summary>

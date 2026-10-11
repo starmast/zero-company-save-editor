@@ -3,8 +3,8 @@
 [![tests](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml/badge.svg)](https://github.com/starmast/zero-company-save-editor/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Edit your **Star Wars: Zero Company** save: credits, focus points, bonds, upgrades, the roster and more, in an app that
-looks like the game. Every change is backed up and checked before it is written.
+Edit your **Star Wars: Zero Company** save: credits, focus points, bonds, upgrades, the roster, even the units in a fight, in
+an app that looks like the game. Every change is backed up and checked before it is written.
 
 > **Unofficial fan project**, not affiliated with Disney, Lucasfilm, Electronic Arts or Bit Reactor. No game content is
 > included. Editing saves is at your own risk: please read the [disclaimer](DISCLAIMER.md) and keep your own backups.
@@ -31,6 +31,8 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
 - **Personnel** - focus points, bonds, ability levels, roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory**, **Galaxy** (influence, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
+- **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
+  objectives, countdown timers and reinforcements. Newer than the rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).
 
 See the [user guide](docs/user-guide.md) for each screen in detail.
 

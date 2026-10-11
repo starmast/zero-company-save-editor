@@ -64,6 +64,14 @@ public sealed class GvasFile
 
     GvasFile(byte[] data, bool _) { Data = data; }
 
+    /// <summary>Parse a buffer this class now owns (a fresh splice result), without the defensive copy of the public constructor.</summary>
+    static GvasFile Adopt(byte[] buf)
+    {
+        var g = new GvasFile(buf, false);
+        g.ParseHeader();
+        return g;
+    }
+
     /// <summary>Parse a bare property list (no GVAS header), e.g. a portrait <c>.bin</c>. Throws on malformed input.</summary>
     public static GvasFile FromPropertyList(byte[] data)
     {
@@ -139,12 +147,21 @@ public sealed class GvasFile
         r.P = saved;
     }
 
+    static bool InTactical(GvasNode node)
+    {
+        for (var p = node.Parent; p != null; p = p.Parent) if (p.Name == "TacticalSaveGameWrapper") return true;
+        return false;
+    }
+
     static string StructName(TypeName tn) => tn.Params.Count > 0 ? tn.Params[0].Name : "";
 
     void ReadStruct(ByteReader r, GvasNode node)
     {
         var sname = StructName(node.Type);
-        if (BinaryStructs.ContainsKey(sname)) return;       // leaf
+        // Inside the tactical wrapper a Transform is a full property list (Rotation/Translation/Scale3D), not 80 raw bytes.
+        // (Hub saves have the same non-80 form in places; those stay leaves, as the reference editor indexed them.)
+        if (BinaryStructs.TryGetValue(sname, out var raw)
+            && !(sname is "Transform" or "Transform3d" && node.Size != raw && InTactical(node))) return;   // leaf
         if (NativeStructs.Contains(sname)) { node.Native = true; return; }
         var sub = new ByteReader(r.D, r.P);
         node.Children = ReadProps(sub, node.End, node);
@@ -325,6 +342,22 @@ public sealed class GvasFile
         throw new GvasException($"cannot edit {t} in place");
     }
 
+    /// <summary>Offset of the property tag's flag byte (it precedes the optional array index and guid).</summary>
+    static int FlagsOffset(GvasNode node) =>
+        node.ValueOffset - 1 - ((node.Flags & FlagArrayIndex) != 0 ? 4 : 0) - ((node.Flags & FlagGuid) != 0 ? 16 : 0);
+
+    /// <summary>
+    /// Set a BoolProperty. A bool has no value bytes: its state is a bit of the tag's flag byte, so this edits in place and
+    /// never changes the size. The node's cached <see cref="GvasNode.Flags"/> is stale afterwards (re-parse to read it).
+    /// </summary>
+    public void SetBool(GvasNode node, bool value)
+    {
+        if (node.TName != "BoolProperty" || node.Size != 0) throw new GvasException($"cannot set bool on {node.TName}");
+        int o = FlagsOffset(node);
+        if (o < 0 || Data[o] != node.Flags) throw new GvasException("bool flag byte not where expected");
+        Data[o] = (byte)(value ? Data[o] | FlagBoolTrue : Data[o] & ~FlagBoolTrue);
+    }
+
     /// <summary>
     /// Replace an FString-valued property (Name/Str/Enum/Object...) with <paramref name="text"/>.
     /// The length changes, so every ancestor's size field (and nested-archive byte count) is adjusted.
@@ -342,7 +375,7 @@ public sealed class GvasFile
         int delta = neu.Length - node.Size;
         var buf = Splice(Data, node.ValueOffset, node.End, neu);
         Grow(buf, node, delta);
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>Append one int32 to an ArrayProperty&lt;IntProperty&gt;; returns a NEW GvasFile.</summary>
@@ -355,7 +388,7 @@ public sealed class GvasFile
         var buf = Splice(Data, node.End, node.End, raw);
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(node.ValueOffset), node.Count.Value + 1);
         Grow(buf, node, 4);
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>
@@ -371,7 +404,7 @@ public sealed class GvasFile
         var buf = Splice(Data, el.Start, el.End, Array.Empty<byte>());
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(arr.ValueOffset), arr.Count.Value - 1);
         Grow(buf, arr, -(el.End - el.Start));
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>Append <paramref name="n"/> elements (raw bytes, concatenated) to an ArrayProperty; returns a NEW GvasFile.</summary>
@@ -382,7 +415,7 @@ public sealed class GvasFile
         var buf = Splice(Data, arr.End, arr.End, raw);
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(arr.ValueOffset), arr.Count.Value + n);
         Grow(buf, arr, raw.Length);
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>Remove entry <paramref name="index"/> of a MapProperty; returns a NEW GvasFile.</summary>
@@ -394,7 +427,7 @@ public sealed class GvasFile
         var buf = Splice(Data, el.Start, el.End, Array.Empty<byte>());
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(mp.ValueOffset + 4), mp.Count.Value - 1);   // after the (zero) removal count
         Grow(buf, mp, -(el.End - el.Start));
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>Append one fixed-size entry (key + value bytes) to a MapProperty; returns a NEW GvasFile.</summary>
@@ -405,7 +438,7 @@ public sealed class GvasFile
         var buf = Splice(Data, mp.End, mp.End, raw);
         BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(mp.ValueOffset + 4), mp.Count.Value + 1);
         Grow(buf, mp, raw.Length);
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>
@@ -416,7 +449,7 @@ public sealed class GvasFile
     {
         var buf = Splice(Data, node.ValueOffset, node.End, newValue);
         Grow(buf, node, newValue.Length - node.Size);
-        return new GvasFile(buf);
+        return Adopt(buf);
     }
 
     /// <summary>Replace <c>data[start..end)</c> with <paramref name="insert"/>.</summary>

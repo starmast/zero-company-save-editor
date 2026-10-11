@@ -17,6 +17,7 @@
     <DataTemplate DataType="vm:PersonnelViewModel"><v:PersonnelView /></DataTemplate>
     <DataTemplate DataType="vm:MedbayViewModel"><v:MedbayView /></DataTemplate>
     <DataTemplate DataType="vm:GalaxyViewModel"><v:GalaxyView /></DataTemplate>
+    <DataTemplate DataType="vm:CombatViewModel"><v:CombatView /></DataTemplate>
     <DataTemplate DataType="vm:PlaceholderViewModel"><v:PlaceholderView /></DataTemplate>
   </Window.DataTemplates>
 
