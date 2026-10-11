@@ -47,6 +47,28 @@ upgrade or all at once.
 Beds, the bacta tank, their costs, who is injured and who is in treatment. **Heal** removes an operator's injuries the way the
 bacta tank does, for free and instantly.
 
+## Combat
+Open a save made **during a fight** (a combat autosave such as `Autosave_EncounterStart_...`, or a manual save you made in one).
+On any other save this tab just says so. A header shows the save's name, and the buttons on the right of the sub-tabs are quick
+actions for that tab.
+
+![Combat screen](screenshots/combat.png)
+
+- **Allies, Enemies, Friendly AI** - one card per unit. Edit its **Health**, base max health, **action points**, movement points,
+  **Advantage** and **position** (X Y Z in world units). Open **All stats** for every other base value (aim, attack, critical
+  chance and so on) and **Effects** to remove an effect, change its stacks, or copy an effect from another unit. **Mark dead**
+  sets the dead flag. The **Team** dropdown moves a unit to another side: *Ally* (you control it), *Friendly AI* (friendly, but the
+  game moves it, like a rescued VIP or an allied fighter) or *Enemy* ([limits](limitations.md#combat-tab)). Quick actions: **Heal
+  allies to full** and **Enemies to 1 HP**.
+- **Objectives** - each mission objective with its status; **Mark succeeded** or **Set back to active**. Counters such as
+  occupy-region points and interactions are editable too. Above them, **Timers** show the turns left on a countdown, what it
+  fails when it runs out, and let you raise it.
+- **Reinforcements** - the waves already on their way (the round each arrives, its spawn group, **Cancel wave**), the encounter's
+  wave definitions (delay, how many times each may spawn, group) and the triggers that start waves (switch off).
+
+The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
+pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.
+
 ## Advanced
 Every editable value as a flat list, grouped the way the save stores it, with a filter, plus a raw property tree that lets you
 edit numbers in place. Use with care.

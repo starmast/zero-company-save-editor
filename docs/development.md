@@ -19,7 +19,7 @@ builds and uploads all four.
 
 ## Layout
 ```
-src/ZeroCompany.Core/      GVAS reader/patcher, save container, editable model, actions, apply/verify/backup service, view models
+src/ZeroCompany.Core/      GVAS reader/patcher, save container, editable model, actions (Actions/Combat/ for combat saves), apply/verify/backup service, view models
 src/ZeroCompany.GameData/  game-data extractor (CUE4Parse) and the typed game database
 src/ZeroCompany.App/       Avalonia desktop UI (MVVM): screens, theme, portraits
 tests/ZeroCompany.Tests/       core, game-data and service tests
@@ -35,6 +35,12 @@ committed), so a fresh clone runs the synthetic tests and the UI smoke tests onl
 - extract game data once, or keep the `gamedata/*.json` dumps there;
 - for the extractor test, set `ZC_GAME_DIR`, `ZC_USMAP` and `ZC_OODLE_DIR` (or leave a `.usmap` and `oodle-data-shared.dll` in
   `gamedata/`) so the test never downloads anything.
+
+**Combat saves.** The combat tests read real combat saves from `saves/` (also git-ignored) and skip without them. Copy these
+from the game's save folder, named exactly: `Combat_EncounterStart.sav` (any combat autosave with enemies, allies and civilians),
+and from one rescue mission: `Combat_Rescue_before.sav` (before the civilian is rescued, with the countdown timer running),
+`Combat_Rescue_after.sav` (right after the rescue) and `Combat_Rescue_late.sav` (later, with the occupy-region points counting).
+Some assertions rely on what is in those saves (unit counts, three queued waves), so a different save needs the numbers adjusted.
 
 **Parity with the original Python editor.** The suite compares the C# code with the v0.3.0 Python editor on your sample save:
 identical fields and screen views, and byte-identical files for scripted edits. The comparison files are produced from the

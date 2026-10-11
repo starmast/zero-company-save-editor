@@ -76,4 +76,20 @@ public static class Repo
             ? Directory.GetFiles(dir, "HUB_Root*.sav").OrderBy(x => x).FirstOrDefault()
             : null;
     }
+
+    /// <summary>A specific local combat sample by file name, or null.</summary>
+    public static string? CombatSaveNamed(string file)
+    {
+        var p = Path.Combine(Root, "saves", file);
+        return File.Exists(p) ? p : null;
+    }
+
+    /// <summary>A combat autosave (gameMode Tactical), or null.</summary>
+    public static string? CombatSave()
+    {
+        var dir = Path.Combine(Root, "saves");
+        return Directory.Exists(dir)
+            ? Directory.GetFiles(dir, "Combat_*.sav").OrderBy(x => x).FirstOrDefault()
+            : null;
+    }
 }

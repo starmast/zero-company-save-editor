@@ -35,4 +35,17 @@ public class DocsShotsTests
         Headless.Run(() => rig.Main.Navigate("command"));
         Save(rig, "command");
     }
+
+    [SkippableFact]
+    public void Regenerate_combat_screenshot()
+    {
+        Skip.IfNot(Enabled, "set ZC_UPDATE_DOCS=1 to regenerate docs/screenshots");
+        Skip.If(Repo.CombatSaveNamed("Combat_Rescue_before.sav") == null, "no combat sample save");
+        using var rig = new TestRig(combat: true, combatFile: "Combat_Rescue_before.sav");
+        rig.Start(width: 1280, height: 900, portraits: false);
+        Headless.Run(() => rig.Main.Navigate("combat"));
+        var vm = (ViewModels.CombatViewModel)rig.Main.Screen!;
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "objectives").Command.Execute(null));
+        Save(rig, "combat");
+    }
 }

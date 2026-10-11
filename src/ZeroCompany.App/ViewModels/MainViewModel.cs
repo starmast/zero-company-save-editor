@@ -18,6 +18,7 @@ public sealed class UiMemory
     public string? SelectedUpgrade { get; set; }
     public string UpgradeTab { get; set; } = "Facilities";
     public string ArmoryTab { get; set; } = "Utility";
+    public string CombatTab { get; set; } = "allies";
     public string ArmoryFilter { get; set; } = "";
     public string AdvancedTab { get; set; } = "";
     public string AdvancedFilter { get; set; } = "";
@@ -42,7 +43,7 @@ public sealed partial class MainViewModel : ViewModelBase
     static readonly (string Key, string Label)[] NavDefs =
     {
         ("command", "Command"), ("personnel", "Personnel"), ("armory", "Armory"), ("upgrades", "Upgrades"),
-        ("medbay", "Medbay"), ("galaxy", "Galaxy"), ("advanced", "Advanced"),
+        ("medbay", "Medbay"), ("galaxy", "Galaxy"), ("combat", "Combat"), ("advanced", "Advanced"),
     };
 
     public EditorSession Session { get; }
@@ -125,6 +126,7 @@ public sealed partial class MainViewModel : ViewModelBase
             "personnel" when open != null => new PersonnelViewModel(this, open, args.ElementAtOrDefault(0), args.ElementAtOrDefault(1)),
             "medbay" when open != null => new MedbayViewModel(this, open),
             "galaxy" when open != null => new GalaxyViewModel(this, open),
+            "combat" when open != null => new CombatViewModel(this, open),
             _ => new PlaceholderViewModel(key),
         };
     }

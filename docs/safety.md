@@ -19,9 +19,11 @@ A save is a ZIP containing an Unreal Engine 5 `GVAS` file whose data sits in nes
 property tree by byte offset and overwrites fixed-size numbers in place, so everything it doesn't understand is preserved
 byte for byte.
 
-A few actions change the file's size: starting an upgrade, healing, bringing someone back, completing a focus tree, and Coil
-changes. For these the editor splices bytes and fixes up every enclosing size field and the sizes recorded in the save's
-metadata. It then re-parses the result and refuses the write unless nothing else changed. Adding or removing characters,
+A few actions change the file's size: starting an upgrade, healing, bringing someone back, completing a focus tree, Coil
+changes, and in combat saves removing or copying an effect, switching a unit's team and changing an objective or spawn group.
+For these the editor splices bytes and fixes up every enclosing size field and the sizes recorded in the save's metadata. A
+team switch also edits the save's separate spawned-actors file, which holds a second copy of each unit's behaviour, and the
+verifier checks that no other actor in it changed. It then re-parses the result and refuses the write unless nothing else changed. Adding or removing characters,
 recipes or items is not supported.
 
 Upgrade behaviour was checked against saves written by the game itself: starting an upgrade reproduces the game's own recipe
@@ -30,3 +32,7 @@ entry byte for byte, and the game then completes it (applying its real effects) 
 ## How it was checked
 The C# editor was compared against the earlier Python editor on the same save: identical fields and screens, and
 byte-identical files for every scripted edit. See [development.md](development.md).
+
+The combat edits were checked against combat saves the game wrote: for example, switching a rescued civilian's team in a save
+from before the rescue gives the same team tag, flag and behaviour as the game wrote in the save from after it. Setting health and
+switching teams were also tried in the game; see [limitations.md](limitations.md#combat-tab) for what has and has not been.

@@ -426,7 +426,24 @@ public sealed class SaveModel
     {
         var @out = new Dictionary<string, GvasNode>();
         foreach (var n in g.Walk())
+        {
             if (GvasFile.Scalars.TryGetValue(n.TName, out var sz) && n.Size == sz) @out[Naming.FieldId(n)] = n;
+            else foreach (var c in VectorComponents(n)) @out[Naming.FieldId(c)] = c;
+        }
         return @out;
+    }
+
+    /// <summary>
+    /// The three doubles of a Translation vector inside a parsed Transform, as editable nodes. They are not part of the tree
+    /// (the vector is a raw leaf): each carries the vector's name and parent, so its path equals the vector's and the
+    /// verifier's per-leaf comparison treats an edit of any component as an edit of that leaf.
+    /// </summary>
+    public static IEnumerable<GvasNode> VectorComponents(GvasNode n)
+    {
+        if (n.Name != "Translation" || n.Parent is not { TName: "StructProperty" } p || p.Children == null
+            || n.Type.Params.Count == 0 || n.Type.Params[0].Name is not ("Vector" or "Vector3d") || n.Size != 24) yield break;
+        var type = new TypeName("DoubleProperty");
+        for (int i = 0; i < 3; i++)
+            yield return new GvasNode(n.Name, type, 8, n.Start, n.ValueOffset + 8 * i, 0, p);
     }
 }

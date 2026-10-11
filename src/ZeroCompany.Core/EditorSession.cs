@@ -61,7 +61,9 @@ public sealed class EditorSession
     public ApplyResult Apply(bool asCopy, bool force)
     {
         var cur = Service.Current ?? throw new EditException("no save open");
-        var res = Service.Apply(Pending.BuildChanges(), force, asCopy, Pending.BuildActions(cur.Upgrades));
+        var actions = Pending.BuildActions(cur.Upgrades);
+        if (cur.Combat != null) actions.AddRange(Pending.BuildCombatActions(cur.Combat));
+        var res = Service.Apply(Pending.BuildChanges(), force, asCopy, actions);
         Pending.Clear();
         return res;
     }

@@ -9,6 +9,8 @@ public static class GvasExtensions
     public static long GetInt(this GvasFile g, GvasNode n) => Convert.ToInt64(g.Get(n));
     public static double GetDouble(this GvasFile g, GvasNode n) => Convert.ToDouble(g.Get(n));
     public static string GetStr(this GvasFile g, GvasNode n) => (string)g.Get(n);
+    /// <summary>A BoolProperty, or false when the node is missing.</summary>
+    public static bool GetBool(this GvasFile g, GvasNode? n) => n != null && (bool)g.Get(n);
 
     /// <summary>16-byte GUID as the game's four little-endian uint32 words, 32 upper-case hex chars.</summary>
     public static string GuidHex(this GvasFile g, GvasNode n)

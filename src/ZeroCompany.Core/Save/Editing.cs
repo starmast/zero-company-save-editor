@@ -28,6 +28,22 @@ public abstract record SaveAction
     public sealed record StartUpgrade(string Id, string Name) : SaveAction;
     public sealed record ExpediteUpgrade(string Id, string Name) : SaveAction;
     public sealed record StartExpediteUpgrade(string Id, string Name) : SaveAction;
+    /// <summary>Edits that only apply to a combat save; run by <c>SaveService.RunCombatAction</c>.</summary>
+    public abstract record CombatAction : SaveAction;
+    /// <summary>Set a unit's dead flag (unit = index into the tactical unit list).</summary>
+    public sealed record SetUnitDead(int Unit, bool Dead) : CombatAction;
+    /// <summary>Remove one active effect. <c>Def</c> guards against a stale index.</summary>
+    public sealed record RemoveUnitEffect(int Unit, int Index, string Def) : CombatAction;
+    /// <summary>Copy another unit's active effect onto this unit.</summary>
+    public sealed record CopyUnitEffect(int Unit, int FromUnit, int FromIndex, string Def) : CombatAction;
+    /// <summary>Experimental: move a unit to another team ("Player", "Enemy", "Civilian"); see <c>CombatOps.SetTeam</c> for everything it changes.</summary>
+    public sealed record SetUnitTeam(int Unit, string Team) : CombatAction;
+    /// <summary>Set the spawn group of a queued reinforcement wave (<c>Kind</c> "wave") or a wave definition ("config").</summary>
+    public sealed record SetSpawnGroup(string Kind, int Logic, int Index, string Group) : CombatAction;
+    /// <summary>Switch a reinforcement trigger on or off. <c>Name</c> guards against a stale index.</summary>
+    public sealed record SetTriggerActive(int Logic, string Name, bool Active) : CombatAction;
+    /// <summary>Set an objective to "Active" or "Succeeded". <c>Name</c> guards against a stale index.</summary>
+    public sealed record SetObjectiveStatus(int Index, string Name, string Status) : CombatAction;
 }
 
 public sealed record ApplyResult(string Written, bool Copy, int Count, string? Backup);
@@ -55,6 +71,8 @@ public sealed class OpenSave
     public required JsonObject? Info { get; init; }
     public UpgradeList Upgrades { get; init; } = new();
     public SaveView View { get; init; } = new();
+    /// <summary>The in-combat state, or null when this is not a combat save.</summary>
+    public CombatView? Combat { get; init; }
 
     Dictionary<string, GvasNode>? _index;
 
