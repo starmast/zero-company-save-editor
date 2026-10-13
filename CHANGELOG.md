@@ -16,10 +16,11 @@ All notable changes to this project are documented here. The format follows
   units back on Enemy when it loads the save, so the option is hidden there and the editor refuses to set it.
 - Combat: a Scenery tab with the fire zones' turns left and every destructible prop the save tracks (not just the ones already hit). It has
   a search, a condition filter, and Destroy / Restore buttons per prop or for everything the filters show. The save marks a prop Destroyed
-  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Not yet tried in the game.
+  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Restore is confirmed working in the game; Destroy is not yet tried.
 - Combat: the mission's enemy threat tier (for example Coil threat 10) can be swapped for another known tier on the Reinforcements
-  tab. For other factions' tiers (experimental, marked) an Imperial mission can also be switched to, say, Coil units. Not yet tried in
-  the game; the game seems to drop the setting once a save has been loaded and played on, so later saves may not show it.
+  tab (other factions' tiers are offered too, marked experimental). It does nothing for the encounter already started, because the
+  enemies and waves in the save are fixed by then (tried on a hero mission); the editor counts the later encounters and says so beside
+  the drop-down, so the setting can only matter for a mission with an encounter still to come.
 - Combat: in a three-way battle the Reinforcements tab can switch the turn structure to standard and back. Trying to add the
   three-way structure to an ordinary mission did not work (the game loaded it as empty), so it is not offered there.
 

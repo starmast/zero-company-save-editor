@@ -81,9 +81,10 @@ actions for that tab.
 - **Reinforcements** - the waves already on their way (the round each arrives, its spawn group, **Cancel wave**), the encounter's
   wave definitions (delay, how many times each may spawn, group) and the triggers that start waves (switch off). **Mission
   settings** above them has the **enemy threat tier** the mission draws its units from (for example *Coil threat 10*; tiers of
-  other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. The threat tier is only
-  saved in fresh fights; it has been missing from saves made after loading a save and playing on (the game seems to drop it), and
-  then there is nothing to edit. For later waves use the wave definitions instead.
+  other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. **The threat tier does nothing for
+  the encounter you are in**: it is read when an encounter starts, so the enemies on the map and the waves in the save are already fixed
+  (the editor says so next to the drop-down). It can only affect a later encounter that has not started. To change who turns up, edit
+  the units or the groups in the wave definitions.
 - **Scenery** - the fire zones (turns left; they start near 9999, so they effectively never burn out) and **every destructible prop**
   the save tracks, not only the ones already hit (a real level has several hundred, so only the first 150 matches are drawn). Search by
   name, area or condition (every word must match), filter by *Intact / Damaged / Destroyed* or by what you have queued, and use

@@ -172,6 +172,8 @@ public sealed class DestructibleView
 public sealed class SpawnSetView
 {
     public string Current { get; init; } = "";
+    /// <summary>Encounters after the current one that have not started: the only ones the tier can still change.</summary>
+    public int EncountersLeft { get; init; }
     public List<(string Value, string Label)> Choices { get; } = new();
 }
 

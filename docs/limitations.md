@@ -15,9 +15,9 @@
 Combat saves are newer territory than the rest of the editor. **Try your edits on a copy first** ("Save as copy"), load it in the
 game, and keep the automatic backup.
 
-What has been tried in the game: setting health (enemies to 1, allies to a high value), and switching a unit's team (Enemy,
-Enemy2 and Friendly AI, both ways). Everything else below was checked against saves the game wrote and re-read after editing, but
-not played through. The scenery and the enemy threat tier in particular have not been tried in the game.
+What has been tried in the game: setting health (enemies to 1, allies to a high value), switching a unit's team (Enemy,
+Enemy2 and Friendly AI, both ways), adding inventory items, and restoring destroyed scenery props. Everything else below was checked
+against saves the game wrote and re-read after editing, but not played through (destroying intact scenery props in particular).
 
 - **Health** is the unit's saved base value. When the game loads the save it caps Health at the unit's real maximum, so a high
   value works as a full heal and does not stay at, say, 999. The editor can't show that maximum.
@@ -39,18 +39,21 @@ not played through. The scenery and the enemy threat tier in particular have not
     assets list only themselves as friends for Enemy and Enemy2, so they are hostile to each other, and the Enemy2 turn group
     exists only in the three-way turn structure.
 - **Enemy threat tier** (Reinforcements tab, *Mission settings*): swaps the mission's enemy spawn set, for example Coil threat 10
-  for 5. It is saved in fresh fights, but has been missing from saves made after loading a save and playing on (the game seems to
-  drop it when it loads), and then there is nothing to edit. It doesn't
-  change units already on the map. Every tier the game ships is offered (read from its own assets). Tiers of another faction are offered too and would
-  bring that faction's units into the mission; nobody knows yet what the game does with that. For later waves, edit the wave
-  definitions instead (delay, how often each may spawn, group).
+  for 5. **It does nothing for the encounter you are in.** The tier is only read when an encounter starts; after that the enemies on the
+  map and the reinforcement waves already have their groups fixed in the save. This was tried on a hero mission: with the set changed
+  to Separatists the enemies and both queued waves stayed Coil, because the save already held those groups (hero missions also use
+  hand-made groups of their own). Real missions in the saves so far have one encounter (or are in their last), so the setting only has
+  anything to act on if a *later* encounter exists; the editor counts them and says so next to the drop-down. To change who turns up,
+  edit the units or the groups on the Reinforcements tab. The setting is also missing from saves made after loading a save and playing
+  on (the game seems to drop it). Every tier the game ships is offered (read from its own assets), and other factions' tiers would
+  bring that faction's units into a later encounter; nobody knows yet what the game does with that.
 - **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place; whether a low turns-left value puts a
   fire out is not known. A prop that is already **destroyed** does not come back by restoring its health: the first attempt (health
   only) left the wreck in the game, and the game then dropped the prop's health entry on loading. What keeps a prop wrecked is a state
   tag in its actor record (Pristine, Damaged or Destroyed), so **Restore** rewrites that tag as well as the health. That was built
-  from the game's own before/after saves and passes the verifier, but whether the game then rebuilds the prop has not been tried yet.
+  from the game's own before/after saves and passes the verifier, and it works: the destroyed props came back in the game.
   **Destroy** is the mirror image (an intact prop's record becomes Destroyed, flags (0,0,1) as the game wrote them for props it saw wrecked,
-  and no health entry is added since the game drops those on load); it is also untried in the game.
+  and no health entry is added since the game drops those on load); it has not been tried in the game yet.
 - **Objectives** only change the saved status (Active / Succeeded). A normal completion also fires follow-on steps (cutscenes,
   the next objective, reinforcements); flipping the status does not, so check the result in the game.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.

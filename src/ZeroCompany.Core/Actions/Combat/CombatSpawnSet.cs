@@ -60,10 +60,25 @@ public static partial class CombatOps
     public static bool IsOtherFaction(string current, string candidate) =>
         SpawnSetPath.Match(current) is { Success: true } a && SpawnSetPath.Match(candidate) is { Success: true } b && a.Groups["f"].Value != b.Groups["f"].Value;
 
+    /// <summary>How many encounters after the current one a mission has, given how many it lists and which one is current (0-based).</summary>
+    public static int LaterEncounters(int total, int current) => Math.Max(0, total - 1 - Math.Max(0, current));
+
+    /// <summary>
+    /// Encounters of this mission that have not started yet. The threat tier is only read when an encounter starts, so it can only
+    /// matter for these; the enemies and reinforcement waves of the current encounter are already fixed in the save.
+    /// </summary>
+    public static int EncountersLeft(GvasFile g)
+    {
+        var archive = MissionArchive(g);
+        int total = g.Child(archive, "OrderedEncounterArray")?.Children?.Count ?? 0;
+        int current = g.Child(archive, "RelevantEncounterIndex") is { } n ? (int)g.GetInt(n) : 0;       // not saved while it is still 0
+        return LaterEncounters(total, current);
+    }
+
     static void BuildSpawnSet(GvasFile g, CombatView view)
     {
         if (EnemySpawnSetOf(g) is not { } cur) return;
-        var sv = new SpawnSetView { Current = cur };
+        var sv = new SpawnSetView { Current = cur, EncountersLeft = EncountersLeft(g) };
         foreach (var c in SpawnSetChoices(cur)) sv.Choices.Add((c, SpawnSetLabel(c) + (IsOtherFaction(cur, c) ? " (other faction)" : "")));
         view.SpawnSet = sv;
     }

@@ -602,6 +602,30 @@ public class CombatTests : IDisposable
         p.ClearScenery();
         Assert.Equal(0, p.ActionCount);
     }
+
+    [Fact]
+    public void Later_encounters_are_those_listed_after_the_current_one()
+    {
+        Assert.Equal(0, CombatOps.LaterEncounters(1, 0));          // a one-encounter mission
+        Assert.Equal(1, CombatOps.LaterEncounters(2, 0));
+        Assert.Equal(0, CombatOps.LaterEncounters(2, 1));          // the second of two: nothing left
+        Assert.Equal(2, CombatOps.LaterEncounters(3, 0));
+        Assert.Equal(0, CombatOps.LaterEncounters(1, 5));          // never negative
+        Assert.Equal(0, CombatOps.LaterEncounters(0, 0));
+        Assert.Equal(1, CombatOps.LaterEncounters(2, -1));         // a bad index counts as the first
+    }
+
+    [SkippableFact]
+    public void In_the_real_mission_saves_there_is_no_later_encounter_so_the_threat_tier_cannot_change_anything()
+    {
+        // COMBAT BASE 5 (a hero mission with one encounter), Brentaal (one) and Belly of the Beast (two, already in the second)
+        foreach (var file in new[] { "Combat_Scenery.sav", "Combat_Imperial.sav", "Combat_ThreeWay.sav" })
+        {
+            var (svc, _, path) = NewRig(file);
+            Assert.Equal(0, CombatOps.EncountersLeft(Gvas(path)));
+            if (svc.Current!.Combat!.SpawnSet is { } sv) Assert.Equal(0, sv.EncountersLeft);
+        }
+    }
     [SkippableFact]
     public void Countdown_timer_is_listed_with_its_turns_left_and_what_it_fails_and_can_be_extended()
     {

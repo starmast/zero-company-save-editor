@@ -149,7 +149,8 @@
               <StackPanel VerticalAlignment="Center">
                 <TextBlock Classes="title" FontSize="16" Text="Enemy threat" />
                 <TextBlock Classes="mute small" TextWrapping="Wrap"
-                           Text="The threat tier the mission draws its enemy units from. Higher tiers bring tougher units. Units already on the map are not changed; this affects what the mission spawns from here on. Sets marked (other faction) would bring that faction's units into this mission: experimental. Not tried in the game yet." />
+                           Text="The threat tier a mission draws its enemy units from when an encounter starts. Higher tiers bring tougher units. Sets marked (other faction) would bring that faction's units: experimental." />
+                <TextBlock Classes="ice small" TextWrapping="Wrap" Margin="0,4,0,0" Text="{Binding SpawnSet.Note}" />
               </StackPanel>
               <ComboBox Grid.Column="1" Width="190" Margin="12,0,0,0" ItemsSource="{Binding SpawnSet.Choices}" SelectedItem="{Binding SpawnSet.Selected, Mode=TwoWay}" VerticalAlignment="Center">
                 <ComboBox.ItemTemplate>

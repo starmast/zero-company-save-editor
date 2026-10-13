@@ -57,6 +57,20 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void The_enemy_threat_setting_says_when_it_cannot_do_anything()
+    {
+        using var rig = OpenCombat();
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Skip.If(vm.SpawnSet == null, "this combat save has no saved enemy spawn set");
+        var sp = vm.SpawnSet!;
+        Assert.Equal(sp.EncountersLeft > 0, sp.IsEffective);
+        if (!sp.IsEffective) { Assert.Contains("no later encounter", sp.Note); Assert.Contains("does nothing", sp.Note); }
+        else Assert.Contains("later encounter", sp.Note);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "reinforcements").Command.Execute(null));
+        rig.Shot("22-combat-threat-note");
+    }
+
+    [SkippableFact]
     public void Scenery_lists_every_prop_with_search_filters_and_destroy_or_restore_for_what_is_shown()
     {
         using var rig = OpenCombat();
