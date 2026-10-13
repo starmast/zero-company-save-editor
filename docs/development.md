@@ -122,4 +122,10 @@ that supports this game's Unreal version works with it. Errors from the mod come
 Mods change the game's behaviour: use it for exploring, not in a save you care about, and expect that updating or repairing the
 game (the EA app may repair modified files) can undo the install.
 
+
+**Known problem.** On the EA App build 197649, installing the UE4SS 1.1.2 pack made the game start as a process and then show
+nothing (no window, no `UE4SS.log`, no game log). Renaming `dwmapi.dll` (UE4SS's loader) back out of the way let the game start
+normally, so UE4SS itself hangs this build and `zcdebug` can't be used with it until a UE4SS build is confirmed to work. The pack's
+own diagnostic report lists this EA build as "runtime feedback pending". The game folder is under `Program Files`, so
+`zcdebug install` needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
 Like `zcsave`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).

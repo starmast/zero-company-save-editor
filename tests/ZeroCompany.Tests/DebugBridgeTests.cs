@@ -134,6 +134,17 @@ public class DebugBridgeTests : IDisposable
     }
 
     [Fact]
+    public void The_mod_folder_can_be_written_somewhere_else_without_touching_any_game_folder()
+    {
+        var outDir = Path.Combine(_dir, "out");
+        var msg = Install.Setup(game: Path.Combine(_dir, "no-such-game"), uninstall: false, outDir);
+        Assert.Contains("yourself", msg);
+        Assert.Contains("LoopAsync", File.ReadAllText(Path.Combine(outDir, "ZcDebug", "Scripts", "main.lua")));
+        Assert.True(File.Exists(Path.Combine(outDir, "ZcDebug", "enabled.txt")));
+        Assert.False(Directory.Exists(Path.Combine(_dir, "no-such-game")));
+    }
+
+    [Fact]
     public void The_mod_files_ship_inside_the_tool_and_install_into_ue4ss_but_never_without_it()
     {
         Assert.Contains("mod/ZcDebug/Scripts/main.lua", typeof(Install).Assembly.GetManifestResourceNames());

@@ -4,7 +4,7 @@ const string Usage = """
     zcdebug - talk to the running game through the ZcDebug mod (needs UE4SS). Reads by default; changes need --write.
 
       zcdebug status                          is the game running, is the mod answering
-      zcdebug install [--game DIR]            copy the ZcDebug mod into UE4SS's Mods folder (never downloads anything)
+      zcdebug install [--game DIR] [--out DIR]  copy the ZcDebug mod into UE4SS's Mods folder, or write it to DIR to copy by hand
       zcdebug uninstall [--game DIR]          remove it again
       zcdebug ping
       zcdebug find <Class> [limit]            live instances of an Unreal class, e.g. Pawn, PlayerController
@@ -40,7 +40,7 @@ try
 
     switch (cmd)
     {
-        case "install": Console.WriteLine(Install.Setup(game, uninstall: false)); return 0;
+        case "install": Console.WriteLine(Install.Setup(game, uninstall: false, Opt("--out"))); return 0;
         case "uninstall": Console.WriteLine(Install.Setup(game, uninstall: true)); return 0;
         case "status": return Session.Status(new Bridge());
         case "repl": return Session.Repl(new Bridge(), write, timeout);
