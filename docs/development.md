@@ -149,3 +149,14 @@ if the mission's turn structure has a turn group for it, and `BP_Enemy2TurnGroup
 
 The output is the game's own content: use it to read, and never publish or commit dumps (see the [disclaimer](../DISCLAIMER.md)).
 On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`, or the shell rewrites it.
+
+**What it found about combat** (read from the game's data, not guessed from saves):
+- *Threat tiers.* The game ships these enemy spawn sets: Coil 1-10 (plus a separate crisis-elite set), Separatist 1-10, Outlaw 1-5,
+  Imperial 1 and 9, and SlugRats 1. A set is a pool of spawn groups, and the pool grows with the tier: Coil 2 holds eight basic
+  non-infected Enforcer/Striker groups (T1), while Coil 10 holds about 89 groups from T4 up through Droidekas, Guardians, Captains,
+  Marauders and Scourge types. A lower tier means a weaker pool, not fewer units.
+- *Three-way battles.* Of all the levels (179 `_Gameplay` maps), only Belly of the Beast sets `TurnStructure` to the three-way
+  structure, and only it has spawners with `OwningTeam = Enemy2Team`. `BP_MissionActor`'s default is the standard structure. Other
+  levels never load the three-way class, which is why a reference to it saved into another mission came back empty.
+- *Where the rules live.* The turn system itself is native code, so why the game puts Enemy2 units back on Enemy in a standard
+  mission is not in any asset; only the data around it is (teams, turn groups, structures).

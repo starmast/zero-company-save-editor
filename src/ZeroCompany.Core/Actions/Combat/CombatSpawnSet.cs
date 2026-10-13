@@ -10,13 +10,17 @@ public static partial class CombatOps
 {
     static readonly Regex SpawnSetPath = new(@"^(?<dir>.*/Faction/(?<f>[A-Za-z]+)/)SS_(?<f2>[A-Za-z]+)_Threat_(?<n>\d+)\.SS_[A-Za-z]+_Threat_\d+$", RegexOptions.Compiled);
 
-    /// <summary>Threat tiers seen in real saves, per faction. Only tiers known to exist are offered.</summary>
-    static readonly IReadOnlyDictionary<string, int[]> KnownTiers = new Dictionary<string, int[]>
+    /// <summary>
+    /// Every enemy spawn set the game ships (read from its own assets with zcassets): folder name -> (file prefix, threat tiers).
+    /// The separate Coil "crisis elite" set is not a tier and is left out.
+    /// </summary>
+    static readonly IReadOnlyDictionary<string, (string Prefix, int[] Tiers)> KnownTiers = new Dictionary<string, (string, int[])>
     {
-        ["Coil"] = new[] { 2, 3, 4, 5, 6, 7, 8, 9, 10 },
-        ["Separatist"] = new[] { 1, 2, 3, 4, 5, 7 },
-        ["Outlaw"] = new[] { 2, 3, 4, 5 },
-        ["Imperial"] = new[] { 9 },
+        ["Coil"] = ("Coil", new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }),
+        ["Separatist"] = ("Separatist", new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }),
+        ["Outlaw"] = ("Outlaw", new[] { 1, 2, 3, 4, 5 }),
+        ["Imperial"] = ("Imperial", new[] { 1, 9 }),
+        ["SlugRats"] = ("SlugRat", new[] { 1 }),
     };
 
     static GvasNode? SpawnSetNode(GvasFile g) =>
@@ -41,13 +45,14 @@ public static partial class CombatOps
             var root = m.Groups["dir"].Value[..(m.Groups["dir"].Value.IndexOf("/Faction/", StringComparison.Ordinal) + "/Faction/".Length)];
             string own = m.Groups["f"].Value;
             foreach (var faction in KnownTiers.Keys.OrderBy(k => k != own).ThenBy(k => k, StringComparer.Ordinal))
-                foreach (var t in KnownTiers[faction])
+                foreach (var t in KnownTiers[faction].Tiers)
                 {
-                    var name = $"SS_{faction}_Threat_{t:00}";
+                    var name = $"SS_{KnownTiers[faction].Prefix}_Threat_{t:00}";
                     list.Add($"{root}{faction}/{name}.{name}");
                 }
         }
-        if (!list.Contains(current)) list.Insert(0, current);
+        list.Remove(current);
+        list.Insert(0, current);                                  // the current set always comes first
         return list;
     }
 

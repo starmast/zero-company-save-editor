@@ -29,7 +29,8 @@ public sealed class PackageReader
     {
         if (_cache.TryGetValue(packagePath, out var d)) return d;
         d = new Dictionary<string, JObject>();
-        var key = "SWZeroCompany/Content" + packagePath["/Game".Length..] + ".uasset";
+        var stem = "SWZeroCompany/Content" + packagePath["/Game".Length..];
+        var key = _p.Files.ContainsKey(stem + ".uasset") ? stem + ".uasset" : stem + ".umap";            // a level is a .umap
         if (_p.Files.ContainsKey(key))
             foreach (var o in _p.LoadPackageObjects(key))
             {

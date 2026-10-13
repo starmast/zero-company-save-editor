@@ -7,11 +7,11 @@ public static class AssetTools
 {
     /// <summary>"SWZeroCompany/Content/Game/X/Y.uasset" -> "/Game/Game/X/Y".</summary>
     public static string PackagePath(string fileKey) =>
-        "/Game" + fileKey["SWZeroCompany/Content".Length..].Replace(".uasset", "", StringComparison.OrdinalIgnoreCase);
+        "/Game" + fileKey["SWZeroCompany/Content".Length..].Replace(".uasset", "", StringComparison.OrdinalIgnoreCase).Replace(".umap", "", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Package paths of every .uasset, sorted.</summary>
     public static List<string> PackagePaths(IEnumerable<string> fileKeys) =>
-        fileKeys.Where(k => k.StartsWith("SWZeroCompany/Content/", StringComparison.OrdinalIgnoreCase) && k.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+        fileKeys.Where(k => k.StartsWith("SWZeroCompany/Content/", StringComparison.OrdinalIgnoreCase) && (k.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) || k.EndsWith(".umap", StringComparison.OrdinalIgnoreCase)))
                 .Select(PackagePath).OrderBy(p => p, StringComparer.Ordinal).ToList();
 
     /// <summary>

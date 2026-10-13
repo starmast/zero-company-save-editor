@@ -11,6 +11,7 @@ public class AssetToolsTests
         "SWZeroCompany/Content/Game/Core/Blueprints/Objects/TurnStructures/BP_TurnStructure_Default.uasset",
         "SWZeroCompany/Content/Game/Core/Blueprints/Objects/TurnStructures/BP_TurnStructure_ThreeWayBattle.uasset",
         "SWZeroCompany/Content/Game/Core/Blueprints/Objects/TurnStructures/BP_TurnStructure_ThreeWayBattle.uexp",
+        "SWZeroCompany/Content/Game/Maps/Skirmish/SK_Foo/SK_Foo_Gameplay.umap",
         "SWZeroCompany/Content/Game/GameData/Teams/Enemy2Team.uasset",
         "SWZeroCompany/Content/Game/GameData/Teams/EnemyTeam.uasset",
         "Engine/Content/Foo.uasset",
@@ -20,9 +21,9 @@ public class AssetToolsTests
     public void File_keys_become_sorted_package_paths_and_only_game_assets_count()
     {
         var p = AssetTools.PackagePaths(Keys);
-        Assert.Equal(4, p.Count);
+        Assert.Equal(5, p.Count);                                                        // the level (.umap) counts too
         Assert.Equal("/Game/Game/Core/Blueprints/Objects/TurnStructures/BP_TurnStructure_Default", p[0]);
-        Assert.DoesNotContain(p, x => x.Contains("Foo") || x.EndsWith(".uexp"));
+        Assert.DoesNotContain(p, x => x.EndsWith("/Foo") || x.EndsWith(".uexp"));
     }
 
     [Fact]

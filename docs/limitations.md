@@ -40,7 +40,7 @@ not played through. The scenery and the enemy threat tier in particular have not
 - **Enemy threat tier** (Reinforcements tab, *Mission settings*): swaps the mission's enemy spawn set, for example Coil threat 10
   for 5. It is saved in fresh fights, but has been missing from saves made after loading a save and playing on (the game seems to
   drop it when it loads), and then there is nothing to edit. It doesn't
-  change units already on the map. Only tiers seen in real saves are offered. Tiers of another faction are offered too and would
+  change units already on the map. Every tier the game ships is offered (read from its own assets). Tiers of another faction are offered too and would
   bring that faction's units into the mission; nobody knows yet what the game does with that. For later waves, edit the wave
   definitions instead (delay, how often each may spawn, group).
 - **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place. Whether a prop that was

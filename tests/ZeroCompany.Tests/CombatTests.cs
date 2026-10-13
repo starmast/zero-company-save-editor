@@ -379,7 +379,8 @@ public class CombatTests : IDisposable
         var sv = svc.Current!.Combat!.SpawnSet!;
         Assert.Contains("SS_Coil_Threat_10", sv.Current);
         Assert.Equal("Coil threat 10", CombatOps.SpawnSetLabel(sv.Current));
-        Assert.Equal(9, sv.Choices.Count(c => !c.Label.Contains("other faction")));
+        Assert.Equal(10, sv.Choices.Count(c => !c.Label.Contains("other faction")));      // Coil 1-10, as the game ships them
+        Assert.Equal("Coil threat 10", sv.Choices[0].Label);
         Assert.Contains(sv.Choices, c => c.Label == "Separatist threat 3 (other faction)");
         Assert.StartsWith("Coil threat", sv.Choices[0].Label);
         var other = sv.Choices.First(c => c.Label == "Coil threat 5").Value;
@@ -402,7 +403,7 @@ public class CombatTests : IDisposable
         var (svc, _, _) = NewRig("Combat_Imperial.sav");
         var sv = svc.Current!.Combat!.SpawnSet!;
         Assert.Equal("Imperial threat 9", sv.Choices[0].Label);
-        Assert.Equal(1, sv.Choices.Count(c => !c.Label.Contains("other faction")));
+        Assert.Equal(2, sv.Choices.Count(c => !c.Label.Contains("other faction")));       // Imperial 1 and 9
         Assert.Contains(sv.Choices, c => c.Label == "Coil threat 10 (other faction)");
         Assert.Equal(sv.Choices.Count, sv.Choices.Select(c => c.Value).Distinct().Count());
     }
