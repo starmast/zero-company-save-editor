@@ -22,12 +22,12 @@ A save is a ZIP containing an Unreal Engine 5 `GVAS` file whose data sits in nes
 property tree by byte offset and overwrites fixed-size numbers in place, so everything it doesn't understand is preserved
 byte for byte.
 
-A few actions change the file's size: starting an upgrade, healing, bringing someone back, completing a focus tree, Coil
+A few actions change the file's size: starting an upgrade, adding an inventory item, healing, bringing someone back, completing a focus tree, Coil
 changes, and in combat saves removing or copying an effect, switching a unit's team, changing an objective, spawn group or enemy threat tier, and adding or removing the turn structure.
 For these the editor splices bytes and fixes up every enclosing size field and the sizes recorded in the save's metadata. A
 team switch also edits the save's separate spawned-actors file, which holds a second copy of each unit's behaviour, and the
-verifier checks that no other actor in it changed. It then re-parses the result and refuses the write unless nothing else changed. Adding or removing characters,
-recipes or items is not supported.
+verifier checks that no other actor in it changed. It then re-parses the result and refuses the write unless nothing else changed. Adding or removing characters or
+recipes is not supported, and the only items that can be added are utility items and weapon mods (as new copies of an existing inventory entry).
 
 Upgrade behaviour was checked against saves written by the game itself: starting an upgrade reproduces the game's own recipe
 entry byte for byte, and the game then completes it (applying its real effects) on the next turn change.

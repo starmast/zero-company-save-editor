@@ -1,5 +1,6 @@
 using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Views;
+using ZeroCompany.Core.Model;
 
 namespace ZeroCompany.Core.Save;
 
@@ -21,6 +22,7 @@ public sealed class PendingChanges
     readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
     readonly Dictionary<int, string> _spawnSet = new();                                    // combat: wanted enemy spawn set (key 0)
     readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
+    readonly Dictionary<string, int> _itemAdds = new();                                   // armory: item asset name -> copies to add
     readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
     readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
     readonly Dictionary<int, string> _objectives = new();              // combat: objective index -> wanted status (only when it differs)
@@ -55,6 +57,7 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<int, bool> TriggerChanges => _triggers;
     public string? SpawnSetChange => _spawnSet.GetValueOrDefault(0);
     public string? TurnChange => _turn.GetValueOrDefault(0);
+    public IReadOnlyDictionary<string, int> ItemAdds => _itemAdds;
     public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
     public IReadOnlyList<(int Unit, int FromUnit, int FromIndex)> EffectCopies => _effectCopies;
 
@@ -62,7 +65,7 @@ public sealed class PendingChanges
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -116,7 +119,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -169,6 +172,14 @@ public sealed class PendingChanges
     public string SpawnSetWanted(string saved) => _spawnSet.GetValueOrDefault(0, saved);
     public void SetTurn(string wanted, string saved) { SetOrClear(_turn, 0, wanted, saved); Raise(); }
     public string TurnWanted(string saved) => _turn.GetValueOrDefault(0, saved);
+
+    /// <summary>Queue <paramref name="copies"/> new copies of an item (0 clears it).</summary>
+    public void SetItemAdd(string asset, int copies)
+    {
+        if (copies <= 0) _itemAdds.Remove(asset); else _itemAdds[asset] = Math.Min(copies, SaveService.MaxItemCopies);
+        Raise();
+    }
+    public int ItemAddCount(string asset) => _itemAdds.GetValueOrDefault(asset);
 
     public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
     public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
@@ -242,6 +253,7 @@ public sealed class PendingChanges
         @out.AddRange(_heals.Select(g => (SaveAction)new SaveAction.HealOperator(g)));
         @out.AddRange(_treeFixes.Select(g => (SaveAction)new SaveAction.CompleteFocusTree(g)));
         @out.AddRange(_revives.Select(g => (SaveAction)new SaveAction.ReviveOperator(g)));
+        @out.AddRange(_itemAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.AddInventoryItem(kv.Key, kv.Value)));
         if (RosterOrderOverride != null) @out.Add(new SaveAction.ReorderRoster(RosterOrderOverride));
         if (_coil.Count > 0) @out.Add(new SaveAction.RemoveCoilUpgrades(_coil.Select(kv => new CoilChange(kv.Key, kv.Value)).ToList()));
         return @out;
@@ -287,6 +299,8 @@ public sealed class PendingChanges
         }
         foreach (var id in _expedites)
             @out.Add(new PendingLine("Upgrades", "", null, null, "Expedite " + (save.Upgrades.Items.FirstOrDefault(x => x.Id == id)?.Title ?? id)));
+        foreach (var (asset, n) in _itemAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            @out.Add(new PendingLine("Armory", "", null, null, $"Add {(n > 1 ? n + " x " : "")}{save.Model.Db.ItemLabel(asset) ?? Naming.Pretty(asset)}"));
         foreach (var g in _heals) @out.Add(new PendingLine("Medbay", "", null, null, $"Heal {Op(g)} (free, instant)"));
         foreach (var g in _treeFixes) @out.Add(new PendingLine("Personnel", "", null, null, $"Complete focus tree: {Op(g)}"));
         foreach (var g in _revives) @out.Add(new PendingLine("Personnel", "", null, null, $"Bring back {Op(g)} from the Memorial"));

@@ -202,7 +202,20 @@ public static class ViewBuilder
             seen[it.Asset] = seen.GetValueOrDefault(it.Asset) + 1;
             it.Name = $"{it.Name} #{seen[it.Asset]}";
         }
-        return new ArmoryView { Items = items };
+        var owned = m.Inventory.GroupBy(i => i.Asset).ToDictionary(x => x.Key, x => x.Count());
+        var addable = new List<ArmoryAddView>();
+        foreach (var (name, info) in m.Db.Items)
+        {
+            if (ArmoryOps.KindOf(name) is not { } kind) continue;
+            addable.Add(new ArmoryAddView
+            {
+                Asset = name, Kind = kind == "UtilityItem" ? "Utility" : "Modification", Tier = info.Tier, Rarity = info.Rarity,
+                Name = (m.Db.ItemLabel(name) ?? Naming.Pretty(name)) + (info.Tier is int t and not 0 ? $" (T{t})" : ""),
+                Description = info.Description, Owned = owned.GetValueOrDefault(name),
+            });
+        }
+        addable = addable.OrderBy(x => KindOrder(x.Kind)).ThenBy(x => x.Name, Ord).ToList();
+        return new ArmoryView { Items = items, Addable = addable };
     }
 
     public static GalaxyView Galaxy(SaveModel m) => new()

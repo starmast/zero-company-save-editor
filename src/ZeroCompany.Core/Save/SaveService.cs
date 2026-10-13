@@ -16,6 +16,9 @@ namespace ZeroCompany.Core.Save;
 /// </summary>
 public sealed class SaveService
 {
+    /// <summary>Most copies of one item a single action may add.</summary>
+    public const int MaxItemCopies = 99;
+
     public const int KeepBackups = 20;
     static readonly Regex SafeName = new(@"^[A-Za-z0-9._ \-+()]+\.sav$", RegexOptions.Compiled);
     static readonly Regex GuidRx = new("^[0-9A-F]{32}$", RegexOptions.Compiled);
@@ -352,6 +355,11 @@ public sealed class SaveService
                     coilDone = true;
                     g = RemoveCoil(g, rc.Changes, touched, cut);
                     break;
+                case SaveAction.AddInventoryItem ai:
+                    if (ai.Copies < 1 || ai.Copies > MaxItemCopies) throw new EditException($"copies must be 1 to {MaxItemCopies}");
+                    if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
+                    for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
+                    break;
                 case SaveAction.StartUpgrade s:
                     g = RunUpgrade(c, g, s.Id, s.Name, start: true, expedite: false, seen, touched);
                     break;
@@ -559,6 +567,18 @@ public sealed class SaveService
             foreach (var (gid, size) in per)
                 if (metaPer.TryGetValue(gid, out var ms) && ms != null && ms != size)
                     throw new EditException("verification failed: a character's recorded size is out of sync");
+        }
+        if (cut.AddedItems.Count > 0)
+        {
+            var before = ArmoryOps.Entries(old); var after = ArmoryOps.Entries(g2);
+            if (after.Count != before.Count + cut.AddedItems.Count) throw new EditException("verification failed: the inventory has the wrong number of entries");
+            if (after.Select(e => e.Guid).Distinct().Count() != after.Count) throw new EditException("verification failed: two inventory entries share a GUID");
+            foreach (var (asset, guid) in cut.AddedItems)
+                if (!after.Any(e => e.Guid == guid && e.Asset == asset && e.Count == 1))
+                    throw new EditException("verification failed: an added item is not in the inventory as intended");
+            var beforeSet = before.Select(e => e.Guid + e.Asset + e.Count).ToHashSet();
+            if (after.Count(e => beforeSet.Contains(e.Guid + e.Asset + e.Count)) != before.Count)
+                throw new EditException("verification failed: an existing inventory entry changed");
         }
         if (cut.Revived.Count > 0)
         {

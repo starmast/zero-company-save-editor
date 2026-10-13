@@ -161,9 +161,25 @@ public sealed class ArmoryItemView
     public FieldRef? Count { get; init; }
 }
 
+/// <summary>An item the game defines that can be added to the inventory.</summary>
+public sealed class ArmoryAddView
+{
+    public string Asset { get; init; } = "";
+    public string Name { get; init; } = "";
+    /// <summary>"Utility" or "Modification".</summary>
+    public string Kind { get; init; } = "";
+    public int? Tier { get; init; }
+    public string Rarity { get; init; } = "";
+    public string Description { get; init; } = "";
+    /// <summary>How many entries of it the save already has.</summary>
+    public int Owned { get; init; }
+}
+
 public sealed class ArmoryView
 {
     public List<ArmoryItemView> Items { get; init; } = new();
+    /// <summary>Every utility item and weapon mod the game defines (empty without extracted game data).</summary>
+    public List<ArmoryAddView> Addable { get; init; } = new();
 }
 
 public sealed class RegionView

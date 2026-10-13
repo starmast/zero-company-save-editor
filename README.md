@@ -30,7 +30,7 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
 - **Command** - turn, level, XP, credits and other resources; restore any backup.
 - **Personnel** - focus points, bonds, ability levels, roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
-- **Armory**, **Galaxy** (influence, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
+- **Armory** (including adding items you never had), **Galaxy** (influence, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
   objectives, countdown timers, reinforcements, fire zones and destructible scenery, and the enemy threat tier. Newer than the
   rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).

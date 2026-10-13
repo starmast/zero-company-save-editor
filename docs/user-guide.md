@@ -38,6 +38,12 @@ queues everything that can be started.
 ## Armory
 Utility items and weapon mods, with how many you own. Use the search box to find one.
 
+**Add items** is a tab for items you never had, such as the reward you did not pick from a meditation (Tel's Jedi Meditation
+missions let you choose one of several utility items). It lists every utility item and weapon mod the game defines, marked
+*never owned* or *owned n*; **+** queues a new copy and **Apply to save** puts it in your inventory. The save keeps each copy as its
+own entry, so two of an item are two entries. It needs the [game data](game-data.md) (the item list comes from there), and it
+can't add resources, which already have an editable amount. Try it on a copy first: it has not been tried in the game yet.
+
 ## Galaxy
 Influence, contacts and reward tier for each region. Below, the **Coil upgrades** the enemy has gained from failed Crisis
 missions: **Remove** puts the crisis back to available (it can be failed again), **Prevent** marks it as won. Both work on one

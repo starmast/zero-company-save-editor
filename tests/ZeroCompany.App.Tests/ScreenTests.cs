@@ -32,6 +32,35 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Armory_add_items_tab_lists_the_games_items_and_queues_new_copies()
+    {
+        using var rig = Open("armory");
+        var vm = Assert.IsType<ArmoryViewModel>(rig.Main.Screen);
+        var tab = Assert.Single(vm.Tabs, t => t.Key == "Add");
+        Headless.Run(() => tab.Command.Execute(null));
+        Assert.True(vm.ShowAdd);
+        Assert.False(vm.ShowOwned);
+        Skip.IfNot(vm.HasGameData, "no game data in this test setup");
+        Assert.NotEmpty(vm.VisibleAdd);
+        var card = vm.VisibleAdd.First(c => c.NeverOwned);
+
+        Headless.Run(() => card.Plus.Execute(null));
+        Headless.Run(() => card.Plus.Execute(null));
+        Assert.Equal(2, card.Queued);
+        Assert.Equal(1, rig.Main.Session.Pending.Count);                 // one action: two copies of one item
+        Headless.Run(() => card.Minus.Execute(null));
+        Headless.Run(() => card.Minus.Execute(null));
+        Headless.Run(() => card.Minus.Execute(null));                   // never below zero
+        Assert.Equal(0, card.Queued);
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+
+        Headless.Run(() => vm.Filter = "zzzz-no-such-item");
+        Assert.True(vm.IsEmpty);
+        Headless.Run(() => vm.Filter = "");
+        Assert.False(vm.IsEmpty);
+    }
+
+    [SkippableFact]
     public void Medbay_renders_slots_and_costs()
     {
         using var rig = Open("medbay");
