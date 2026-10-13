@@ -7,7 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 - Armory: an Add items tab for utility items and weapon mods you never had (for example the meditation rewards you did not pick). It
-  lists what the game defines (with filters for type, mod slot, tier and rarity, a sort, and a never-owned / queued-only toggle) and adds
+  lists what the game defines (with filters for type, mod slot, tier, rarity and mission choice rewards, a sort, and a never-owned / queued-only
+  toggle; the game data now records which mission and choice gives each item, so re-extract it) and adds
   each copy as its own inventory entry. Not yet tried in the game.
 - Combat: a second hostile team, Enemy2 (for example Imperials fighting beside the Coil), offered only in three-way battles such as
   Belly of the Beast. It is listed under Enemies, can be picked in a unit's team dropdown, and is included by "Enemies to 1 HP".

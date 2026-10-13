@@ -129,6 +129,10 @@ public sealed class InjuredView
 public sealed class TreatingView
 {
     public string Slot { get; init; } = "";
+    /// <summary>The missions that give this item and the choice behind it, e.g. "Jedi Meditation I: Meditate on the Past." (empty when unknown or never a reward).</summary>
+    public string Source { get; init; } = "";
+    /// <summary>True when at least one source is a choice: picking another option meant never getting this item.</summary>
+    public bool FromChoice { get; init; }
     public List<string> Operators { get; init; } = new();
     public long? Started { get; init; }
 }
@@ -175,6 +179,10 @@ public sealed class ArmoryAddView
     public int Owned { get; init; }
     /// <summary>The weapon-mod slot (Scope, Barrel, Stabilizer, Cells ...), or "" for utility items.</summary>
     public string Slot { get; init; } = "";
+    /// <summary>The missions that give this item and the choice behind it, e.g. "Jedi Meditation I: Meditate on the Past." (empty when unknown or never a reward).</summary>
+    public string Source { get; init; } = "";
+    /// <summary>True when at least one source is a choice: picking another option meant never getting this item.</summary>
+    public bool FromChoice { get; init; }
 }
 
 public sealed class ArmoryView

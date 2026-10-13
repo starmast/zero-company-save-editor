@@ -4,7 +4,7 @@ namespace ZeroCompany.Core.Views;
 public enum AddSort { Name, TierLow, TierHigh, Rarity, FewestOwned }
 
 /// <summary>
-/// What the Add items tab shows. Empty text, "All" and 0 mean "no filter". <see cref="Group"/> is "All", "Utility", "Mods" (every
+/// What the Add items tab shows. Empty text, "All" and 0 mean "no filter". <see cref="Group"/> is "All", "Utility", "Choices" (rewards of a mission choice), "Mods" (every
 /// weapon mod) or "Mods:Scope" (one mod slot); <see cref="Rarity"/> is "" or a rarity name; <see cref="Tier"/> is 0 or 1 to 4.
 /// </summary>
 public sealed record AddQuery(string Text = "", string Group = "All", int Tier = 0, string Rarity = "",
@@ -16,12 +16,12 @@ public static class ArmoryAddFilter
     /// <summary>Common is the plainest, Unique the rarest. Unknown or empty rarities rank below all of them.</summary>
     public static int RarityRank(string rarity) => rarity switch { "Common" => 1, "Uncommon" => 2, "Rare" => 3, "Unique" => 4, _ => 0 };
 
-    /// <summary>Every word must appear in the item's name, internal name, description, slot or rarity (any case).</summary>
+    /// <summary>Every word must appear in the item's name, internal name, description, slot, rarity or the mission that rewards it (any case).</summary>
     public static bool MatchesText(ArmoryAddView it, string text)
     {
         var words = (text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (words.Length == 0) return true;
-        var hay = string.Join(' ', it.Name, it.Asset, it.Description, it.Slot, it.Rarity);
+        var hay = string.Join(' ', it.Name, it.Asset, it.Description, it.Slot, it.Rarity, it.Source);
         return words.All(w => hay.Contains(w, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -29,6 +29,7 @@ public static class ArmoryAddFilter
     {
         "" or "All" => true,
         "Utility" => it.Kind == "Utility",
+        "Choices" => it.FromChoice,
         "Mods" => it.Kind == "Modification",
         _ when group.StartsWith("Mods:", StringComparison.Ordinal) => it.Kind == "Modification" && it.Slot == group["Mods:".Length..],
         _ => true,
@@ -62,6 +63,7 @@ public static class ArmoryAddFilter
     {
         var all = items.ToList();
         var @out = new List<(string, string)> { ("All", "All items") };
+        if (all.Any(i => i.FromChoice)) @out.Add(("Choices", "Mission choice rewards"));
         if (all.Any(i => i.Kind == "Utility")) @out.Add(("Utility", "Utility items"));
         if (all.Any(i => i.Kind == "Modification")) @out.Add(("Mods", "Weapon mods (all)"));
         foreach (var slot in all.Where(i => i.Kind == "Modification" && i.Slot.Length > 0).Select(i => i.Slot).Distinct().OrderBy(s => s, StringComparer.Ordinal))

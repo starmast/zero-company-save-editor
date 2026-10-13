@@ -13,6 +13,7 @@ const string Usage = """
       zcassets dump <asset> [--grep TEXT] [--merged]
                                                   an asset's objects as JSON (--grep: only the properties mentioning TEXT)
       zcassets scan <path-part> <text> [--limit N] search inside every asset whose path contains <path-part> for TEXT
+      zcassets rewards [path-part] [--json]       inventory-item rewards of missions, grouped by the player choice that unlocks them (--json: raw, for the editor's dev dumps)
 
     <asset> is a package path (/Game/Game/Core/...), a file name, or a part of the path that matches exactly one asset.
     Examples:
@@ -36,9 +37,10 @@ try
     int limit = int.TryParse(Opt("--limit"), out var l) ? l : 60;
     var grep = Opt("--grep");
     bool merged = Flag("--merged");
+    bool asJson = Flag("--json");
     var cmd = a[0]; a.RemoveAt(0);
-    if (cmd is not ("find" or "dump" or "scan")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
-    if (a.Count == 0 || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
+    if (cmd is not ("find" or "dump" or "scan" or "rewards")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
+    if ((a.Count == 0 && cmd != "rewards") || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
 
     var env = new AppEnvironment();
     var s = AppSettings.Load(env);
@@ -70,6 +72,22 @@ try
 
     switch (cmd)
     {
+        case "rewards":
+        {
+            var part = a.Count > 0 ? a[0] : "";
+            if (asJson) { Console.WriteLine(RewardReader.Read(reader, log, default).ToString(Formatting.Indented)); return 0; }
+            foreach (var r in RewardReader.Read(reader, log, default).Where(r => ((string)r["recipe"]!).Contains(part, StringComparison.OrdinalIgnoreCase)))
+            {
+                Console.WriteLine($"{r["recipe"]}  \"{r["title"]}\"");
+                foreach (var tier in r["tiers"]!)
+                {
+                    var choices = tier["choices"]!.Select(c => (string)c!).ToList();
+                    var items = string.Join(", ", tier["items"]!.Select(i => $"{i["item"]} x{i["amount"]}"));
+                    Console.WriteLine($"    {(choices.Count == 0 ? "always" : "choice: " + string.Join(" + ", choices))}  ->  {items}");
+                }
+            }
+            return 0;
+        }
         case "find":
         {
             var text = string.Join(' ', a);

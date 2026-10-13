@@ -99,6 +99,7 @@
                 <TextBlock Classes="h2" FontSize="19" Text="{Binding Name}" TextWrapping="Wrap" />
                 <TextBlock Classes="caps ice small" Text="{Binding Meta}" TextWrapping="Wrap" />
                 <TextBlock Classes="caps mute small" Text="{Binding Owned}" />
+                <TextBlock Classes="ice small" Text="{Binding SourceText}" TextWrapping="Wrap" IsVisible="{Binding HasSource}" />
                 <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
               </StackPanel>
               <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2" HorizontalAlignment="Right">

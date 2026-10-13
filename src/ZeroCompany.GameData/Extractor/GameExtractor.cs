@@ -88,6 +88,9 @@ public static class GameExtractor
         }
 
         ct.ThrowIfCancellationRequested();
+        log.Report("Reading mission rewards");
+        raw.Rewards = RewardReader.Read(pkg, log, ct);
+
         log.Report("Reading text");
         raw.Strings = ReadStrings(provider);
 

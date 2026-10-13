@@ -103,6 +103,28 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Armory_add_items_can_show_the_choice_rewards_of_missions_like_the_meditations()
+    {
+        using var rig = Open("armory");
+        var vm = Assert.IsType<ArmoryViewModel>(rig.Main.Screen);
+        Headless.Run(() => Assert.Single(vm.Tabs, t => t.Key == "Add").Command.Execute(null));
+        var choices = vm.GroupChoices.FirstOrDefault(g => g.Value == "Choices");
+        Skip.If(choices == null, "no mission rewards in this test's game data (make gamedata/raw_rewards.json with `zcassets rewards --json`)");
+
+        Headless.Run(() => vm.SelGroup = choices!);
+        Assert.NotEmpty(vm.VisibleAdd);
+        Assert.All(vm.VisibleAdd, c => Assert.True(c.HasSource));
+        Headless.Run(() => vm.Filter = "meditat");
+        var names = vm.VisibleAdd.Select(c => c.Name).ToList();
+        Assert.Contains(vm.VisibleAdd, c => c.SourceText.Contains("Jedi Meditation I:"));
+        Assert.Contains(vm.VisibleAdd, c => c.SourceText.Contains("Jedi Meditation II:"));
+        Assert.True(vm.VisibleAdd.Count >= 8, "both meditations offer two choices of two items each");
+        Headless.Run(() => vm.NeverOwnedOnly = true);
+        Assert.All(vm.VisibleAdd, c => Assert.True(c.NeverOwned));
+        rig.Shot("10c-armory-meditations");
+    }
+
+    [SkippableFact]
     public void Medbay_renders_slots_and_costs()
     {
         using var rig = Open("medbay");

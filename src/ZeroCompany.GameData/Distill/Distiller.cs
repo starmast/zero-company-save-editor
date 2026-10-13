@@ -14,6 +14,8 @@ public sealed class RawGameData
     public JObject Effects { get; set; } = new();
     public JObject Focus { get; set; } = new();
     public JObject Crisis { get; set; } = new();
+    /// <summary>Missions that give inventory items, from <c>RewardReader</c>: { recipe, title, tiers:[{ choices, items:[{ item, amount }] }] }.</summary>
+    public JArray Rewards { get; set; } = new();
     /// <summary>namespace -> key -> text from Game.locres.</summary>
     public Dictionary<string, Dictionary<string, string>> Strings { get; set; } = new();
 
@@ -28,6 +30,7 @@ public sealed class RawGameData
         raw.Effects = Read(Path.Combine(dir, "raw_effects.json")) as JObject ?? new();
         raw.Focus = Read(Path.Combine(dir, "raw_focus.json")) as JObject ?? new();
         raw.Crisis = Read(Path.Combine(dir, "raw_crisis.json")) as JObject ?? new();
+        raw.Rewards = Read(Path.Combine(dir, "raw_rewards.json")) as JArray ?? new();           // optional: made by `zcassets rewards --json`
         if (Read(Path.Combine(dir, "strings_en.json")) is JObject s)
             foreach (var ns in s.Properties())
                 raw.Strings[ns.Name] = ((JObject)ns.Value).Properties().ToDictionary(p => p.Name, p => (string?)p.Value ?? "");
@@ -62,7 +65,7 @@ public static class Distiller
             ExtractedUtc = DateTime.UtcNow,
             GameDir = gameDir,
             Upgrades = Upgrades(raw.Upgrades),
-            Items = Items(raw.Items),
+            Items = WithRewardSources(Items(raw.Items), raw.Rewards),
             Effects = Effects(raw.Effects),
             FocusThresholds = Thresholds(raw.Focus),
             CoilEffects = Crisis(raw.Crisis),
@@ -71,6 +74,27 @@ public static class Distiller
                               .OrderBy(kv => kv.Key, StringComparer.Ordinal)
                               .ToDictionary(kv => kv.Key, kv => GameDatabase.Plain(kv.Value)),
         };
+    }
+
+    /// <summary>Record, on each item, which missions (and which player choice) give it. Items the database does not know are skipped.</summary>
+    static Dictionary<string, ItemInfo> WithRewardSources(Dictionary<string, ItemInfo> items, JArray rewards)
+    {
+        foreach (var r in rewards)
+        {
+            var recipe = (string?)r["recipe"] ?? "";
+            var mission = (string?)r["title"] is { Length: > 0 } t ? t : recipe;
+            foreach (var tier in (r["tiers"] as JArray) ?? new JArray())
+            {
+                var choice = string.Join(" + ", ((tier["choices"] as JArray) ?? new JArray()).Select(c => (string?)c).Where(c => !string.IsNullOrEmpty(c)));
+                foreach (var it in (tier["items"] as JArray) ?? new JArray())
+                {
+                    if (!items.TryGetValue((string?)it["item"] ?? "", out var info)) continue;
+                    var src = new RewardSource { Recipe = recipe, Mission = mission, Choice = choice.Length > 0 ? choice : null };
+                    if (!info.Sources.Any(s => s.Recipe == src.Recipe && s.Choice == src.Choice)) info.Sources.Add(src);
+                }
+            }
+        }
+        return items;
     }
 
     /// <summary>key -> text; the first namespace (ordinal order) wins on duplicate keys.</summary>

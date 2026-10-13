@@ -46,6 +46,7 @@ public sealed class AddItemCardViewModel : ViewModelBase, IDisposable
         Kind = it.Kind;
         Owned = it.Owned == 0 ? "NEVER OWNED" : $"OWNED {it.Owned}";
         NeverOwned = it.Owned == 0;
+        SourceText = it.Source.Length > 0 ? "Reward: " + it.Source : "";
         Plus = new RelayCommand(() => _pending.SetItemAdd(_asset, _pending.ItemAddCount(_asset) + 1));
         Minus = new RelayCommand(() => _pending.SetItemAdd(_asset, _pending.ItemAddCount(_asset) - 1));
         _pending.Changed += OnChanged;
@@ -60,6 +61,9 @@ public sealed class AddItemCardViewModel : ViewModelBase, IDisposable
     public string Kind { get; }
     public string Owned { get; }
     public bool NeverOwned { get; }
+    /// <summary>"Reward: Jedi Meditation I: Meditate on the Past." when a mission gives this item.</summary>
+    public string SourceText { get; }
+    public bool HasSource => SourceText.Length > 0;
     public int Queued => _pending.ItemAddCount(_asset);
     public bool IsQueued => Queued > 0;
     public string QueuedText => IsQueued ? $"+{Queued}" : "0";

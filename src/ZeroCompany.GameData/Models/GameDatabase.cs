@@ -195,6 +195,8 @@ public sealed class ItemInfo
     public string Rarity { get; set; } = "";
     public int? Tier { get; set; }
     public List<string> Tags { get; set; } = new();
+    /// <summary>The missions that give this item (and the player choice that unlocks it); empty when it is only found or bought.</summary>
+    public List<RewardSource> Sources { get; set; } = new();
 }
 
 public sealed class EffectInfo
@@ -216,4 +218,15 @@ public sealed class CoilEffectInfo
 {
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
+}
+
+/// <summary>A mission that gives an item, and the choice that unlocks it (null when the mission always gives it).</summary>
+public sealed class RewardSource
+{
+    public string Recipe { get; set; } = "";
+    public string Mission { get; set; } = "";
+    public string? Choice { get; set; }
+
+    /// <summary>"Jedi Meditation I: Meditate on the Past." or just the mission name.</summary>
+    public string Text => Choice == null ? Mission : $"{Mission}: {Choice}";
 }

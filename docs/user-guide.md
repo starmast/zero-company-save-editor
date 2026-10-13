@@ -44,7 +44,11 @@ missions let you choose one of several utility items). It lists every utility it
 own entry, so two of an item are two entries. The list is long (about 150 items), so the tab has filters and a sort: **Show** (all,
 utility items, all weapon mods, or one mod slot such as Scope or Barrel), **Tier**, **Rarity**, **Never owned only**, **Queued only**,
 and **Sort by** name, tier, rarity or fewest owned; the search box matches every word you type, in any order, against the name,
-description, slot and rarity, and **Clear filters** resets it all. It needs the [game data](game-data.md) (the item list comes from there), and it
+description, slot, rarity and the mission that rewards it, and **Clear filters** resets it all. Items that missions give carry a
+*Reward: mission: choice* line, and **Show: Mission choice rewards** lists the ones tied to a choice. For the meditations, pick that
+filter plus **Never owned only** to see the pair you passed up in each Jedi Meditation (for example Serenity and Listen Through
+Chaos if you chose *Meditate on the Present*). The mission list comes from the game data, so extract it again after updating the
+editor (**Game data** tab) to get it. It needs the [game data](game-data.md) (the item list comes from there), and it
 can't add resources, which already have an editable amount. Try it on a copy first: it has not been tried in the game yet.
 
 ## Galaxy

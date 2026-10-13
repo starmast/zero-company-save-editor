@@ -1,7 +1,7 @@
 # Game data (optional)
 
 Out of the box the editor works from the save alone and shows internal names. With **game data** it shows real item names and
-descriptions, upgrade costs and durations, Den Level requirements, focus costs and Coil upgrade text.
+descriptions, upgrade costs and durations, Den Level requirements, focus costs, Coil upgrade text and which missions (and which choice) give each item.
 
 The editor reads **your own game install** for this, read-only. Nothing is written to the game, and the result stays on your
 computer. It is the game's own content, so never publish it (see the [disclaimer](../DISCLAIMER.md)).
