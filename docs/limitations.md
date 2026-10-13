@@ -1,7 +1,7 @@
 # Limitations
 
 - Built against the 2026 releases of the game. A game update can change the save format.
-- You can add utility items and weapon mods you never had (Armory -> Add items; not yet tried in the game), but not other items
+- You can add utility items and weapon mods you never had (Armory -> Add items; confirmed working in the game), but not other items
   or abilities, and combat stats (health, damage) aren't computed. Those need data this project hasn't been
   able to verify.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.

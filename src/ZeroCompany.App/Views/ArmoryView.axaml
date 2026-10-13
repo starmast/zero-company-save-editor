@@ -85,7 +85,7 @@
     </Border>
 
     <TextBlock Classes="mute small" TextWrapping="Wrap" IsVisible="{Binding ShowAdd}"
-               Text="Items the game defines, including ones you never got (for example the rewards of a meditation you did not choose). Search matches every word you type, in any order. + queues a new copy; Apply to save adds it to the inventory. The save keeps each copy as its own entry, so two of an item are two entries. Weapon mods and utility items only; resources already have an editable amount. Not yet tried in the game." />
+               Text="Items the game defines, including ones you never got (for example the rewards of a meditation you did not choose). Search matches every word you type, in any order. + queues a new copy; Apply to save adds it to the inventory. The save keeps each copy as its own entry, so two of an item are two entries. Weapon mods and utility items only; resources already have an editable amount." />
 
     <ItemsControl ItemsSource="{Binding VisibleAdd}" IsVisible="{Binding ShowAdd}">
       <ItemsControl.ItemsPanel>

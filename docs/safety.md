@@ -38,4 +38,4 @@ byte-identical files for every scripted edit. See [development.md](development.m
 
 The combat edits were checked against combat saves the game wrote: for example, switching a rescued civilian's team in a save
 from before the rescue gives the same team tag, flag and behaviour as the game wrote in the save from after it. Setting health and
-switching teams were also tried in the game; see [limitations.md](limitations.md#combat-tab) for what has and has not been.
+switching teams and adding inventory items were also tried in the game; see [limitations.md](limitations.md#combat-tab) for what has and has not been.

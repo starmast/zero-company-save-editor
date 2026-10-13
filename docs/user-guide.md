@@ -49,7 +49,7 @@ description, slot, rarity and the mission that rewards it, and **Clear filters**
 filter plus **Never owned only** to see the pair you passed up in each Jedi Meditation (for example Serenity and Listen Through
 Chaos if you chose *Meditate on the Present*). The mission list comes from the game data, so extract it again after updating the
 editor (**Game data** tab) to get it. It needs the [game data](game-data.md) (the item list comes from there), and it
-can't add resources, which already have an editable amount. Try it on a copy first: it has not been tried in the game yet.
+can't add resources, which already have an editable amount. Adding an item has been confirmed working in the game; as with any edit, try it on a copy first.
 
 ## Galaxy
 Influence, contacts and reward tier for each region. Below, the **Coil upgrades** the enemy has gained from failed Crisis
