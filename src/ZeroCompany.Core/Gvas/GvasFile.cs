@@ -452,6 +452,25 @@ public sealed class GvasFile
         return Adopt(buf);
     }
 
+    /// <summary>Insert raw bytes (whole properties) into a nested archive at <paramref name="pos"/>; sizes and the archive byte count follow. Returns a NEW GvasFile.</summary>
+    public GvasFile InsertInArchive(GvasNode archive, int pos, byte[] insert)
+    {
+        if (!archive.Nested || pos < archive.ValueOffset || pos > archive.End) throw new GvasException("insert position is outside the archive");
+        var buf = Splice(Data, pos, pos, insert);
+        Grow(buf, archive, insert.Length);
+        return Adopt(buf);
+    }
+
+    /// <summary>Remove <c>[start, end)</c> (whole properties) from a nested archive. Returns a NEW GvasFile.</summary>
+    public GvasFile RemoveFromArchive(GvasNode archive, int start, int end)
+    {
+        if (!archive.Nested || start < archive.ValueOffset || end > archive.End || end < start) throw new GvasException("range is outside the archive");
+        var buf = Splice(Data, start, end, Array.Empty<byte>());
+        Grow(buf, archive, -(end - start));
+        return Adopt(buf);
+    }
+
+
     /// <summary>Replace <c>data[start..end)</c> with <paramref name="insert"/>.</summary>
     static byte[] Splice(byte[] data, int start, int end, byte[] insert)
     {

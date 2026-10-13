@@ -8,6 +8,9 @@ public sealed class CombatView
     public List<ObjectiveView> Objectives { get; } = new();
     public List<TimerView> Timers { get; } = new();
     public ReinforcementsView Reinforcements { get; } = new();
+    public TurnStructureView? TurnStructure { get; set; }
+    /// <summary>A three-way battle: Enemy2 can be used here.</summary>
+    public bool ThreeWay { get; set; }
 }
 
 /// <summary>Reinforcements: waves already queued, the wave definitions the encounter draws from, and the trigger actors.</summary>
@@ -127,4 +130,11 @@ public sealed class UnitEffectView
     public FieldRef? Stacks { get; init; }
     /// <summary>Seconds left, or -1 for "until removed".</summary>
     public double? Duration { get; init; }
+}
+
+/// <summary>The mission's turn structure: standard (two sides) or three-way battle (a second hostile team takes its own turns).</summary>
+public sealed class TurnStructureView
+{
+    public string Current { get; init; } = "";
+    public List<(string Value, string Label)> Choices { get; } = new();
 }

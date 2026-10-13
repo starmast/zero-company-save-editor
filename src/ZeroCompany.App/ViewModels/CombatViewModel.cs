@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
+using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Save;
 using ZeroCompany.Core.Views;
 
@@ -31,6 +32,7 @@ public sealed class CombatViewModel : ScreenViewModel
         foreach (var u in _combat.Units) _cards.Add(Own(new UnitCardViewModel(_pending, fields, _combat, u, choices)));
         foreach (var o in _combat.Objectives) Objectives.Add(Own(new ObjectiveRowViewModel(_pending, fields, o)));
         foreach (var t in _combat.Timers) Timers.Add(new TimerRowViewModel(fields, t));
+        if (_combat.TurnStructure != null) Turn = Own(new TurnStructurePicker(_pending, _combat.TurnStructure));
         var rv = _combat.Reinforcements;
         foreach (var w in rv.Waves) Waves.Add(Own(new WaveRowViewModel(_pending, fields, rv, w)));
         foreach (var c in rv.Configs) Configs.Add(Own(new WaveConfigRowViewModel(_pending, fields, rv, c)));
@@ -67,6 +69,8 @@ public sealed class CombatViewModel : ScreenViewModel
 
     public string ActiveTab => _active;
     public bool ShowUnits => HasCombat && _active is "allies" or "enemies" or "civilians" or "other";
+    public TurnStructurePicker? Turn { get; }
+    public bool HasTurn => Turn != null;
     public bool ShowObjectives => HasCombat && _active == "objectives";
     public bool ShowTimers => ShowObjectives && Timers.Count > 0;
     public bool ShowReinforcements => HasCombat && _active == "reinforcements";
@@ -90,6 +94,6 @@ public sealed class CombatViewModel : ScreenViewModel
     }
 
     void SetAllHealth(string team, double health) =>
-        _pending.SetEdits(_combat!.Units.Where(u => u.Team == team && !u.Dead && u.Attr("Health") != null)
+        _pending.SetEdits(_combat!.Units.Where(u => (team == "Enemy" ? CombatOps.IsEnemyTeam(u.Team) : u.Team == team) && !u.Dead && u.Attr("Health") != null)
                                         .Select(u => (u.Attr("Health")!, health)));
 }

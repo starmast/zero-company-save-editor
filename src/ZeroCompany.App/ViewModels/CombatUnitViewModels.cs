@@ -49,6 +49,7 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     public UnitCardViewModel(PendingChanges pending, FieldSet fields, CombatView combat, CombatUnitView u, IReadOnlyList<EffectChoice> choices)
     {
         _pending = pending; _unit = u; _combat = combat;
+        TeamChoices = combat.ThreeWay ? new[] { "Ally", "Friendly AI", "Enemy", "Enemy2" } : new[] { "Ally", "Friendly AI", "Enemy" };
         Name = u.Name;
         Team = u.Team;
         Health = fields.Make(u.Attr("Health"), 0, "Health");
@@ -82,14 +83,14 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     static string Trim(string set) => set.StartsWith("BitReactor", StringComparison.Ordinal) ? set[10..].Replace("Set", "") : set;
 
     /// <summary>The sub-tab a unit of this team is listed under.</summary>
-    public static string TabOf(string team) => team switch { "Player" => "allies", "Enemy" => "enemies", "Civilian" => "civilians", _ => "other" };
+    public static string TabOf(string team) => team switch { "Player" => "allies", "Enemy" or "Enemy2" => "enemies", "Civilian" => "civilians", _ => "other" };
 
     public string Name { get; }
     public string Team { get; }
     public string TabKey => TabOf(Team);
 
-    /// <summary>Ally = player team (you control it). Friendly AI = the civilian team: friendly units the game controls (rescued VIPs, allied fighters).</summary>
-    public IReadOnlyList<string> TeamChoices { get; } = new[] { "Ally", "Friendly AI", "Enemy" };
+    /// <summary>Ally = player team (you control it). Enemy2 is offered only in three-way battles. Friendly AI = the civilian team: friendly units the game controls (rescued VIPs, allied fighters).</summary>
+    public IReadOnlyList<string> TeamChoices { get; }
     static string TeamLabel(string team) => team switch { "Player" => "Ally", "Civilian" => "Friendly AI", _ => team };
     static string TeamKey(string label) => label switch { "Ally" => "Player", "Friendly AI" => "Civilian", _ => label };
 

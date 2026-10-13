@@ -34,4 +34,6 @@ public sealed class CutInfo
     public Dictionary<int, bool> TriggerActive { get; } = new();
     /// <summary>Combat: expected objective status per EncounterLogicActorWrappers index.</summary>
     public Dictionary<int, string> ObjectiveStatuses { get; } = new();
+    /// <summary>Combat: expected turn structure after a change.</summary>
+    public string? TurnStructure { get; set; }
 }

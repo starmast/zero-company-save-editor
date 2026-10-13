@@ -320,6 +320,66 @@ public class CombatTests : IDisposable
     }
 
     [SkippableFact]
+    public void Enemy_and_Enemy2_switch_by_team_tag_alone_and_keep_enemy_behaviour()
+    {
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        var cb = svc.Current!.Combat!;
+        Assert.Equal(6, cb.Units.Count(u => u.Team == "Enemy2"));
+        var coil = cb.Units.First(u => u.Actor == "Char_Enemy_Coil_Enforcer_C_1");
+        var imp = cb.Units.First(u => u.Actor == "Char_Enemy_Imperial_Trooper_C_1");
+        var before = Gvas(path);
+        var impTagsBefore = CombatOps.UnitTags(before, imp.Index)!;
+
+        Act(svc, new SaveAction.SetUnitTeam(coil.Index, "Enemy2"), new SaveAction.SetUnitTeam(imp.Index, "Enemy"));
+        var g = Gvas(path);
+        Assert.Equal("Enemy2", CombatOps.TeamOf(g, coil.Index));
+        Assert.Equal("Enemy", CombatOps.TeamOf(g, imp.Index));
+        Assert.False(CombatOps.IsFriendly(g, coil.Index));
+        Assert.False(CombatOps.IsFriendly(g, imp.Index));
+        Assert.True(CombatOps.BehaviorMatches(g, coil.Index, "Enemy2"));
+        var ct = CombatOps.UnitTags(g, coil.Index)!;
+        Assert.Contains("BitReactor.Team.Enemy2", ct);
+        Assert.DoesNotContain("BitReactor.Team.Enemy", ct);
+        var it = CombatOps.UnitTags(g, imp.Index)!;
+        Assert.Contains("BitReactor.Team.Enemy", it);
+        Assert.DoesNotContain("BitReactor.Team.Enemy2", it);
+        Assert.Equal(impTagsBefore.Count, it.Count);
+        Assert.Equal(coil.Attr("Health")!.Value, svc.Current!.Combat!.Units[coil.Index].Attr("Health")!.Value);
+    }
+
+    [SkippableFact]
+    public void Turn_structure_can_be_added_and_removed_and_re_adding_it_reproduces_the_games_own_bytes()
+    {
+        // COMBAT BASE 3.1 saves the three-way structure itself: remove it, add it back, and the file must be byte-identical.
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        var original = SaveContainer.Load(File.ReadAllBytes(path)).Gvas;
+        Assert.Equal(CombatOps.TurnThreeWay, svc.Current!.Combat!.TurnStructure!.Current);
+        Act(svc, new SaveAction.SetTurnStructure(CombatOps.TurnStandard));
+        Assert.Equal(CombatOps.TurnStandard, CombatOps.TurnStructureOf(Gvas(path)));
+        Assert.True(SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length < original.Length);
+        Act(svc, new SaveAction.SetTurnStructure(CombatOps.TurnThreeWay));
+        Assert.Equal(original, SaveContainer.Load(File.ReadAllBytes(path)).Gvas);
+    }
+
+    [SkippableFact]
+    public void Enemy2_and_the_turn_structure_are_only_offered_in_three_way_battles()
+    {
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        Assert.True(svc.Current!.Combat!.ThreeWay);
+        Assert.NotNull(svc.Current.Combat.TurnStructure);
+
+        var (svc2, _, path2) = NewRig("Combat_Imperial.sav");               // Brentaal: an ordinary two-sided mission
+        var cb = svc2.Current!.Combat!;
+        Assert.False(cb.ThreeWay);
+        Assert.Null(cb.TurnStructure);
+        var before = File.ReadAllBytes(path2);
+        var unit = cb.Units.First(u => u.Team == "Enemy");
+        Assert.ThrowsAny<Exception>(() => Act(svc2, new SaveAction.SetUnitTeam(unit.Index, "Enemy2")));
+        Assert.Equal(before, File.ReadAllBytes(path2));
+        Act(svc2, new SaveAction.SetUnitTeam(unit.Index, "Civilian"));       // the other teams still work
+    }
+
+    [SkippableFact]
     public void Countdown_timer_is_listed_with_its_turns_left_and_what_it_fails_and_can_be_extended()
     {
         var (svc, _, _) = NewRig("Combat_Rescue_before.sav");

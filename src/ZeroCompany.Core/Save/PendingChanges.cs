@@ -19,6 +19,7 @@ public sealed class PendingChanges
     readonly Dictionary<string, string> _coil = new();
     readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
     readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
+    readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
     readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
     readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
     readonly Dictionary<int, string> _objectives = new();              // combat: objective index -> wanted status (only when it differs)
@@ -52,6 +53,7 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<(string Kind, int Logic, int Index), string> GroupChanges => _groups;
     public IReadOnlyDictionary<int, bool> TriggerChanges => _triggers;
     public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
+    public string? TurnChange => _turn.GetValueOrDefault(0);
     public IReadOnlyList<(int Unit, int FromUnit, int FromIndex)> EffectCopies => _effectCopies;
 
     public int Count => _edits.Count + ActionCount;
@@ -163,6 +165,9 @@ public sealed class PendingChanges
 
     public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
     public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
+    public void SetTurn(string wanted, string saved) { SetOrClear(_turn, 0, wanted, saved); Raise(); }
+    public string TurnWanted(string saved) => _turn.GetValueOrDefault(0, saved);
+
 
     public void SetTeam(int unit, string wanted, string saved) { SetOrClear(_teams, unit, wanted, saved); Raise(); }
     public string TeamWanted(int unit, string saved) => _teams.GetValueOrDefault(unit, saved);
@@ -254,6 +259,7 @@ public sealed class PendingChanges
             new SaveAction.SetTriggerActive(kv.Key, combat.Reinforcements.Triggers.First(t => t.Logic == kv.Key).Name, kv.Value)));
         @out.AddRange(_objectives.OrderBy(kv => kv.Key).Select(kv =>
             new SaveAction.SetObjectiveStatus(kv.Key, combat.Objectives.First(o => o.Index == kv.Key).Name, kv.Value)));
+        if (_turn.TryGetValue(0, out var tn)) @out.Add(new SaveAction.SetTurnStructure(tn));
         return @out;
     }
 
@@ -300,6 +306,7 @@ public sealed class PendingChanges
             foreach (var (u, t) in _teams.OrderBy(kv => kv.Key)) Add($"Team: {U(u)} -> {t} (experimental)");
             foreach (var (i, st) in _objectives.OrderBy(kv => kv.Key))
                 Add($"Objective {cb.Objectives.FirstOrDefault(o => o.Index == i)?.Title ?? "?"}: {st}");
+            if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
         }
         if (_coil.Count > 0)
         {

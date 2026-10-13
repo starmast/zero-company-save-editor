@@ -408,6 +408,9 @@ public sealed class SaveService
                 case SaveAction.SetSpawnGroup sg:
                     if (!seen.Add($"grp{sg.Kind}/{sg.Logic}/{sg.Index}")) throw new EditException("duplicate spawn group change");
                     return CombatOps.SetSpawnGroup(g, sg.Kind, sg.Logic, sg.Index, sg.Group, cut);
+                case SaveAction.SetTurnStructure ts:
+                    if (!seen.Add("turn")) throw new EditException("duplicate turn structure change");
+                    return CombatOps.SetTurnStructure(g, ts.Structure, cut);
                 case SaveAction.SetTriggerActive ta:
                     if (!seen.Add($"trg{ta.Logic}")) throw new EditException("duplicate trigger change");
                     return CombatOps.SetTriggerActive(g, ta.Logic, ta.Name, ta.Active, cut);
@@ -605,6 +608,8 @@ public sealed class SaveService
         foreach (var (logic, active) in cut.TriggerActive)
             if (CombatOps.TriggerActiveOf(g2, logic) != active)
                 throw new EditException("verification failed: a reinforcement trigger is not what was intended");
+        if (cut.TurnStructure != null && CombatOps.TurnStructureOf(g2) != cut.TurnStructure)
+            throw new EditException("verification failed: the turn structure is not what was intended");
         foreach (var (i, st) in cut.ObjectiveStatuses)
             if (CombatOps.ObjectiveStatus(g2, i) != st)
                 throw new EditException("verification failed: an objective's status is not what was intended");

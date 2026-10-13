@@ -6,7 +6,10 @@ namespace ZeroCompany.Core.Actions;
 // Teams: who a unit fights for, and the many places the save records it.
 public static partial class CombatOps
 {
-    public static readonly IReadOnlyList<string> Teams = new[] { "Player", "Enemy", "Civilian" };
+    public static readonly IReadOnlyList<string> Teams = new[] { "Player", "Enemy", "Enemy2", "Civilian" };
+
+    /// <summary>Hostile to the squad. Enemy2 is a second hostile team (e.g. Imperials beside the Coil) that also fights Enemy.</summary>
+    public static bool IsEnemyTeam(string? team) => team is "Enemy" or "Enemy2";
 
     static GvasNode? TeamNode(GvasFile g, int unit) => g.Child(g.Child(UnitAt(g, unit), "TeamTag"), "TagName");
 
@@ -127,13 +130,13 @@ public static partial class CombatOps
     }
 
     /// <summary>The living, native (enemy-behaviour) enemy closest to <paramref name="unit"/>, or -1.</summary>
-    static int NearestNativeEnemy(GvasFile g, int unit)
+    static int NearestNativeEnemy(GvasFile g, int unit, string team)
     {
         var me = XY(g, unit);
         int best = -1; double bd = double.MaxValue;
         for (int i = 0; i < Units(g).Count; i++)
         {
-            if (i == unit || TeamOf(g, i) != "Enemy" || IsDead(g, i) || !BehaviorMatches(g, i, "Enemy")) continue;
+            if (i == unit || TeamOf(g, i) != team || IsDead(g, i) || !BehaviorMatches(g, i, team)) continue;
             var p = XY(g, i);
             double d = me == null || p == null ? 0 : Math.Pow(me.Value.X - p.Value.X, 2) + Math.Pow(me.Value.Y - p.Value.Y, 2);
             if (d < bd) { bd = d; best = i; }
@@ -154,12 +157,13 @@ public static partial class CombatOps
     public static GvasFile SetTeam(GvasFile g, int unit, string team, CutInfo cut)
     {
         if (!Teams.Contains(team)) throw new GvasException($"unknown team '{team}'");
+        if (team == "Enemy2" && !IsThreeWay(g)) throw new GvasException("Enemy2 only works in three-way battles; the game puts those units back on Enemy in other missions");
         var tn = TeamNode(g, unit) ?? throw new GvasException("unit not found");
         var flag = g.Child(UnitAt(g, unit), "bIsFriendly") ?? throw new GvasException("unit has no friendly flag");
         string oldTag = g.GetStr(tn), oldTeam = After(oldTag, '.');
         string actor = ActorName(g, UnitAt(g, unit)!);
         string tag = "BitReactor.Team." + team;
-        bool friendly = team != "Enemy";                      // only used when the save has no unit on that team to copy
+        bool friendly = !IsEnemyTeam(team);                     // only used when the save has no unit on that team to copy
         for (int i = 0; i < Units(g).Count; i++)
             if (TeamOf(g, i) == team) { tag = TeamTagOf(g, i); friendly = IsFriendly(g, i); break; }
         cut.UnitTeams[unit] = (team, friendly);
@@ -171,7 +175,8 @@ public static partial class CombatOps
         // Becoming an enemy: a unit that never was one lacks what the enemy AI works from, so copy its AI area / faction tags
         // and action-point refresh values from the nearest native enemy. (A best guess; not verified to be enough.)
         List<string> aiTags = new();
-        int template = team == "Enemy" && oldTeam != "Enemy" ? NearestNativeEnemy(g, unit) : -1;
+        int template = IsEnemyTeam(team) && !IsEnemyTeam(oldTeam) ? NearestNativeEnemy(g, unit, team) : -1;
+        if (template < 0 && IsEnemyTeam(team) && !IsEnemyTeam(oldTeam)) template = NearestNativeEnemy(g, unit, team == "Enemy" ? "Enemy2" : "Enemy");
         if (template >= 0)
         {
             aiTags = (UnitTags(g, template) ?? new List<string>()).Where(IsAiTag).ToList();

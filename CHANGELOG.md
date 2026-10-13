@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Combat: a second hostile team, Enemy2 (for example Imperials fighting beside the Coil), offered only in three-way battles such as
+  Belly of the Beast. It is listed under Enemies, can be picked in a unit's team dropdown, and is included by "Enemies to 1 HP".
+  Swapping units between Enemy, Enemy2 and Friendly AI is confirmed working in the game. In ordinary missions the game puts Enemy2
+  units back on Enemy when it loads the save, so the option is hidden there and the editor refuses to set it.
+- Combat: in a three-way battle the Reinforcements tab can switch the turn structure to standard and back. Trying to add the
+  three-way structure to an ordinary mission did not work (the game loaded it as empty), so it is not offered there.
+
 ### Security
 - The Oodle library that the game-data extractor downloads is checked against a pinned SHA-256 before it is loaded; anything else
   is deleted and refused. A copy you place yourself is not checked.

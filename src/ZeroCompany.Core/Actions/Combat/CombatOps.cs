@@ -145,6 +145,7 @@ public static partial class CombatOps
         BuildObjectives(g, view);
         BuildTimers(g, view);
         BuildReinforcements(g, view);
+        BuildTurnStructure(g, view);
         return view;
     }
 

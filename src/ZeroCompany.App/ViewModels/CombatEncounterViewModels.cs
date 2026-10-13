@@ -173,3 +173,29 @@ public sealed class ObjectiveRowViewModel : ViewModelBase, IDisposable
 
     public void Dispose() { _pending.Changed -= OnChanged; _toggle.Dispose(); }
 }
+
+/// <summary>The mission's turn structure (standard / three-way): a drop-down bound to the pending store.</summary>
+public sealed class TurnStructurePicker : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _p;
+    readonly string _saved;
+
+    public TurnStructurePicker(PendingChanges p, TurnStructureView v)
+    {
+        _p = p; _saved = v.Current;
+        Choices = v.Choices.Select(c => new GroupChoice(c.Value, c.Label)).ToList();
+        p.Changed += OnChanged;
+    }
+
+    public IReadOnlyList<GroupChoice> Choices { get; }
+
+    public GroupChoice? Selected
+    {
+        get => Choices.FirstOrDefault(c => c.Value == _p.TurnWanted(_saved));
+        set { if (value != null) _p.SetTurn(value.Value, _saved); }
+    }
+
+    public bool IsChanged => _p.TurnChange != null;
+    void OnChanged() { OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(IsChanged)); }
+    public void Dispose() => _p.Changed -= OnChanged;
+}
