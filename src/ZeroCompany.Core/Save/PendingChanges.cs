@@ -24,6 +24,7 @@ public sealed class PendingChanges
     readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
     readonly Dictionary<string, int> _itemAdds = new();                                   // armory: item asset name -> copies to add
     readonly SortedSet<string> _sceneryRestores = new(StringComparer.Ordinal);               // combat: destroyed props (full object paths) to bring back
+    readonly SortedSet<string> _sceneryDestroys = new(StringComparer.Ordinal);                // combat: intact or damaged props (full object paths) to wreck
     readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
     readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
     readonly Dictionary<int, string> _objectives = new();              // combat: objective index -> wanted status (only when it differs)
@@ -60,6 +61,7 @@ public sealed class PendingChanges
     public string? TurnChange => _turn.GetValueOrDefault(0);
     public IReadOnlyDictionary<string, int> ItemAdds => _itemAdds;
     public IReadOnlySet<string> SceneryRestores => _sceneryRestores;
+    public IReadOnlySet<string> SceneryDestroys => _sceneryDestroys;
     public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
     public IReadOnlyList<(int Unit, int FromUnit, int FromIndex)> EffectCopies => _effectCopies;
 
@@ -67,7 +69,7 @@ public sealed class PendingChanges
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count + _sceneryRestores.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -121,7 +123,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _sceneryRestores.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -184,9 +186,15 @@ public sealed class PendingChanges
     public int ItemAddCount(string asset) => _itemAdds.GetValueOrDefault(asset);
 
     /// <summary>Queue or unqueue bringing one destroyed prop back.</summary>
-    public void ToggleSceneryRestore(string actor) { if (!_sceneryRestores.Remove(actor)) _sceneryRestores.Add(actor); Raise(); }
-    /// <summary>Queue bringing all of <paramref name="actors"/> back (what the "Restore scenery" button does).</summary>
-    public void QueueSceneryRestores(IEnumerable<string> actors) { foreach (var a in actors) _sceneryRestores.Add(a); Raise(); }
+    // A prop is either to be restored, to be destroyed or left alone: queuing one cancels the other.
+    public void ToggleSceneryRestore(string actor) { _sceneryDestroys.Remove(actor); if (!_sceneryRestores.Remove(actor)) _sceneryRestores.Add(actor); Raise(); }
+    public void ToggleSceneryDestroy(string actor) { _sceneryRestores.Remove(actor); if (!_sceneryDestroys.Remove(actor)) _sceneryDestroys.Add(actor); Raise(); }
+    /// <summary>Queue bringing all of <paramref name="actors"/> back (the "Restore scenery" button, "Restore all shown").</summary>
+    public void QueueSceneryRestores(IEnumerable<string> actors) { foreach (var a in actors) { _sceneryDestroys.Remove(a); _sceneryRestores.Add(a); } Raise(); }
+    /// <summary>Queue wrecking all of <paramref name="actors"/> ("Destroy all shown").</summary>
+    public void QueueSceneryDestroys(IEnumerable<string> actors) { foreach (var a in actors) { _sceneryRestores.Remove(a); _sceneryDestroys.Add(a); } Raise(); }
+    /// <summary>Drop every queued scenery restore and destroy.</summary>
+    public void ClearScenery() { _sceneryRestores.Clear(); _sceneryDestroys.Clear(); Raise(); }
 
     public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
     public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
@@ -279,6 +287,7 @@ public sealed class PendingChanges
         @out.AddRange(_groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Logic).ThenBy(kv => kv.Key.Index)
             .Select(kv => new SaveAction.SetSpawnGroup(kv.Key.Kind, kv.Key.Logic, kv.Key.Index, kv.Value)));
         if (_sceneryRestores.Count > 0) @out.Add(new SaveAction.RestoreScenery(_sceneryRestores.ToList()));
+        if (_sceneryDestroys.Count > 0) @out.Add(new SaveAction.DestroyScenery(_sceneryDestroys.ToList()));
         if (_spawnSet.TryGetValue(0, out var ss)) @out.Add(new SaveAction.SetEnemySpawnSet(ss));
         if (_turn.TryGetValue(0, out var tn)) @out.Add(new SaveAction.SetTurnStructure(tn));
         @out.AddRange(_triggers.OrderBy(kv => kv.Key).Select(kv =>
@@ -329,6 +338,7 @@ public sealed class PendingChanges
             foreach (var (k, grp) in _groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Index))
                 Add($"Reinforcement {(k.Kind == "wave" ? "wave" : "definition")} {k.Index + 1}: group {CombatOps.GroupLabel(grp)}");
             if (_sceneryRestores.Count > 0) Add($"Restore {_sceneryRestores.Count} destroyed or damaged scenery prop{(_sceneryRestores.Count == 1 ? "" : "s")}");
+            if (_sceneryDestroys.Count > 0) Add($"Destroy {_sceneryDestroys.Count} scenery prop{(_sceneryDestroys.Count == 1 ? "" : "s")}");
             if (_spawnSet.TryGetValue(0, out var sset)) Add($"Enemy spawn set: {CombatOps.SpawnSetLabel(sset)}");
             if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
             foreach (var (logic, on) in _triggers.OrderBy(kv => kv.Key))

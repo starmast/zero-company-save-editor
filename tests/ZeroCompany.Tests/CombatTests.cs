@@ -521,6 +521,87 @@ public class CombatTests : IDisposable
         Assert.Equal(cb.DestroyedProps.OrderBy(x => x, StringComparer.Ordinal), action.Actors);
         Assert.Contains(p.Describe(svc.Current!), l => l.Text == "Restore 4 destroyed or damaged scenery props");
     }
+
+    [SkippableFact]
+    public void Every_tracked_prop_is_listed_with_its_condition_and_only_hit_props_have_health()
+    {
+        var (svc, _, _) = NewRig("Combat_Scenery.sav");
+        var props = svc.Current!.Combat!.Props;
+        Assert.True(props.Count > 300, $"a real level has hundreds of props, got {props.Count}");
+        Assert.Equal(4, props.Count(p => p.Condition == "Destroyed"));
+        Assert.Equal(props.Count - 4, props.Count(p => p.Condition == "Pristine"));
+        Assert.All(props.Where(p => p.Condition == "Destroyed"), p => Assert.NotNull(p.Health));
+        Assert.All(props.Where(p => p.Condition == "Pristine"), p => Assert.Null(p.Health));
+        Assert.All(props, p => { Assert.NotEmpty(p.Title); Assert.NotEmpty(p.Area); Assert.Contains(":PersistentLevel.", p.Actor); });
+    }
+
+    [SkippableFact]
+    public void Destroying_intact_props_rewrites_their_records_and_the_whole_save_still_verifies()
+    {
+        var (svc, _, path) = NewRig("Combat_Scenery.sav");
+        var props = svc.Current!.Combat!.Props;
+        var pick = props.Where(p => p.Condition == "Pristine").Take(5).Select(p => p.Actor).ToList();
+        var before = CombatOps.PropConditions(Gvas(path));
+        var lengthBefore = SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length;
+
+        Act(svc, new SaveAction.DestroyScenery(pick));
+
+        var after = CombatOps.PropConditions(Gvas(path));
+        Assert.Equal(before.Count, after.Count);
+        Assert.All(pick, a => Assert.Equal("Destroyed", after[a]));
+        Assert.All(before.Keys.Except(pick), a => Assert.Equal(before[a], after[a]));                    // nothing else changed
+        Assert.Equal(lengthBefore + 5, SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length);          // a destroyed record is one byte longer
+        Assert.Equal(9, svc.Current!.Combat!.WreckedProps.Count);                                        // the four already wrecked, plus five
+    }
+
+    [SkippableFact]
+    public void Destroy_and_restore_can_be_applied_together_and_a_prop_can_make_the_round_trip()
+    {
+        var (svc, _, path) = NewRig("Combat_Scenery.sav");
+        var cb = svc.Current!.Combat!;
+        var intact = cb.Props.Where(p => p.Condition == "Pristine").Take(3).Select(p => p.Actor).ToList();
+        Act(svc, new SaveAction.RestoreScenery(cb.DestroyedProps), new SaveAction.DestroyScenery(intact));
+        var c = CombatOps.PropConditions(Gvas(path));
+        Assert.All(intact, a => Assert.Equal("Destroyed", c[a]));
+        Assert.Equal(3, c.Values.Count(v => v == "Destroyed"));                                          // the original four came back, three new ones went
+
+        Act(svc, new SaveAction.RestoreScenery(intact));                                                 // and back again
+        Assert.DoesNotContain("Destroyed", CombatOps.PropConditions(Gvas(path)).Values);
+    }
+
+    [SkippableFact]
+    public void Destroying_an_already_destroyed_prop_or_one_not_in_the_save_is_refused()
+    {
+        var (svc, _, path) = NewRig("Combat_Scenery.sav");
+        var cb = svc.Current!.Combat!;
+        var before = File.ReadAllBytes(path);
+        Assert.ThrowsAny<Exception>(() => Act(svc, new SaveAction.DestroyScenery(new[] { cb.DestroyedProps[0] })));
+        Assert.ThrowsAny<Exception>(() => Act(svc, new SaveAction.DestroyScenery(new[] { "/Game/Nope.Nope:PersistentLevel.BP_Nope_C_0" })));
+        Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [SkippableFact]
+    public void Queued_destroys_and_restores_exclude_each_other_and_become_actions()
+    {
+        var (svc, _, _) = NewRig("Combat_Scenery.sav");
+        var cb = svc.Current!.Combat!;
+        var a = cb.Props.First(p => p.Condition == "Pristine").Actor; var b = cb.DestroyedProps[0];
+        var p = new PendingChanges();
+        p.ToggleSceneryDestroy(a); p.ToggleSceneryRestore(b);
+        Assert.Equal(2, p.ActionCount);
+        p.ToggleSceneryRestore(a);                                                                       // queuing the other way cancels the destroy
+        Assert.DoesNotContain(a, p.SceneryDestroys);
+        Assert.Contains(a, p.SceneryRestores);
+        p.ToggleSceneryDestroy(a);
+        var acts = p.BuildCombatActions(cb);
+        Assert.Equal(new[] { a }, Assert.IsType<SaveAction.DestroyScenery>(acts.Single(x => x is SaveAction.DestroyScenery)).Actors);
+        Assert.Equal(new[] { b }, Assert.IsType<SaveAction.RestoreScenery>(acts.Single(x => x is SaveAction.RestoreScenery)).Actors);
+        var text = p.Describe(svc.Current!).Select(l => l.Text).ToList();
+        Assert.Contains("Destroy 1 scenery prop", text);
+        Assert.Contains("Restore 1 destroyed or damaged scenery prop", text);
+        p.ClearScenery();
+        Assert.Equal(0, p.ActionCount);
+    }
     [SkippableFact]
     public void Countdown_timer_is_listed_with_its_turns_left_and_what_it_fails_and_can_be_extended()
     {

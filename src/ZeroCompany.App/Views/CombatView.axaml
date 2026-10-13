@@ -294,27 +294,50 @@
       </Border>
 
       <Border Classes="panel" IsVisible="{Binding ShowDestructibles}">
-        <StackPanel>
+        <StackPanel DataContext="{Binding Scenery}" x:DataType="vm:SceneryPanelViewModel">
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="DESTRUCTIBLE SCENERY" /></Border>
-          <ItemsControl ItemsSource="{Binding Destructibles}">
+          <Border Padding="14,10">
+            <StackPanel Spacing="8">
+              <WrapPanel>
+                <TextBox Width="260" Margin="0,0,12,6" PlaceholderText="Search props…" Text="{Binding Search, Mode=TwoWay}" />
+                <ComboBox Width="170" Margin="0,0,12,6" ItemsSource="{Binding ConditionChoices}" SelectedItem="{Binding SelCondition, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <CheckBox Margin="0,0,12,6" Content="Queued only" IsChecked="{Binding QueuedOnly, Mode=TwoWay}" />
+                <Button Margin="0,0,8,6" Content="Clear filters" Command="{Binding ClearFilters}" />
+              </WrapPanel>
+              <WrapPanel>
+                <Button Margin="0,0,8,6" Content="{Binding DestroyShownText}" Command="{Binding DestroyShown}" />
+                <Button Margin="0,0,8,6" Content="{Binding RestoreShownText}" Command="{Binding RestoreShown}" />
+                <Button Margin="0,0,8,6" Content="Clear queued" Command="{Binding ClearQueued}" />
+              </WrapPanel>
+              <TextBlock Classes="mute" Text="{Binding Summary}" TextWrapping="Wrap" />
+              <TextBlock Classes="mute" Text="Nothing matches." IsVisible="{Binding IsEmpty}" />
+            </StackPanel>
+          </Border>
+          <ItemsControl ItemsSource="{Binding Visible}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:DestructibleRowViewModel">
+              <DataTemplate x:DataType="vm:PropRowViewModel">
                 <Border Classes="hairline" Padding="14,6">
-                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                    <TextBlock Classes="title" FontSize="16" Text="{Binding Title}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Classes="mute" Text="{Binding State}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                    <Panel Grid.Column="2" Margin="0,0,6,0" VerticalAlignment="Center">
-                      <c:NumField DataContext="{Binding Health}" Width="80" />
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock Classes="title" FontSize="16" Text="{Binding Title}" />
+                      <TextBlock Classes="mute small" Text="{Binding Area}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Classes="mute" Text="{Binding ConditionText}" Margin="0,0,12,0" Width="70" VerticalAlignment="Center" />
+                    <Panel Grid.Column="2" Margin="0,0,6,0" VerticalAlignment="Center" IsVisible="{Binding HasHealth}">
+                      <c:NumField DataContext="{Binding Health}" Width="70" />
                     </Panel>
                     <TextBlock Grid.Column="3" Classes="mute" Text="{Binding Max}" Width="48" VerticalAlignment="Center" />
-                    <ContentControl Grid.Column="4" Content="{Binding Restore}" IsVisible="{Binding CanRestore}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                    <ContentControl Grid.Column="4" Content="{Binding Destroy}" IsVisible="{Binding CanDestroy}" Margin="8,0,0,0" MinWidth="110" VerticalAlignment="Center" />
+                    <ContentControl Grid.Column="5" Content="{Binding Restore}" IsVisible="{Binding CanRestore}" Margin="8,0,0,0" MinWidth="110" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Cover and props that can be shot apart. A destroyed prop stays wrecked when the save loads because the save marks it destroyed, not because of its health, so Restore (or the Restore scenery button for all of them) changes that mark as well as the health. Damaged props that are still standing only need their health back. Not yet tried in the game." />
+                     Text="Every cover, crate, railing and other prop the save tracks (hundreds in a real level), not only the ones already hit. Destroy wrecks a prop when the save loads; Restore brings a destroyed or damaged one back. The save marks a prop destroyed separately from its health, so changing health alone does not wreck or rebuild it. The buttons act on every prop the search and filters match. Not yet tried in the game." />
         </StackPanel>
       </Border>
 

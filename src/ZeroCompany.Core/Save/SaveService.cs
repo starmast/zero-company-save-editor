@@ -416,6 +416,9 @@ public sealed class SaveService
                 case SaveAction.SetSpawnGroup sg:
                     if (!seen.Add($"grp{sg.Kind}/{sg.Logic}/{sg.Index}")) throw new EditException("duplicate spawn group change");
                     return CombatOps.SetSpawnGroup(g, sg.Kind, sg.Logic, sg.Index, sg.Group, cut);
+                case SaveAction.DestroyScenery ds:
+                    if (!seen.Add("scenerydestroy")) throw new EditException("duplicate scenery action");
+                    return CombatOps.DestroyScenery(g, ds.Actors, cut);
                 case SaveAction.RestoreScenery rs:
                     if (!seen.Add("scenery")) throw new EditException("duplicate scenery action");
                     return CombatOps.RestoreScenery(g, rs.Actors, cut);
@@ -571,17 +574,19 @@ public sealed class SaveService
                 if (metaPer.TryGetValue(gid, out var ms) && ms != null && ms != size)
                     throw new EditException("verification failed: a character's recorded size is out of sync");
         }
-        if (cut.RestoredScenery.Count > 0)
+        if (cut.SceneryStates.Count > 0)
         {
-            var before = CombatOps.WreckedActors(old).ToHashSet();
-            var after = CombatOps.WreckedActors(g2).ToHashSet();
-            if (!after.SetEquals(before.Except(cut.RestoredScenery)))
-                throw new EditException("verification failed: the destroyed and damaged props are not what was intended");
-            foreach (var actor in cut.RestoredScenery)
+            // every tracked prop must end up as it was, except the ones changed on purpose, which must be in their intended state
+            var before = CombatOps.PropConditions(old); var after = CombatOps.PropConditions(g2);
+            if (before.Count != after.Count) throw new EditException("verification failed: the number of scenery props changed");
+            foreach (var (actor, was) in before)
             {
-                if (!CombatOps.IsPristine(g2, actor)) throw new EditException("verification failed: a restored prop is not intact");
-                if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != h.Max) throw new EditException("verification failed: a restored prop is not at full health");
+                var want = cut.SceneryStates.TryGetValue(actor, out var s) ? s : was;
+                if (!after.TryGetValue(actor, out var now) || now != want) throw new EditException("verification failed: a scenery prop is not in the intended state");
             }
+            foreach (var (actor, state) in cut.SceneryStates)
+                if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
+                    throw new EditException("verification failed: a scenery prop's health does not match its state");
         }
         if (cut.AddedItems.Count > 0)
         {

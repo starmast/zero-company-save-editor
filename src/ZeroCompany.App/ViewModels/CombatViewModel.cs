@@ -35,7 +35,7 @@ public sealed class CombatViewModel : ScreenViewModel
         if (_combat.SpawnSet != null) SpawnSet = Own(new SpawnSetPicker(_pending, _combat.SpawnSet));
         if (_combat.TurnStructure != null) Turn = Own(new TurnStructurePicker(_pending, _combat.TurnStructure));
         foreach (var h in _combat.Hazards) Hazards.Add(new HazardRowViewModel(fields, h));
-        foreach (var d in _combat.Destructibles) Destructibles.Add(Own(new DestructibleRowViewModel(_pending, fields, d)));
+        if (_combat.Props.Count > 0) Scenery = Own(new SceneryPanelViewModel(_pending, fields, _combat.Props));
         var rv = _combat.Reinforcements;
         foreach (var w in rv.Waves) Waves.Add(Own(new WaveRowViewModel(_pending, fields, rv, w)));
         foreach (var c in rv.Configs) Configs.Add(Own(new WaveConfigRowViewModel(_pending, fields, rv, c)));
@@ -46,7 +46,7 @@ public sealed class CombatViewModel : ScreenViewModel
             Tab(key, label, _cards.Count(c => c.TabKey == key));
         Tab("objectives", "Objectives", Objectives.Count);
         Tab("reinforcements", "Reinforcements", rv.Waves.Count + rv.Configs.Count + rv.Triggers.Count + (SpawnSet != null ? 1 : 0) + (Turn != null ? 1 : 0));
-        Tab("scenery", "Scenery", Hazards.Count + Destructibles.Count);
+        Tab("scenery", "Scenery", Hazards.Count + _combat.Props.Count);
         var want = main.Memory.CombatTab;
         _active = Tabs.Any(t => t.Key == want) ? want : Tabs.FirstOrDefault()?.Key ?? "allies";
         Summary = string.IsNullOrWhiteSpace(_combat.Title) ? "Combat autosave" : _combat.Title;
@@ -70,7 +70,8 @@ public sealed class CombatViewModel : ScreenViewModel
     public ObservableCollection<ObjectiveRowViewModel> Objectives { get; } = new();
     public ObservableCollection<TimerRowViewModel> Timers { get; } = new();
     public ObservableCollection<HazardRowViewModel> Hazards { get; } = new();
-    public ObservableCollection<DestructibleRowViewModel> Destructibles { get; } = new();
+    /// <summary>The searchable list of every scenery prop, or null when the save tracks none.</summary>
+    public SceneryPanelViewModel? Scenery { get; }
     public ObservableCollection<WaveRowViewModel> Waves { get; } = new();
     public ObservableCollection<WaveConfigRowViewModel> Configs { get; } = new();
     public ObservableCollection<TriggerRowViewModel> Triggers { get; } = new();
@@ -92,7 +93,7 @@ public sealed class CombatViewModel : ScreenViewModel
     public bool ShowSpawnSet => ShowReinforcements && (SpawnSet != null || Turn != null);
     public bool ShowScenery => HasCombat && _active == "scenery";
     public bool ShowHazards => ShowScenery && Hazards.Count > 0;
-    public bool ShowDestructibles => ShowScenery && Destructibles.Count > 0;
+    public bool ShowDestructibles => ShowScenery && Scenery != null;
     public bool ShowAllyActions => _active == "allies";
     public bool ShowEnemyActions => _active == "enemies";
 

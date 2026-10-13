@@ -84,9 +84,13 @@ actions for that tab.
   other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. The threat tier is only
   saved in fresh fights; it has been missing from saves made after loading a save and playing on (the game seems to drop it), and
   then there is nothing to edit. For later waves use the wave definitions instead.
-- **Scenery** - the fire zones (turns left; they start near 9999, so they effectively never burn out) and every destructible prop
-  with its health. A prop that is **Destroyed** or **Damaged** has a **Restore** button, and **Restore scenery** does all of them: it
-  rewrites the prop's state mark in the save as well as its health, because health alone does not bring a wreck back.
+- **Scenery** - the fire zones (turns left; they start near 9999, so they effectively never burn out) and **every destructible prop**
+  the save tracks, not only the ones already hit (a real level has several hundred, so only the first 150 matches are drawn). Search by
+  name, area or condition (every word must match), filter by *Intact / Damaged / Destroyed* or by what you have queued, and use
+  **Destroy** or **Restore** on a prop. **Destroy all N shown** and **Restore all N shown** act on every prop the search and filters
+  match (not only the 150 on screen), so you can wreck all the cover in one area, or everything. A prop is wrecked or rebuilt by a state
+  mark in its save record, not by its health, so these rewrite that mark (and set health to 0 or full where the prop has a health
+  entry). The **Restore scenery** button in the header restores every destroyed or damaged prop.
 
 The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
 pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.

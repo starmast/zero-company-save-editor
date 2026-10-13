@@ -15,6 +15,8 @@ public sealed class CombatView
     public List<HazardView> Hazards { get; } = new();
     public List<DestructibleView> Destructibles { get; } = new();
     /// <summary>Full object paths of every prop the save marks as destroyed (with or without a health entry).</summary>
+    /// <summary>Every prop the save tracks with a state tag, whatever its condition.</summary>
+    public List<PropView> Props { get; } = new();
     public List<string> DestroyedProps { get; } = new();
     /// <summary>Full object paths of every prop that is destroyed or damaged: what the "Restore scenery" button brings back.</summary>
     public List<string> WreckedProps { get; } = new();
@@ -178,4 +180,19 @@ public sealed class TurnStructureView
 {
     public string Current { get; init; } = "";
     public List<(string Value, string Label)> Choices { get; } = new();
+}
+
+/// <summary>A scenery prop the save tracks (every one with a state tag, not only the damaged ones that have a health entry).</summary>
+public sealed class PropView
+{
+    /// <summary>The full object path, which is how the save and the actions refer to the prop.</summary>
+    public string Actor { get; init; } = "";
+    public string Title { get; init; } = "";
+    /// <summary>The sub-level the prop sits in, e.g. HM_Cly_020_Gameplay_Cover (useful for searching).</summary>
+    public string Area { get; init; } = "";
+    /// <summary>"Pristine", "Damaged" or "Destroyed".</summary>
+    public string Condition { get; init; } = "";
+    /// <summary>Its health entry, when the game has one (it only has one for props that were hit).</summary>
+    public FieldRef? Health { get; init; }
+    public FieldRef? MaxHealth { get; init; }
 }

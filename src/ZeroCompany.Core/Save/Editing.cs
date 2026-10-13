@@ -45,6 +45,8 @@ public abstract record SaveAction
     /// <summary>Swap the mission's enemy threat tier (EnemySelectedSpawnSet) for another known tier of the same faction.</summary>
     /// <summary>Bring destroyed scenery props (by full object path) back: their actor record goes from Destroyed to Pristine and their health to maximum.</summary>
     public sealed record RestoreScenery(IReadOnlyList<string> Actors) : CombatAction;
+    /// <summary>Wreck intact or damaged scenery props (by full object path): their actor record goes to Destroyed (and health to 0 where a health entry exists).</summary>
+    public sealed record DestroyScenery(IReadOnlyList<string> Actors) : CombatAction;
     public sealed record SetEnemySpawnSet(string Set) : CombatAction;
     /// <summary>Experimental: standard or three-way turn structure (Enemy2 needs the three-way one to stay a separate team).</summary>
     public sealed record SetTurnStructure(string Structure) : CombatAction;

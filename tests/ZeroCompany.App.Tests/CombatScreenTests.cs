@@ -57,6 +57,50 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void Scenery_lists_every_prop_with_search_filters_and_destroy_or_restore_for_what_is_shown()
+    {
+        using var rig = OpenCombat();
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "scenery").Command.Execute(null));
+        var sc = Assert.IsType<SceneryPanelViewModel>(vm.Scenery);
+        Assert.True(vm.ShowDestructibles);
+        Assert.True(sc.MatchCount > 150, $"a real level has hundreds of props, got {sc.MatchCount}");
+        Assert.Equal(SceneryPanelViewModel.MaxShown, sc.Visible.Count);                         // only a screenful is drawn
+        Assert.Contains($"Showing {SceneryPanelViewModel.MaxShown} of {sc.MatchCount}", sc.Summary);
+        rig.Shot("21-combat-scenery");
+
+        Headless.Run(() => sc.Search = "cover");
+        Assert.InRange(sc.MatchCount, 1, sc.MatchCount);
+        Assert.All(sc.Visible, r => Assert.Contains("cover", (r.Title + r.Area).ToLowerInvariant()));
+        int cover = sc.MatchCount;
+
+        var pending = rig.Main.Session.Pending;
+        var row = sc.Visible.First(r => r.CanDestroy);
+        Headless.Run(() => row.Destroy!.Command.Execute(null));
+        Assert.Single(pending.SceneryDestroys);
+        Assert.Contains("1 queued to destroy", sc.Summary);
+        Headless.Run(() => row.Destroy!.Command.Execute(null));                                 // undo
+        Assert.Empty(pending.SceneryDestroys);
+
+        Headless.Run(() => sc.DestroyShown.Execute(null));                                      // every match, not just the drawn rows
+        Assert.Equal(sc.MatchCount, pending.SceneryDestroys.Count);
+        Assert.Equal(cover, pending.SceneryDestroys.Count);
+        Headless.Run(() => sc.QueuedOnly = true);
+        Assert.Equal(cover, sc.MatchCount);
+        Headless.Run(() => sc.ClearQueued.Execute(null));
+        Assert.Empty(pending.SceneryDestroys);
+        Assert.Equal(0, sc.MatchCount);                                                        // nothing is queued any more
+        Headless.Run(() => sc.ClearFilters.Execute(null));
+        Assert.True(sc.MatchCount > 150);
+        Assert.False(sc.QueuedOnly);
+
+        var destroyed = sc.ConditionChoices.First(c => c.Value == "Destroyed");
+        Headless.Run(() => sc.SelCondition = destroyed);
+        Assert.All(sc.Visible, r => Assert.Equal("Destroyed", r.Condition));
+        Assert.All(sc.Visible, r => Assert.False(r.CanDestroy));                                // already wrecked: only Restore is offered
+    }
+
+    [SkippableFact]
     public void Objectives_tab_lists_objectives_and_queues_a_status_change()
     {
         using var rig = OpenCombat();

@@ -1,5 +1,6 @@
 using System.Text;
 using ZeroCompany.Core.Gvas;
+using ZeroCompany.Core.Model;
 using ZeroCompany.Core.Views;
 
 namespace ZeroCompany.Core.Actions;
@@ -45,6 +46,15 @@ public static partial class CombatOps
             if (hp == null || max == null) continue;
             var condition = records.TryGetValue(actor, out var rec) ? Condition(g, rec) : "";
             view.Destructibles.Add(new DestructibleView { Name = name, Title = SceneryTitle(name), Health = hp, MaxHealth = max, Actor = actor, Condition = condition });
+        }
+        var withHealth = view.Destructibles.ToDictionary(d => d.Actor, d => d, StringComparer.Ordinal);
+        foreach (var (actor, rec) in records.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            var condition = Condition(g, rec);
+            if (condition.Length == 0) continue;
+            var name = After(actor, (char)46);
+            withHealth.TryGetValue(actor, out var hd);
+            view.Props.Add(new PropView { Actor = actor, Title = SceneryTitle(name), Area = Area(actor), Condition = condition, Health = hd?.Health, MaxHealth = hd?.MaxHealth });
         }
         view.DestroyedProps.AddRange(records.Where(kv => IsTag(g, kv.Value, DestroyedTag)).Select(kv => kv.Key).OrderBy(k => k, StringComparer.Ordinal));
         view.WreckedProps.AddRange(WreckedActors(g));
@@ -134,22 +144,44 @@ public static partial class CombatOps
     }
 
     /// <summary>
-    /// Bring destroyed props back: each record goes from Destroyed to Pristine (written the way the game writes an intact prop, one
-    /// byte shorter for a destroyed one) and its health, if it has an entry, back to its maximum. A prop that is neither destroyed nor damaged is refused (a stale list).
+    /// Bring props back: each destroyed or damaged prop's record is rewritten as an intact one (the way the game writes it; a destroyed
+    /// one gets one byte shorter) and its health, if it has an entry, goes back to its maximum. An intact prop is refused (a stale list).
     /// </summary>
     public static GvasFile RestoreScenery(GvasFile g, IReadOnlyList<string> actors, CutInfo cut)
     {
         foreach (var actor in actors.Distinct())
         {
-            if (!ActorRecords(g).TryGetValue(actor, out var rec)) throw new GvasException("a prop is no longer in the save; re-open it");
+            var rec = PropRecord(g, actor);
             if (Condition(g, rec) is not ("Destroyed" or "Damaged")) throw new GvasException("a prop is neither destroyed nor damaged; re-open the save");
             cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(rec)));
             g = g.ReplaceValue(rec, TagRecord(PristineTag));
             if (PropHealth(g, actor) is { } h && h.Health != h.Max) SetPropHealth(g, actor, h.Max, cut);
-            cut.RestoredScenery.Add(actor);
+            cut.SceneryStates[actor] = "Pristine";
         }
         return g;
     }
+
+    /// <summary>
+    /// Wreck props: each intact or damaged prop's record goes to Destroyed, written as the game wrote it for the props it saw destroyed
+    /// (flags (0,0,1)), and its health, if it has an entry, to 0. A prop that is already destroyed is refused (a stale list).
+    /// </summary>
+    public static GvasFile DestroyScenery(GvasFile g, IReadOnlyList<string> actors, CutInfo cut)
+    {
+        foreach (var actor in actors.Distinct())
+        {
+            var rec = PropRecord(g, actor);
+            if (Condition(g, rec) is not ("Pristine" or "Damaged")) throw new GvasException("a prop is already destroyed; re-open the save");
+            cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(rec)));
+            g = g.ReplaceValue(rec, TagRecord(DestroyedTag, 0, 0, 1));
+            if (PropHealth(g, actor) is { } h && h.Health != 0) SetPropHealth(g, actor, 0, cut);
+            cut.SceneryStates[actor] = "Destroyed";
+        }
+        return g;
+    }
+
+    static GvasNode PropRecord(GvasFile g, string actor) =>
+        ActorRecords(g).TryGetValue(actor, out var rec) ? rec : throw new GvasException("a prop is no longer in the save; re-open it");
+
 
     static void SetPropHealth(GvasFile g, string actor, double value, CutInfo cut)
     {
@@ -166,13 +198,36 @@ public static partial class CombatOps
         }
     }
 
-    /// <summary>"BP_SEP_ExtA_RailingB_Strx2_ZUpSnow_A_DS_C_13" -> "Sep Ext A Railing B Strx2 ... 14".</summary>
-    static string SceneryTitle(string name)
+    /// <summary>"/Game/.../HM_Cly_020_Gameplay_Cover.HM_Cly_020_Gameplay_Cover:PersistentLevel.BP_X" -> "HM_Cly_020_Gameplay_Cover".</summary>
+    static string Area(string actor)
     {
-        var body = name;
+        var outer = actor.Split(':')[0];
+        var last = outer[(outer.LastIndexOf('/') + 1)..];
+        var dot = last.IndexOf('.');
+        return dot < 0 ? last : last[..dot];
+    }
+
+    /// <summary>Every tracked prop's condition by full object path ("Pristine", "Damaged" or "Destroyed"); used to verify a scenery edit.</summary>
+    public static Dictionary<string, string> PropConditions(GvasFile g)
+    {
+        var d = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (actor, rec) in ActorRecords(g))
+            if (Condition(g, rec) is { Length: > 0 } c) d[actor] = c;
+        return d;
+    }
+
+    /// <summary>
+    /// A readable name for a prop. Level-instance props are named "BP_X_GEN_VARIABLE_BP_X_C_CAT_127" (the same name twice and an index),
+    /// which becomes "X 128"; ordinary ones are "BP_SEP_ExtA_RailingB_Strx2_A_DS_C_13", which becomes "Sep Ext A Railing B Strx2 A 14".
+    /// </summary>
+    internal static string SceneryTitle(string name)
+    {
+        var body = name; int? instance = null;
+        var gen = System.Text.RegularExpressions.Regex.Match(body, @"^(?<base>.*?)_GEN_VARIABLE_.*_C_CAT_(?<n>\d+)$");
+        if (gen.Success) { body = gen.Groups["base"].Value; instance = int.Parse(gen.Groups["n"].Value); }
         foreach (var p in new[] { "BP_SEP_", "BP_UNI_", "BP_OTR_", "BP_" })
             if (body.StartsWith(p, StringComparison.Ordinal)) { body = body[p.Length..]; break; }
         foreach (var junk in new[] { "_ZUpSnow", "_GEN_VARIABLE", "_DS" }) body = body.Replace(junk, "", StringComparison.Ordinal);
-        return NumberedTitle(body, "");
+        return instance is { } i ? $"{Naming.Pretty(body)} {i + 1}" : NumberedTitle(body, "");
     }
 }
