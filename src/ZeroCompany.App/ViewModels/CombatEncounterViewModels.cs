@@ -191,23 +191,6 @@ public sealed class HazardRowViewModel
     public EditableField? TurnsLeft { get; }
 }
 
-/// <summary>A destructible prop with editable health (maximum shown beside it).</summary>
-public sealed class DestructibleRowViewModel
-{
-    public DestructibleRowViewModel(FieldSet fields, DestructibleView d)
-    {
-        Title = d.Title;
-        Health = fields.Make(d.Health, 0, "Health");
-        Max = $"of {d.MaxHealth.Value:0}";
-        Destroyed = d.Health.Value <= 0;
-    }
-
-    public string Title { get; }
-    public string Max { get; }
-    public bool Destroyed { get; }
-    public string State => Destroyed ? "Destroyed" : "";
-    public EditableField? Health { get; }
-}
 
 /// <summary>The enemy threat tier of the mission: a drop-down bound to the pending store.</summary>
 public sealed class SpawnSetPicker : ViewModelBase, IDisposable
@@ -259,4 +242,30 @@ public sealed class TurnStructurePicker : ViewModelBase, IDisposable
     public bool IsChanged => _p.TurnChange != null;
     void OnChanged() { OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(IsChanged)); }
     public void Dispose() => _p.Changed -= OnChanged;
+}
+
+/// <summary>A destructible prop with editable health (maximum shown beside it) and, when it is destroyed, a Restore button.</summary>
+public sealed class DestructibleRowViewModel : IDisposable
+{
+    readonly ToggleActionViewModel? _restore;
+
+    public DestructibleRowViewModel(PendingChanges pending, FieldSet fields, DestructibleView d)
+    {
+        Title = d.Title;
+        Health = fields.Make(d.Health, 0, "Health");
+        Max = $"of {d.MaxHealth.Value:0}";
+        Destroyed = d.Destroyed; State = d.NeedsRestore ? d.Condition : "";
+        if (d.NeedsRestore)
+            _restore = new ToggleActionViewModel(pending, () => pending.SceneryRestores.Contains(d.Actor), () => pending.ToggleSceneryRestore(d.Actor),
+                "Restore", "Queued - undo", "Rebuilds this prop at full health. Setting health alone does not: the save also marks the prop destroyed or damaged.");
+    }
+
+    public string Title { get; }
+    public string Max { get; }
+    public bool Destroyed { get; }
+    public string State { get; }
+    public EditableField? Health { get; }
+    public ToggleActionViewModel? Restore => _restore;
+    public bool CanRestore => _restore != null;
+    public void Dispose() => _restore?.Dispose();
 }

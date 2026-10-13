@@ -43,6 +43,8 @@ public abstract record SaveAction
     /// <summary>Set the spawn group of a queued reinforcement wave (<c>Kind</c> "wave") or a wave definition ("config").</summary>
     public sealed record SetSpawnGroup(string Kind, int Logic, int Index, string Group) : CombatAction;
     /// <summary>Swap the mission's enemy threat tier (EnemySelectedSpawnSet) for another known tier of the same faction.</summary>
+    /// <summary>Bring destroyed scenery props (by full object path) back: their actor record goes from Destroyed to Pristine and their health to maximum.</summary>
+    public sealed record RestoreScenery(IReadOnlyList<string> Actors) : CombatAction;
     public sealed record SetEnemySpawnSet(string Set) : CombatAction;
     /// <summary>Experimental: standard or three-way turn structure (Enemy2 needs the three-way one to stay a separate team).</summary>
     public sealed record SetTurnStructure(string Structure) : CombatAction;

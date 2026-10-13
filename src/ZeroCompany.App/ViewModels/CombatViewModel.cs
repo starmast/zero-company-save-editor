@@ -35,7 +35,7 @@ public sealed class CombatViewModel : ScreenViewModel
         if (_combat.SpawnSet != null) SpawnSet = Own(new SpawnSetPicker(_pending, _combat.SpawnSet));
         if (_combat.TurnStructure != null) Turn = Own(new TurnStructurePicker(_pending, _combat.TurnStructure));
         foreach (var h in _combat.Hazards) Hazards.Add(new HazardRowViewModel(fields, h));
-        foreach (var d in _combat.Destructibles) Destructibles.Add(new DestructibleRowViewModel(fields, d));
+        foreach (var d in _combat.Destructibles) Destructibles.Add(Own(new DestructibleRowViewModel(_pending, fields, d)));
         var rv = _combat.Reinforcements;
         foreach (var w in rv.Waves) Waves.Add(Own(new WaveRowViewModel(_pending, fields, rv, w)));
         foreach (var c in rv.Configs) Configs.Add(Own(new WaveConfigRowViewModel(_pending, fields, rv, c)));
@@ -52,7 +52,12 @@ public sealed class CombatViewModel : ScreenViewModel
         Summary = string.IsNullOrWhiteSpace(_combat.Title) ? "Combat autosave" : _combat.Title;
         EnemiesTo1Hp = new RelayCommand(() => SetAllHealth("Enemy", 1));
         SquadHeal = new RelayCommand(() => SetAllHealth("Player", FullHealValue));
-        RestoreScenery = new RelayCommand(() => _pending.SetEdits(_combat!.Destructibles.Where(d => d.Health.Value < d.MaxHealth.Value).Select(d => (d.Health, d.MaxHealth.Value))));
+        RestoreScenery = new RelayCommand(() =>
+        {
+            _pending.QueueSceneryRestores(_combat!.WreckedProps);                                                     // destroyed or damaged props: tag and health, by the action
+            _pending.SetEdits(_combat.Destructibles.Where(d => !d.NeedsRestore && d.Health.Value < d.MaxHealth.Value)   // marked intact but low on health: health only
+                .Select(d => (d.Health, d.MaxHealth.Value)));
+        });
         Refresh();
     }
 

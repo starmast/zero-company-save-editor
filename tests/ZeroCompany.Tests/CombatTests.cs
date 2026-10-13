@@ -441,6 +441,86 @@ public class CombatTests : IDisposable
         Act(svc2, new SaveAction.SetUnitTeam(unit.Index, "Civilian"));       // the other teams still work
     }
 
+
+    // ---- scenery: a prop stays wrecked because its actor record says Destroyed, not because of its health -----------------
+    [SkippableFact]
+    public void Destroyed_props_are_found_by_the_tag_in_their_actor_record()
+    {
+        var (svc, _, _) = NewRig("Combat_Scenery.sav");                      // COMBAT BASE 5.3, the game's own save: four wrecked props
+        var cb = svc.Current!.Combat!;
+        Assert.Equal(4, cb.Destructibles.Count);
+        Assert.All(cb.Destructibles, d => { Assert.True(d.Destroyed); Assert.Equal(0, d.Health.Value); });
+        Assert.Equal(4, cb.DestroyedProps.Count);
+        Assert.Equal(cb.Destructibles.Select(d => d.Actor).OrderBy(x => x), cb.DestroyedProps.OrderBy(x => x));
+    }
+
+    [SkippableFact]
+    public void Restoring_destroyed_scenery_flips_the_record_to_pristine_and_puts_health_back()
+    {
+        var (svc, _, path) = NewRig("Combat_Scenery.sav");
+        var cb = svc.Current!.Combat!;
+        var before = Gvas(path);
+        var lengthBefore = SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length;
+        Act(svc, new SaveAction.RestoreScenery(cb.DestroyedProps));
+
+        var g = Gvas(path);
+        Assert.Empty(CombatOps.DestroyedActors(g));
+        foreach (var d in cb.Destructibles)
+        {
+            Assert.True(CombatOps.IsPristine(g, d.Actor));
+            var h = CombatOps.PropHealth(g, d.Actor)!.Value;
+            Assert.Equal(h.Max, h.Health);
+            Assert.True(h.Max > 0);
+        }
+        Assert.Equal(lengthBefore - 4, SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length);        // each record is one byte shorter
+        Assert.All(svc.Current!.Combat!.Destructibles, d => Assert.False(d.Destroyed));
+        Assert.Empty(svc.Current.Combat.DestroyedProps);
+        Assert.Equal(CombatOps.Units(before).Count, CombatOps.Units(g).Count);                          // nothing else was touched
+    }
+
+    [SkippableFact]
+    public void Restoring_an_intact_prop_or_one_not_in_the_save_is_refused_and_damaged_props_come_back_too()
+    {
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        var cb = svc.Current!.Combat!;
+        Assert.NotEmpty(cb.DestroyedProps);
+        var damaged = cb.Destructibles.FirstOrDefault(d => d.Condition == "Damaged");                   // the half-broken crate in 3.1
+        Skip.If(damaged == null, "no damaged prop in this save");
+        Assert.True(damaged!.NeedsRestore);
+        Assert.Contains(damaged.Actor, cb.WreckedProps);
+        Assert.DoesNotContain(damaged.Actor, cb.DestroyedProps);
+
+        var pristine = CombatOps.ActorRecords(Gvas(path)).Keys.First(a => CombatOps.IsPristine(Gvas(path), a));
+        var before = File.ReadAllBytes(path);
+        Assert.ThrowsAny<Exception>(() => Act(svc, new SaveAction.RestoreScenery(new[] { pristine })));                    // intact
+        Assert.ThrowsAny<Exception>(() => Act(svc, new SaveAction.RestoreScenery(new[] { "/Game/Nope.Nope:PersistentLevel.BP_Nope_C_0" })));
+        Assert.Equal(before, File.ReadAllBytes(path));
+
+        Act(svc, new SaveAction.RestoreScenery(cb.WreckedProps));                                                          // destroyed and damaged
+        var g = Gvas(path);
+        Assert.Empty(CombatOps.WreckedActors(g));
+        Assert.True(CombatOps.IsPristine(g, damaged.Actor));
+        Assert.True(CombatOps.IsPristine(g, pristine));                                                                    // an intact prop was left alone
+        var h = CombatOps.PropHealth(g, damaged.Actor)!.Value;
+        Assert.Equal(h.Max, h.Health);
+    }
+
+    [SkippableFact]
+    public void The_pending_store_queues_scenery_restores_into_one_action()
+    {
+        var (svc, _, _) = NewRig("Combat_Scenery.sav");
+        var cb = svc.Current!.Combat!;
+        var p = new PendingChanges();
+        p.ToggleSceneryRestore(cb.DestroyedProps[0]);
+        p.ToggleSceneryRestore(cb.DestroyedProps[0]);                                                    // toggled off again
+        Assert.Equal(0, p.ActionCount);
+        p.QueueSceneryRestores(cb.DestroyedProps);
+        Assert.Equal(4, p.SceneryRestores.Count);
+        Assert.Equal(1, p.ActionCount - 3);                                                              // ActionCount counts each prop
+        var action = Assert.IsType<SaveAction.RestoreScenery>(Assert.Single(p.BuildCombatActions(cb)));
+        Assert.Equal(cb.DestroyedProps.OrderBy(x => x, StringComparer.Ordinal), action.Actors);
+        Assert.Contains(p.Describe(svc.Current!), l => l.Text == "Restore 4 destroyed or damaged scenery props");
+    }
     [SkippableFact]
     public void Countdown_timer_is_listed_with_its_turns_left_and_what_it_fails_and_can_be_extended()
     {

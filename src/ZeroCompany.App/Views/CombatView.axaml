@@ -300,20 +300,21 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:DestructibleRowViewModel">
                 <Border Classes="hairline" Padding="14,6">
-                  <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                     <TextBlock Classes="title" FontSize="16" Text="{Binding Title}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="mute" Text="{Binding State}" Margin="0,0,12,0" VerticalAlignment="Center" />
                     <Panel Grid.Column="2" Margin="0,0,6,0" VerticalAlignment="Center">
                       <c:NumField DataContext="{Binding Health}" Width="80" />
                     </Panel>
                     <TextBlock Grid.Column="3" Classes="mute" Text="{Binding Max}" Width="48" VerticalAlignment="Center" />
+                    <ContentControl Grid.Column="4" Content="{Binding Restore}" IsVisible="{Binding CanRestore}" Margin="10,0,0,0" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Cover and props that can be shot apart. 0 = already destroyed. 'Restore scenery' sets every damaged or destroyed prop back to full health. Whether a prop that was already blown up comes back on load is not verified in the game." />
+                     Text="Cover and props that can be shot apart. A destroyed prop stays wrecked when the save loads because the save marks it destroyed, not because of its health, so Restore (or the Restore scenery button for all of them) changes that mark as well as the health. Damaged props that are still standing only need their health back. Not yet tried in the game." />
         </StackPanel>
       </Border>
 

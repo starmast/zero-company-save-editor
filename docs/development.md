@@ -42,7 +42,8 @@ and from one rescue mission: `Combat_Rescue_before.sav` (before the civilian is 
 `Combat_Rescue_after.sav` (right after the rescue) and `Combat_Rescue_late.sav` (later, with the occupy-region points counting).
 Two more fixtures cover the newer features: `Combat_ThreeWay.sav` (a three-way battle, such as Belly of the Beast, with Coil on
 Enemy and Imperials on Enemy2, fire zones and destructible props, saved mid-fight) and `Combat_Imperial.sav`
-(an ordinary two-sided mission whose enemy threat tier is still saved, such as a Brentaal skirmish at the start of the fight).
+(an ordinary two-sided mission whose enemy threat tier is still saved, such as a Brentaal skirmish at the start of the fight). `Combat_Scenery.sav`
+is a game-written save in which some destructible props are already destroyed (it has four), for the scenery restore tests.
 Some assertions rely on what is in those saves (unit counts, three queued waves), so a different save needs the numbers adjusted.
 
 **Parity with the original Python editor.** The suite compares the C# code with the v0.3.0 Python editor on your sample save:

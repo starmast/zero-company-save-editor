@@ -85,7 +85,8 @@ actions for that tab.
   saved in fresh fights; it has been missing from saves made after loading a save and playing on (the game seems to drop it), and
   then there is nothing to edit. For later waves use the wave definitions instead.
 - **Scenery** - the fire zones (turns left; they start near 9999, so they effectively never burn out) and every destructible prop
-  with its health. **Restore scenery** sets every damaged or destroyed prop back to full health.
+  with its health. A prop that is **Destroyed** or **Damaged** has a **Restore** button, and **Restore scenery** does all of them: it
+  rewrites the prop's state mark in the save as well as its health, because health alone does not bring a wreck back.
 
 The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
 pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.

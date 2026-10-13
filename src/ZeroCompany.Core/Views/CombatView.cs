@@ -14,6 +14,10 @@ public sealed class CombatView
     public bool ThreeWay { get; set; }
     public List<HazardView> Hazards { get; } = new();
     public List<DestructibleView> Destructibles { get; } = new();
+    /// <summary>Full object paths of every prop the save marks as destroyed (with or without a health entry).</summary>
+    public List<string> DestroyedProps { get; } = new();
+    /// <summary>Full object paths of every prop that is destroyed or damaged: what the "Restore scenery" button brings back.</summary>
+    public List<string> WreckedProps { get; } = new();
 }
 
 /// <summary>Reinforcements: waves already queued, the wave definitions the encounter draws from, and the trigger actors.</summary>
@@ -153,6 +157,13 @@ public sealed class DestructibleView
     public string Title { get; init; } = "";
     public FieldRef Health { get; init; } = new();
     public FieldRef MaxHealth { get; init; } = new();
+    /// <summary>The full object path of the prop (what the save records it by).</summary>
+    public string Actor { get; init; } = "";
+    /// <summary>"Destroyed", "Damaged" or "Pristine" from the prop's actor record: that tag, not health, is what keeps it wrecked when the save loads.</summary>
+    public string Condition { get; init; } = "";
+    public bool Destroyed => Condition == "Destroyed";
+    /// <summary>True when Restore can do something: the prop is destroyed or damaged.</summary>
+    public bool NeedsRestore => Condition is "Destroyed" or "Damaged";
 }
 
 /// <summary>The enemy threat tier the mission draws its units from, with the tiers that can be swapped in.</summary>

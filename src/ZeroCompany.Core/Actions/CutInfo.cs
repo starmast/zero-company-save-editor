@@ -18,6 +18,8 @@ public sealed class CutInfo
     /// <summary>Combat: expected dead flag per unit index after the edit.</summary>
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>
     public List<(string Asset, string Guid)> AddedItems { get; } = new();
+    /// <summary>Combat scenery: full object paths of props brought back from destroyed.</summary>
+    public List<string> RestoredScenery { get; } = new();
     public Dictionary<int, bool> UnitDead { get; } = new();
     /// <summary>Combat: expected active-effect count per unit index after the edit.</summary>
     public Dictionary<int, int> EffectCounts { get; } = new();

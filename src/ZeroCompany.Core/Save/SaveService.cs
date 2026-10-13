@@ -416,6 +416,9 @@ public sealed class SaveService
                 case SaveAction.SetSpawnGroup sg:
                     if (!seen.Add($"grp{sg.Kind}/{sg.Logic}/{sg.Index}")) throw new EditException("duplicate spawn group change");
                     return CombatOps.SetSpawnGroup(g, sg.Kind, sg.Logic, sg.Index, sg.Group, cut);
+                case SaveAction.RestoreScenery rs:
+                    if (!seen.Add("scenery")) throw new EditException("duplicate scenery action");
+                    return CombatOps.RestoreScenery(g, rs.Actors, cut);
                 case SaveAction.SetEnemySpawnSet ss:
                     if (!seen.Add("spawnset")) throw new EditException("duplicate spawn set change");
                     return CombatOps.SetEnemySpawnSet(g, ss.Set, cut);
@@ -567,6 +570,18 @@ public sealed class SaveService
             foreach (var (gid, size) in per)
                 if (metaPer.TryGetValue(gid, out var ms) && ms != null && ms != size)
                     throw new EditException("verification failed: a character's recorded size is out of sync");
+        }
+        if (cut.RestoredScenery.Count > 0)
+        {
+            var before = CombatOps.WreckedActors(old).ToHashSet();
+            var after = CombatOps.WreckedActors(g2).ToHashSet();
+            if (!after.SetEquals(before.Except(cut.RestoredScenery)))
+                throw new EditException("verification failed: the destroyed and damaged props are not what was intended");
+            foreach (var actor in cut.RestoredScenery)
+            {
+                if (!CombatOps.IsPristine(g2, actor)) throw new EditException("verification failed: a restored prop is not intact");
+                if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != h.Max) throw new EditException("verification failed: a restored prop is not at full health");
+            }
         }
         if (cut.AddedItems.Count > 0)
         {

@@ -44,8 +44,11 @@ not played through. The scenery and the enemy threat tier in particular have not
   change units already on the map. Every tier the game ships is offered (read from its own assets). Tiers of another faction are offered too and would
   bring that faction's units into the mission; nobody knows yet what the game does with that. For later waves, edit the wave
   definitions instead (delay, how often each may spawn, group).
-- **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place. Whether a prop that was
-  already destroyed comes back on load, and whether a low turns-left value puts a fire out, is not known.
+- **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place; whether a low turns-left value puts a
+  fire out is not known. A prop that is already **destroyed** does not come back by restoring its health: the first attempt (health
+  only) left the wreck in the game, and the game then dropped the prop's health entry on loading. What keeps a prop wrecked is a state
+  tag in its actor record (Pristine, Damaged or Destroyed), so **Restore** rewrites that tag as well as the health. That was built
+  from the game's own before/after saves and passes the verifier, but whether the game then rebuilds the prop has not been tried yet.
 - **Objectives** only change the saved status (Active / Succeeded). A normal completion also fires follow-on steps (cutscenes,
   the next objective, reinforcements); flipping the status does not, so check the result in the game.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.
