@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\ZeroCompany.Core\ZeroCompany.Core.csproj" />
     <ProjectReference Include="..\..\src\ZeroCompany.GameData\ZeroCompany.GameData.csproj" />
     <ProjectReference Include="..\..\src\ZeroCompany.DebugCli\ZeroCompany.DebugCli.csproj" />
+    <ProjectReference Include="..\..\src\ZeroCompany.AssetsCli\ZeroCompany.AssetsCli.csproj" />
   </ItemGroup>
 
 </Project>

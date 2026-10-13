@@ -34,7 +34,9 @@ not played through. The scenery and the enemy threat tier in particular have not
     that already are one, and the editor refuses it elsewhere. In an ordinary mission the game puts Enemy2 units back on Enemy
     when it loads the save, so they never fight the other enemies. Giving such a mission the three-way turn structure was
     tried and does not work: the game loaded it as empty. The turn structure can be switched to standard and back, but only in a
-    save that has it.
+    save that has it. This matches the game's own data (read with `zcassets`, see [development.md](development.md)): the team
+    assets list only themselves as friends for Enemy and Enemy2, so they are hostile to each other, and the Enemy2 turn group
+    exists only in the three-way turn structure.
 - **Enemy threat tier** (Reinforcements tab, *Mission settings*): swaps the mission's enemy spawn set, for example Coil threat 10
   for 5. It is saved in fresh fights, but has been missing from saves made after loading a save and playing on (the game seems to
   drop it when it loads), and then there is nothing to edit. It doesn't

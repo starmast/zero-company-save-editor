@@ -129,3 +129,23 @@ normally, so UE4SS itself hangs this build and `zcdebug` can't be used with it u
 own diagnostic report lists this EA build as "runtime feedback pending". The game folder is under `Program Files`, so
 `zcdebug install` needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
 Like `zcsave`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
+
+## zcassets: browsing the game's own assets
+`src/ZeroCompany.AssetsCli` builds `zcassets`, a read-only browser for the game's packages. It uses the same install folder,
+`.usmap` and Oodle library the editor already knows about (extract game data once in the editor first), never downloads anything
+and never writes to the game. Mounting about 180,000 files takes a few seconds.
+
+```
+zcassets find TurnStructure                      asset package paths containing a word
+zcassets dump BP_TurnStructure_ThreeWayBattle     one asset's objects as JSON (--merged adds inherited properties)
+zcassets dump Enemy2Team --grep FriendlyTeamTags  only the properties that mention a word
+zcassets scan Blueprints/Objects Enemy2          search inside every asset whose path contains a word
+```
+
+It is how the combat rules were checked against the game's own data rather than guessed from saves. For example, each team asset
+(`GameData/Teams/*Team`) lists the teams it counts as friends in `FriendlyTeamTags`: Player and Civilian list each other, Enemy
+lists only Enemy, and Enemy2 lists only Enemy2, so Enemy and Enemy2 are hostile to each other and to the squad. A team only acts
+if the mission's turn structure has a turn group for it, and `BP_Enemy2TurnGroup` exists only in `BP_TurnStructure_ThreeWayBattle`.
+
+The output is the game's own content: use it to read, and never publish or commit dumps (see the [disclaimer](../DISCLAIMER.md)).
+On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`, or the shell rewrites it.

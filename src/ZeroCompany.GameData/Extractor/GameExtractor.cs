@@ -99,6 +99,22 @@ public static class GameExtractor
         return db;
     }
 
+    /// <summary>
+    /// Open the game's packages read-only (for tools that browse assets). Unlike <see cref="Extract"/> this never downloads the
+    /// Oodle library: <see cref="ExtractOptions.OodleDir"/> must already hold it.
+    /// </summary>
+    public static DefaultFileProvider OpenProvider(ExtractOptions opt, IProgress<string>? log = null, CancellationToken ct = default)
+    {
+        log ??= new Progress<string>();
+        var paks = FindPaksDir(opt.GameDir) ?? throw new ExtractionException($"Could not find the game's Paks folder under '{opt.GameDir}'.");
+        var usmap = UsmapInfo.Inspect(opt.UsmapPath);
+        if (!usmap.IsUsable) throw new ExtractionException(usmap.Message);
+        var dir = opt.OodleDir ?? AppContext.BaseDirectory;
+        if (!new[] { OodleHelper.OodleFileName, "oodle-data-shared.dll", "liboodle-data-shared.so" }.Any(n => File.Exists(Path.Combine(dir, n))))
+            throw new ExtractionException($"The Oodle library is not in {dir}. Run the extraction once in the editor (it fetches and checks it), or put your own copy there.");
+        return Mount(paks, opt.UsmapPath, opt.OodleDir, log, ct);
+    }
+
     static DefaultFileProvider Mount(string paksDir, string usmap, string? oodleDir, IProgress<string> log, CancellationToken ct)
     {
         try
