@@ -71,3 +71,20 @@ Epic Games Tools / RAD) at run time, and a community-made `.usmap` mappings file
 The earlier [Zero_Company_Save_Editor](https://github.com/jpatrickp512/Zero_Company_Save_Editor) by jpatrickp512 was a useful
 reference for which save properties matter; no code was copied from it. The earlier Python/web implementation (v0.1.0 to
 v0.3.0) is kept in git history under those tags.
+
+## zcsave: a read-only save profiler
+`src/ZeroCompany.Cli` builds `zcsave`, a command-line tool for looking inside saves while developing. It never writes to a save.
+
+```
+dotnet run --project src/ZeroCompany.Cli -- list
+dotnet run --project src/ZeroCompany.Cli -- profile "COMBAT BASE 4.0"
+dotnet run --project src/ZeroCompany.Cli -- diff "COMBAT BASE 4.0" latest
+dotnet run --project src/ZeroCompany.Cli -- find latest Enemy2
+dotnet run --project src/ZeroCompany.Cli -- dump latest TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6] --depth 3
+```
+
+A save is a path, a file-name fragment, a save comment, or `latest`. `profile` shows the teams, units, objectives, waves and scenery,
+`diff` shows what changed between two saves (units first), `find` locates a name or value, and `dump` prints a property tree.
+
+The published tool is a self-contained single file (`dotnet publish src/ZeroCompany.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcsave-win-x64`);
+on machines with Application Control a loose `zcsave.dll` may be refused where the single-file exe is not.
