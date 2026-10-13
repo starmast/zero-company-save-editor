@@ -91,3 +91,35 @@ A save is a path, a file-name fragment, a save comment, or `latest`. `profile` s
 
 The published tool is a self-contained single file (`dotnet publish src/ZeroCompany.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcsave-win-x64`);
 on machines with Application Control a loose `zcsave.dll` may be refused where the single-file exe is not.
+
+## zcdebug: talking to the running game
+`src/ZeroCompany.DebugCli` builds `zcdebug`, a command-line debugger for the live game. It does not touch the game process
+itself. Instead it talks to a small Lua mod, **ZcDebug**, that runs inside the game through [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
+(a third-party Unreal mod loader that you install yourself; `zcdebug` never downloads or patches anything).
+
+```
+zcdebug install            copy the ZcDebug mod into UE4SS's Mods folder (zcdebug uninstall removes it)
+zcdebug status             is the game running, is the mod answering
+zcdebug find Pawn          live instances of an Unreal class
+zcdebug props <object>     a class's properties and types
+zcdebug get <object> Prop  read a property
+zcdebug set ... --write    change a property in the running game   (also: exec <console command>, eval <lua>)
+zcdebug repl [--write]     the same, interactively
+```
+
+Reads need no flag; anything that changes the running game (`set`, `exec`, `eval`) is refused without `--write`. `<object>` is a
+full object path or a short class name (its first live instance).
+
+**How it talks to the game.** Lua has no sockets or JSON library, so both sides use three small files in
+`%LOCALAPPDATA%\ZeroCompanyEditor\debug`: `request.txt` (written by `zcdebug`), `response.txt` (written by the mod) and
+`heartbeat.txt` (the mod, about once a second, which is how `status` knows the game is up). Each is one tab-separated line ending
+in a newline; see `Protocol.cs`. The mod polls every 200 ms and runs each command on the game thread.
+
+**State of it.** The tool, the protocol and the installer are covered by tests against a fake mod. The Lua mod itself
+(`src/ZeroCompany.DebugCli/mod/ZcDebug/Scripts/main.lua`) has **not been run against the game yet**: it uses the UE4SS Lua API
+from memory (`FindAllOf`, `StaticFindObject`, `ForEachProperty`, `ExecuteInGameThread`), and it is not known whether a UE4SS build
+that supports this game's Unreal version works with it. Errors from the mod come back as `error: ...` and also go to UE4SS's log.
+Mods change the game's behaviour: use it for exploring, not in a save you care about, and expect that updating or repairing the
+game (the EA app may repair modified files) can undo the install.
+
+Like `zcsave`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
