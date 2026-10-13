@@ -35,6 +35,7 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
           <Button Content="Heal allies to full" Command="{Binding SquadHeal}" IsVisible="{Binding ShowAllyActions}" />
           <Button Content="Enemies to 1 HP" Command="{Binding EnemiesTo1Hp}" IsVisible="{Binding ShowEnemyActions}" />
+          <Button Content="Restore scenery" Command="{Binding RestoreScenery}" IsVisible="{Binding ShowDestructibles}" />
         </StackPanel>
       </Grid>
 
@@ -140,6 +141,40 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
+      <Border Classes="panel" IsVisible="{Binding ShowSpawnSet}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="MISSION SETTINGS" /></Border>
+          <Border Padding="14,10" IsVisible="{Binding HasSpawnSet}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Classes="title" FontSize="16" Text="Enemy threat" />
+                <TextBlock Classes="mute small" TextWrapping="Wrap"
+                           Text="The threat tier the mission draws its enemy units from. Higher tiers bring tougher units. Units already on the map are not changed; this affects what the mission spawns from here on. Sets marked (other faction) would bring that faction's units into this mission: experimental. Not tried in the game yet." />
+              </StackPanel>
+              <ComboBox Grid.Column="1" Width="190" Margin="12,0,0,0" ItemsSource="{Binding SpawnSet.Choices}" SelectedItem="{Binding SpawnSet.Selected, Mode=TwoWay}" VerticalAlignment="Center">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+          </Border>
+          <Border Classes="hairline" Padding="14,10" IsVisible="{Binding HasTurn}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Classes="title" FontSize="16" Text="Turn structure" />
+                <TextBlock Classes="mute small" TextWrapping="Wrap"
+                           Text="This mission is a three-way battle: Enemy2 is its own hostile team and fights Enemy. Switching to Standard removes the three-way structure; Enemy2 units would then be put back on Enemy by the game. Shown only in three-way battles; adding it to an ordinary mission was tried and does not work." />
+              </StackPanel>
+              <ComboBox Grid.Column="1" Width="190" Margin="12,0,0,0" ItemsSource="{Binding Turn.Choices}" SelectedItem="{Binding Turn.Selected, Mode=TwoWay}" VerticalAlignment="Center">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+          </Border>
+        </StackPanel>
+      </Border>
+
       <Border Classes="panel" IsVisible="{Binding ShowReinforcements}">
         <StackPanel>
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="INCOMING WAVES" /></Border>
@@ -230,6 +265,55 @@
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
                      Text="Waves arrive at the round shown (rounds count up through the fight; the game does not save which round it is now). Cancel pushes a wave to round 999. A group can only be swapped for one this encounter already uses. A definition's 'May spawn' limits how often it fires (-1 = no limit); 'Already triggered' counts how often it has. Triggers can be switched off once they have fired. None of this has been tried in the game yet: apply to a copy first." />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel" IsVisible="{Binding ShowHazards}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="FIRE ZONES" /></Border>
+          <ItemsControl ItemsSource="{Binding Hazards}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:HazardRowViewModel">
+                <Border Classes="hairline" Padding="14,8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock Classes="title" FontSize="18" Text="{Binding Title}" />
+                      <TextBlock Classes="mute small" Text="{Binding Detail}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Panel Grid.Column="1" Margin="12,0,6,0" VerticalAlignment="Center">
+                      <c:NumField DataContext="{Binding TurnsLeft}" Width="90" />
+                    </Panel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
+                     Text="Turns a fire keeps burning. They start near 9999, so they effectively never go out; set a low number to let one burn out. Not tried in the game yet." />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel" IsVisible="{Binding ShowDestructibles}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="DESTRUCTIBLE SCENERY" /></Border>
+          <ItemsControl ItemsSource="{Binding Destructibles}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DestructibleRowViewModel">
+                <Border Classes="hairline" Padding="14,6">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <TextBlock Classes="title" FontSize="16" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="mute" Text="{Binding State}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                    <Panel Grid.Column="2" Margin="0,0,6,0" VerticalAlignment="Center">
+                      <c:NumField DataContext="{Binding Health}" Width="80" />
+                    </Panel>
+                    <TextBlock Grid.Column="3" Classes="mute" Text="{Binding Max}" Width="48" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
+                     Text="Cover and props that can be shot apart. 0 = already destroyed. 'Restore scenery' sets every damaged or destroyed prop back to full health. Whether a prop that was already blown up comes back on load is not verified in the game." />
         </StackPanel>
       </Border>
 

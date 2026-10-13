@@ -40,6 +40,8 @@ public abstract record SaveAction
     public sealed record SetUnitTeam(int Unit, string Team) : CombatAction;
     /// <summary>Set the spawn group of a queued reinforcement wave (<c>Kind</c> "wave") or a wave definition ("config").</summary>
     public sealed record SetSpawnGroup(string Kind, int Logic, int Index, string Group) : CombatAction;
+    /// <summary>Swap the mission's enemy threat tier (EnemySelectedSpawnSet) for another known tier of the same faction.</summary>
+    public sealed record SetEnemySpawnSet(string Set) : CombatAction;
     /// <summary>Experimental: standard or three-way turn structure (Enemy2 needs the three-way one to stay a separate team).</summary>
     public sealed record SetTurnStructure(string Structure) : CombatAction;
     /// <summary>Switch a reinforcement trigger on or off. <c>Name</c> guards against a stale index.</summary>

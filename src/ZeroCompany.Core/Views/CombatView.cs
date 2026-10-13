@@ -8,9 +8,12 @@ public sealed class CombatView
     public List<ObjectiveView> Objectives { get; } = new();
     public List<TimerView> Timers { get; } = new();
     public ReinforcementsView Reinforcements { get; } = new();
+    public SpawnSetView? SpawnSet { get; set; }
     public TurnStructureView? TurnStructure { get; set; }
     /// <summary>A three-way battle: Enemy2 can be used here.</summary>
     public bool ThreeWay { get; set; }
+    public List<HazardView> Hazards { get; } = new();
+    public List<DestructibleView> Destructibles { get; } = new();
 }
 
 /// <summary>Reinforcements: waves already queued, the wave definitions the encounter draws from, and the trigger actors.</summary>
@@ -130,6 +133,33 @@ public sealed class UnitEffectView
     public FieldRef? Stacks { get; init; }
     /// <summary>Seconds left, or -1 for "until removed".</summary>
     public double? Duration { get; init; }
+}
+
+/// <summary>A fire hazard zone (an ability actor) that burns for a number of turns.</summary>
+public sealed class HazardView
+{
+    public string Name { get; init; } = "";
+    public string Title { get; init; } = "";
+    public FieldRef TurnsLeft { get; init; } = new();
+    public double? Radius { get; init; }
+    public double? X { get; set; }
+    public double? Y { get; set; }
+}
+
+/// <summary>A destructible prop (railing, crate, canister ...) with its health and maximum.</summary>
+public sealed class DestructibleView
+{
+    public string Name { get; init; } = "";
+    public string Title { get; init; } = "";
+    public FieldRef Health { get; init; } = new();
+    public FieldRef MaxHealth { get; init; } = new();
+}
+
+/// <summary>The enemy threat tier the mission draws its units from, with the tiers that can be swapped in.</summary>
+public sealed class SpawnSetView
+{
+    public string Current { get; init; } = "";
+    public List<(string Value, string Label)> Choices { get; } = new();
 }
 
 /// <summary>The mission's turn structure: standard (two sides) or three-way battle (a second hostile team takes its own turns).</summary>

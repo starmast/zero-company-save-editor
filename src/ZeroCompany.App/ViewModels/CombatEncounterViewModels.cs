@@ -174,6 +174,67 @@ public sealed class ObjectiveRowViewModel : ViewModelBase, IDisposable
     public void Dispose() { _pending.Changed -= OnChanged; _toggle.Dispose(); }
 }
 
+/// <summary>A fire hazard zone with an editable turns-left field.</summary>
+public sealed class HazardRowViewModel
+{
+    public HazardRowViewModel(FieldSet fields, HazardView h)
+    {
+        Title = h.Title;
+        TurnsLeft = fields.Make(h.TurnsLeft, 0, "Turns left");
+        Detail = h.X != null && h.Y != null
+            ? $"Fire zone, radius {h.Radius:0} at {h.X:0}, {h.Y:0}. Counts down one per round."
+            : "Fire zone. Counts down one per round.";
+    }
+
+    public string Title { get; }
+    public string Detail { get; }
+    public EditableField? TurnsLeft { get; }
+}
+
+/// <summary>A destructible prop with editable health (maximum shown beside it).</summary>
+public sealed class DestructibleRowViewModel
+{
+    public DestructibleRowViewModel(FieldSet fields, DestructibleView d)
+    {
+        Title = d.Title;
+        Health = fields.Make(d.Health, 0, "Health");
+        Max = $"of {d.MaxHealth.Value:0}";
+        Destroyed = d.Health.Value <= 0;
+    }
+
+    public string Title { get; }
+    public string Max { get; }
+    public bool Destroyed { get; }
+    public string State => Destroyed ? "Destroyed" : "";
+    public EditableField? Health { get; }
+}
+
+/// <summary>The enemy threat tier of the mission: a drop-down bound to the pending store.</summary>
+public sealed class SpawnSetPicker : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _p;
+    readonly string _saved;
+
+    public SpawnSetPicker(PendingChanges p, SpawnSetView v)
+    {
+        _p = p; _saved = v.Current;
+        Choices = v.Choices.Select(c => new GroupChoice(c.Value, c.Label)).ToList();
+        p.Changed += OnChanged;
+    }
+
+    public IReadOnlyList<GroupChoice> Choices { get; }
+
+    public GroupChoice? Selected
+    {
+        get => Choices.FirstOrDefault(c => c.Value == _p.SpawnSetWanted(_saved));
+        set { if (value != null) _p.SetSpawnSet(value.Value, _saved); }
+    }
+
+    public bool IsChanged => _p.SpawnSetChange != null;
+    void OnChanged() { OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(IsChanged)); }
+    public void Dispose() => _p.Changed -= OnChanged;
+}
+
 /// <summary>The mission's turn structure (standard / three-way): a drop-down bound to the pending store.</summary>
 public sealed class TurnStructurePicker : ViewModelBase, IDisposable
 {

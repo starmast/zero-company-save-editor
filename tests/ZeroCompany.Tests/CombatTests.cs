@@ -319,6 +319,8 @@ public class CombatTests : IDisposable
         Assert.Contains("Behavior_Player", CombatOps.SpawnedBehavior(a, "Char_Baker_C_0")!);
     }
 
+
+    /// <summary>COMBAT BASE 3.1: Coil (Enemy) and Imperials (Enemy2) fight each other and the squad. Enemy2 is a normal hostile team.</summary>
     [SkippableFact]
     public void Enemy_and_Enemy2_switch_by_team_tag_alone_and_keep_enemy_behaviour()
     {
@@ -348,6 +350,64 @@ public class CombatTests : IDisposable
     }
 
     [SkippableFact]
+    public void Fire_zones_and_destructibles_are_listed_and_edit_in_place()
+    {
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        var cb = svc.Current!.Combat!;
+        Assert.Equal(5, cb.Hazards.Count);
+        Assert.All(cb.Hazards, h => { Assert.Equal(250, h.Radius); Assert.NotNull(h.X); Assert.InRange(h.TurnsLeft.Value, 9000, 9999); });
+        Assert.Equal(28, cb.Destructibles.Count);
+        Assert.Contains(cb.Destructibles, d => d.Health.Value < d.MaxHealth.Value && d.Health.Value > 0);   // the half-broken crate
+        Assert.Contains(cb.Destructibles, d => d.Health.Value == 0);
+
+        var changes = cb.Destructibles.Where(d => d.Health.Value < d.MaxHealth.Value)
+            .Select(d => new FieldChange(d.Health.Id, d.MaxHealth.Value)).ToList();
+        changes.Add(new FieldChange(cb.Hazards[0].TurnsLeft.Id, 2));
+        var sizeBefore = SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length;
+        svc.Apply(changes, force: true);
+        Assert.Equal(sizeBefore, SaveContainer.Load(File.ReadAllBytes(path)).Gvas.Length);        // scalars: edited in place
+        var after = svc.Current!.Combat!;
+        Assert.All(after.Destructibles, d => Assert.Equal(d.MaxHealth.Value, d.Health.Value));
+        Assert.Equal(2, after.Hazards[0].TurnsLeft.Value);
+        Assert.Equal(cb.Hazards[1].TurnsLeft.Value, after.Hazards[1].TurnsLeft.Value);
+    }
+
+    [SkippableFact]
+    public void Enemy_spawn_set_lists_known_tiers_and_can_be_swapped_and_bad_ones_are_refused()
+    {
+        var (svc, _, path) = NewRig("Combat_ThreeWay.sav");
+        var sv = svc.Current!.Combat!.SpawnSet!;
+        Assert.Contains("SS_Coil_Threat_10", sv.Current);
+        Assert.Equal("Coil threat 10", CombatOps.SpawnSetLabel(sv.Current));
+        Assert.Equal(9, sv.Choices.Count(c => !c.Label.Contains("other faction")));
+        Assert.Contains(sv.Choices, c => c.Label == "Separatist threat 3 (other faction)");
+        Assert.StartsWith("Coil threat", sv.Choices[0].Label);
+        var other = sv.Choices.First(c => c.Label == "Coil threat 5").Value;
+
+        Act(svc, new SaveAction.SetEnemySpawnSet(other));
+        Assert.Equal(other, CombatOps.EnemySpawnSetOf(Gvas(path)));
+        Assert.Equal(other, svc.Current!.Combat!.SpawnSet!.Current);
+        var cross = svc.Current!.Combat!.SpawnSet!.Choices.First(c => c.Label == "Separatist threat 3 (other faction)").Value;
+        Act(svc, new SaveAction.SetEnemySpawnSet(cross));
+        Assert.Equal(cross, CombatOps.EnemySpawnSetOf(Gvas(path)));
+
+        var before = File.ReadAllBytes(path);
+        Assert.ThrowsAny<Exception>(() => Act(svc, new SaveAction.SetEnemySpawnSet("/Game/Nope.Nope")));
+        Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [SkippableFact]
+    public void An_imperial_mission_offers_its_only_tier_first_then_the_other_factions_marked_experimental()
+    {
+        var (svc, _, _) = NewRig("Combat_Imperial.sav");
+        var sv = svc.Current!.Combat!.SpawnSet!;
+        Assert.Equal("Imperial threat 9", sv.Choices[0].Label);
+        Assert.Equal(1, sv.Choices.Count(c => !c.Label.Contains("other faction")));
+        Assert.Contains(sv.Choices, c => c.Label == "Coil threat 10 (other faction)");
+        Assert.Equal(sv.Choices.Count, sv.Choices.Select(c => c.Value).Distinct().Count());
+    }
+
+    [SkippableFact]
     public void Turn_structure_can_be_added_and_removed_and_re_adding_it_reproduces_the_games_own_bytes()
     {
         // COMBAT BASE 3.1 saves the three-way structure itself: remove it, add it back, and the file must be byte-identical.
@@ -360,6 +420,7 @@ public class CombatTests : IDisposable
         Act(svc, new SaveAction.SetTurnStructure(CombatOps.TurnThreeWay));
         Assert.Equal(original, SaveContainer.Load(File.ReadAllBytes(path)).Gvas);
     }
+
 
     [SkippableFact]
     public void Enemy2_and_the_turn_structure_are_only_offered_in_three_way_battles()

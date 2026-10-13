@@ -19,6 +19,7 @@ public sealed class PendingChanges
     readonly Dictionary<string, string> _coil = new();
     readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
     readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
+    readonly Dictionary<int, string> _spawnSet = new();                                    // combat: wanted enemy spawn set (key 0)
     readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
     readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
     readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
@@ -52,15 +53,16 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<int, string> TeamChanges => _teams;
     public IReadOnlyDictionary<(string Kind, int Logic, int Index), string> GroupChanges => _groups;
     public IReadOnlyDictionary<int, bool> TriggerChanges => _triggers;
-    public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
+    public string? SpawnSetChange => _spawnSet.GetValueOrDefault(0);
     public string? TurnChange => _turn.GetValueOrDefault(0);
+    public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
     public IReadOnlyList<(int Unit, int FromUnit, int FromIndex)> EffectCopies => _effectCopies;
 
     public int Count => _edits.Count + ActionCount;
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -114,7 +116,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -163,11 +165,13 @@ public sealed class PendingChanges
     public void SetGroup(string kind, int logic, int index, string wanted, string saved) { SetOrClear(_groups, (kind, logic, index), wanted, saved); Raise(); }
     public string GroupWanted(string kind, int logic, int index, string saved) => _groups.GetValueOrDefault((kind, logic, index), saved);
 
-    public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
-    public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
+    public void SetSpawnSet(string wanted, string saved) { SetOrClear(_spawnSet, 0, wanted, saved); Raise(); }
+    public string SpawnSetWanted(string saved) => _spawnSet.GetValueOrDefault(0, saved);
     public void SetTurn(string wanted, string saved) { SetOrClear(_turn, 0, wanted, saved); Raise(); }
     public string TurnWanted(string saved) => _turn.GetValueOrDefault(0, saved);
 
+    public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
+    public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
 
     public void SetTeam(int unit, string wanted, string saved) { SetOrClear(_teams, unit, wanted, saved); Raise(); }
     public string TeamWanted(int unit, string saved) => _teams.GetValueOrDefault(unit, saved);
@@ -255,11 +259,12 @@ public sealed class PendingChanges
         @out.AddRange(_teams.OrderBy(kv => kv.Key).Select(kv => new SaveAction.SetUnitTeam(kv.Key, kv.Value)));
         @out.AddRange(_groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Logic).ThenBy(kv => kv.Key.Index)
             .Select(kv => new SaveAction.SetSpawnGroup(kv.Key.Kind, kv.Key.Logic, kv.Key.Index, kv.Value)));
+        if (_spawnSet.TryGetValue(0, out var ss)) @out.Add(new SaveAction.SetEnemySpawnSet(ss));
+        if (_turn.TryGetValue(0, out var tn)) @out.Add(new SaveAction.SetTurnStructure(tn));
         @out.AddRange(_triggers.OrderBy(kv => kv.Key).Select(kv =>
             new SaveAction.SetTriggerActive(kv.Key, combat.Reinforcements.Triggers.First(t => t.Logic == kv.Key).Name, kv.Value)));
         @out.AddRange(_objectives.OrderBy(kv => kv.Key).Select(kv =>
             new SaveAction.SetObjectiveStatus(kv.Key, combat.Objectives.First(o => o.Index == kv.Key).Name, kv.Value)));
-        if (_turn.TryGetValue(0, out var tn)) @out.Add(new SaveAction.SetTurnStructure(tn));
         return @out;
     }
 
@@ -301,12 +306,13 @@ public sealed class PendingChanges
             foreach (var x in _effectRemovals.OrderBy(x => x.Unit).ThenBy(x => x.Index)) Add($"Remove effect {E(x.Unit, x.Index)} from {U(x.Unit)}");
             foreach (var (k, grp) in _groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Index))
                 Add($"Reinforcement {(k.Kind == "wave" ? "wave" : "definition")} {k.Index + 1}: group {CombatOps.GroupLabel(grp)}");
+            if (_spawnSet.TryGetValue(0, out var sset)) Add($"Enemy spawn set: {CombatOps.SpawnSetLabel(sset)}");
+            if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
             foreach (var (logic, on) in _triggers.OrderBy(kv => kv.Key))
                 Add($"Reinforcement trigger {cb.Reinforcements.Triggers.FirstOrDefault(t => t.Logic == logic)?.Title ?? "?"}: {(on ? "on" : "off")}");
             foreach (var (u, t) in _teams.OrderBy(kv => kv.Key)) Add($"Team: {U(u)} -> {t} (experimental)");
             foreach (var (i, st) in _objectives.OrderBy(kv => kv.Key))
                 Add($"Objective {cb.Objectives.FirstOrDefault(o => o.Index == i)?.Title ?? "?"}: {st}");
-            if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
         }
         if (_coil.Count > 0)
         {

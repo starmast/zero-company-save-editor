@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format follows
   Belly of the Beast. It is listed under Enemies, can be picked in a unit's team dropdown, and is included by "Enemies to 1 HP".
   Swapping units between Enemy, Enemy2 and Friendly AI is confirmed working in the game. In ordinary missions the game puts Enemy2
   units back on Enemy when it loads the save, so the option is hidden there and the editor refuses to set it.
+- Combat: a Scenery tab with the fire zones' turns left and every destructible prop's health, plus a "Restore scenery" button.
+  Not yet tried in the game.
+- Combat: the mission's enemy threat tier (for example Coil threat 10) can be swapped for another known tier on the Reinforcements
+  tab. For other factions' tiers (experimental, marked) an Imperial mission can also be switched to, say, Coil units. Not yet tried in the game.
 - Combat: in a three-way battle the Reinforcements tab can switch the turn structure to standard and back. Trying to add the
   three-way structure to an ordinary mission did not work (the game loaded it as empty), so it is not offered there.
 

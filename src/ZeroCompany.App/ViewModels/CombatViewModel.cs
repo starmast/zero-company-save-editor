@@ -32,7 +32,10 @@ public sealed class CombatViewModel : ScreenViewModel
         foreach (var u in _combat.Units) _cards.Add(Own(new UnitCardViewModel(_pending, fields, _combat, u, choices)));
         foreach (var o in _combat.Objectives) Objectives.Add(Own(new ObjectiveRowViewModel(_pending, fields, o)));
         foreach (var t in _combat.Timers) Timers.Add(new TimerRowViewModel(fields, t));
+        if (_combat.SpawnSet != null) SpawnSet = Own(new SpawnSetPicker(_pending, _combat.SpawnSet));
         if (_combat.TurnStructure != null) Turn = Own(new TurnStructurePicker(_pending, _combat.TurnStructure));
+        foreach (var h in _combat.Hazards) Hazards.Add(new HazardRowViewModel(fields, h));
+        foreach (var d in _combat.Destructibles) Destructibles.Add(new DestructibleRowViewModel(fields, d));
         var rv = _combat.Reinforcements;
         foreach (var w in rv.Waves) Waves.Add(Own(new WaveRowViewModel(_pending, fields, rv, w)));
         foreach (var c in rv.Configs) Configs.Add(Own(new WaveConfigRowViewModel(_pending, fields, rv, c)));
@@ -42,12 +45,14 @@ public sealed class CombatViewModel : ScreenViewModel
         foreach (var (key, label) in new[] { ("allies", "Allies"), ("enemies", "Enemies"), ("civilians", "Friendly AI"), ("other", "Other") })
             Tab(key, label, _cards.Count(c => c.TabKey == key));
         Tab("objectives", "Objectives", Objectives.Count);
-        Tab("reinforcements", "Reinforcements", rv.Waves.Count + rv.Configs.Count + rv.Triggers.Count);
+        Tab("reinforcements", "Reinforcements", rv.Waves.Count + rv.Configs.Count + rv.Triggers.Count + (SpawnSet != null ? 1 : 0) + (Turn != null ? 1 : 0));
+        Tab("scenery", "Scenery", Hazards.Count + Destructibles.Count);
         var want = main.Memory.CombatTab;
         _active = Tabs.Any(t => t.Key == want) ? want : Tabs.FirstOrDefault()?.Key ?? "allies";
         Summary = string.IsNullOrWhiteSpace(_combat.Title) ? "Combat autosave" : _combat.Title;
         EnemiesTo1Hp = new RelayCommand(() => SetAllHealth("Enemy", 1));
         SquadHeal = new RelayCommand(() => SetAllHealth("Player", FullHealValue));
+        RestoreScenery = new RelayCommand(() => _pending.SetEdits(_combat!.Destructibles.Where(d => d.Health.Value < d.MaxHealth.Value).Select(d => (d.Health, d.MaxHealth.Value))));
         Refresh();
     }
 
@@ -59,21 +64,30 @@ public sealed class CombatViewModel : ScreenViewModel
     public ObservableCollection<UnitCardViewModel> Units { get; } = new();
     public ObservableCollection<ObjectiveRowViewModel> Objectives { get; } = new();
     public ObservableCollection<TimerRowViewModel> Timers { get; } = new();
+    public ObservableCollection<HazardRowViewModel> Hazards { get; } = new();
+    public ObservableCollection<DestructibleRowViewModel> Destructibles { get; } = new();
     public ObservableCollection<WaveRowViewModel> Waves { get; } = new();
     public ObservableCollection<WaveConfigRowViewModel> Configs { get; } = new();
     public ObservableCollection<TriggerRowViewModel> Triggers { get; } = new();
+    public SpawnSetPicker? SpawnSet { get; }
+    public TurnStructurePicker? Turn { get; }
+    public bool HasTurn => Turn != null;
+    public bool HasSpawnSet => SpawnSet != null;
     public bool NoWaves => Waves.Count == 0;
     public bool HasTriggers => Triggers.Count > 0;
     public System.Windows.Input.ICommand? EnemiesTo1Hp { get; }
     public System.Windows.Input.ICommand? SquadHeal { get; }
+    public System.Windows.Input.ICommand? RestoreScenery { get; }
 
     public string ActiveTab => _active;
     public bool ShowUnits => HasCombat && _active is "allies" or "enemies" or "civilians" or "other";
-    public TurnStructurePicker? Turn { get; }
-    public bool HasTurn => Turn != null;
     public bool ShowObjectives => HasCombat && _active == "objectives";
     public bool ShowTimers => ShowObjectives && Timers.Count > 0;
     public bool ShowReinforcements => HasCombat && _active == "reinforcements";
+    public bool ShowSpawnSet => ShowReinforcements && (SpawnSet != null || Turn != null);
+    public bool ShowScenery => HasCombat && _active == "scenery";
+    public bool ShowHazards => ShowScenery && Hazards.Count > 0;
+    public bool ShowDestructibles => ShowScenery && Destructibles.Count > 0;
     public bool ShowAllyActions => _active == "allies";
     public bool ShowEnemyActions => _active == "enemies";
 
@@ -89,7 +103,7 @@ public sealed class CombatViewModel : ScreenViewModel
         foreach (var t in Tabs) t.IsActive = t.Key == _active;
         Units.Clear();
         foreach (var c in _cards.Where(c => c.TabKey == _active)) Units.Add(c);
-        foreach (var n in new[] { nameof(ActiveTab), nameof(ShowUnits), nameof(ShowObjectives), nameof(ShowReinforcements), nameof(ShowTimers), nameof(ShowAllyActions), nameof(ShowEnemyActions) })
+        foreach (var n in new[] { nameof(ActiveTab), nameof(ShowUnits), nameof(ShowObjectives), nameof(ShowReinforcements), nameof(ShowSpawnSet), nameof(ShowTimers), nameof(ShowScenery), nameof(ShowHazards), nameof(ShowDestructibles), nameof(ShowAllyActions), nameof(ShowEnemyActions) })
             OnPropertyChanged(n);
     }
 

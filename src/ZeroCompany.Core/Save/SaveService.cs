@@ -408,6 +408,9 @@ public sealed class SaveService
                 case SaveAction.SetSpawnGroup sg:
                     if (!seen.Add($"grp{sg.Kind}/{sg.Logic}/{sg.Index}")) throw new EditException("duplicate spawn group change");
                     return CombatOps.SetSpawnGroup(g, sg.Kind, sg.Logic, sg.Index, sg.Group, cut);
+                case SaveAction.SetEnemySpawnSet ss:
+                    if (!seen.Add("spawnset")) throw new EditException("duplicate spawn set change");
+                    return CombatOps.SetEnemySpawnSet(g, ss.Set, cut);
                 case SaveAction.SetTurnStructure ts:
                     if (!seen.Add("turn")) throw new EditException("duplicate turn structure change");
                     return CombatOps.SetTurnStructure(g, ts.Structure, cut);
@@ -605,11 +608,13 @@ public sealed class SaveService
             var nodes = CombatOps.SpawnGroupOf(g2, p[0], int.Parse(p[1]), int.Parse(p[2]));
             if (nodes != group) throw new EditException("verification failed: a spawn group is not what was intended");
         }
+        if (cut.EnemySpawnSet != null && CombatOps.EnemySpawnSetOf(g2) != cut.EnemySpawnSet)
+            throw new EditException("verification failed: the enemy spawn set is not what was intended");
+        if (cut.TurnStructure != null && CombatOps.TurnStructureOf(g2) != cut.TurnStructure)
+            throw new EditException("verification failed: the turn structure is not what was intended");
         foreach (var (logic, active) in cut.TriggerActive)
             if (CombatOps.TriggerActiveOf(g2, logic) != active)
                 throw new EditException("verification failed: a reinforcement trigger is not what was intended");
-        if (cut.TurnStructure != null && CombatOps.TurnStructureOf(g2) != cut.TurnStructure)
-            throw new EditException("verification failed: the turn structure is not what was intended");
         foreach (var (i, st) in cut.ObjectiveStatuses)
             if (CombatOps.ObjectiveStatus(g2, i) != st)
                 throw new EditException("verification failed: an objective's status is not what was intended");
