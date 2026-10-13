@@ -14,8 +14,9 @@
 Combat saves are newer territory than the rest of the editor. **Try your edits on a copy first** ("Save as copy"), load it in the
 game, and keep the automatic backup.
 
-What has been tried in the game: setting health (enemies to 1, allies to a high value), and switching a unit's team. Everything
-else below was checked against saves the game wrote and re-read after editing, but not played through.
+What has been tried in the game: setting health (enemies to 1, allies to a high value), and switching a unit's team (Enemy,
+Enemy2 and Friendly AI, both ways). Everything else below was checked against saves the game wrote and re-read after editing, but
+not played through. The scenery and the enemy threat tier in particular have not been tried in the game.
 
 - **Health** is the unit's saved base value. When the game loads the save it caps Health at the unit's real maximum, so a high
   value works as a full heal and does not stay at, say, 999. The editor can't show that maximum.
@@ -29,6 +30,19 @@ else below was checked against saves the game wrote and re-read after editing, b
   - A **hero** (a player-class unit) turned **Enemy** or **Friendly AI** loads but skips its turn: the AI has no abilities for it,
     and abilities come from the unit's class, not the save. The editor warns about this. Turning any unit into an Enemy also
     copies the AI area and faction tags and the action-point refresh values of the nearest enemy; that was not enough for heroes.
+  - **Enemy2** is the second hostile side of a **three-way battle** (Belly of the Beast is one). It is offered only in saves
+    that already are one, and the editor refuses it elsewhere. In an ordinary mission the game puts Enemy2 units back on Enemy
+    when it loads the save, so they never fight the other enemies. Giving such a mission the three-way turn structure was
+    tried and does not work: the game loaded it as empty. The turn structure can be switched to standard and back, but only in a
+    save that has it.
+- **Enemy threat tier** (Reinforcements tab, *Mission settings*): swaps the mission's enemy spawn set, for example Coil threat 10
+  for 5. It is saved in fresh fights, but has been missing from saves made after loading a save and playing on (the game seems to
+  drop it when it loads), and then there is nothing to edit. It doesn't
+  change units already on the map. Only tiers seen in real saves are offered. Tiers of another faction are offered too and would
+  bring that faction's units into the mission; nobody knows yet what the game does with that. For later waves, edit the wave
+  definitions instead (delay, how often each may spawn, group).
+- **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place. Whether a prop that was
+  already destroyed comes back on load, and whether a low turns-left value puts a fire out, is not known.
 - **Objectives** only change the saved status (Active / Succeeded). A normal completion also fires follow-on steps (cutscenes,
   the next objective, reinforcements); flipping the status does not, so check the result in the game.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.

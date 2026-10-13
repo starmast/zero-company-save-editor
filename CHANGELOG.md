@@ -13,7 +13,8 @@ All notable changes to this project are documented here. The format follows
 - Combat: a Scenery tab with the fire zones' turns left and every destructible prop's health, plus a "Restore scenery" button.
   Not yet tried in the game.
 - Combat: the mission's enemy threat tier (for example Coil threat 10) can be swapped for another known tier on the Reinforcements
-  tab. For other factions' tiers (experimental, marked) an Imperial mission can also be switched to, say, Coil units. Not yet tried in the game.
+  tab. For other factions' tiers (experimental, marked) an Imperial mission can also be switched to, say, Coil units. Not yet tried in
+  the game; the game seems to drop the setting once a save has been loaded and played on, so later saves may not show it.
 - Combat: in a three-way battle the Reinforcements tab can switch the turn structure to standard and back. Trying to add the
   three-way structure to an ordinary mission did not work (the game loaded it as empty), so it is not offered there.
 

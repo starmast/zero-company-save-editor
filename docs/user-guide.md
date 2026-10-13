@@ -58,13 +58,21 @@ actions for that tab.
   **Advantage** and **position** (X Y Z in world units). Open **All stats** for every other base value (aim, attack, critical
   chance and so on) and **Effects** to remove an effect, change its stacks, or copy an effect from another unit. **Mark dead**
   sets the dead flag. The **Team** dropdown moves a unit to another side: *Ally* (you control it), *Friendly AI* (friendly, but the
-  game moves it, like a rescued VIP or an allied fighter) or *Enemy* ([limits](limitations.md#combat-tab)). Quick actions: **Heal
-  allies to full** and **Enemies to 1 HP**.
+  game moves it, like a rescued VIP or an allied fighter) or *Enemy*. In a **three-way battle** (a mission with two hostile sides
+  fighting each other as well as you, like Belly of the Beast) there is also *Enemy2*, the second hostile side, and units can be
+  moved between the two ([limits](limitations.md#combat-tab)). Quick actions: **Heal allies to full** and **Enemies to 1 HP**
+  (both enemy sides).
 - **Objectives** - each mission objective with its status; **Mark succeeded** or **Set back to active**. Counters such as
   occupy-region points and interactions are editable too. Above them, **Timers** show the turns left on a countdown, what it
   fails when it runs out, and let you raise it.
 - **Reinforcements** - the waves already on their way (the round each arrives, its spawn group, **Cancel wave**), the encounter's
-  wave definitions (delay, how many times each may spawn, group) and the triggers that start waves (switch off).
+  wave definitions (delay, how many times each may spawn, group) and the triggers that start waves (switch off). **Mission
+  settings** above them has the **enemy threat tier** the mission draws its units from (for example *Coil threat 10*; tiers of
+  other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. The threat tier is only
+  saved in fresh fights; it has been missing from saves made after loading a save and playing on (the game seems to drop it), and
+  then there is nothing to edit. For later waves use the wave definitions instead.
+- **Scenery** - the fire zones (turns left; they start near 9999, so they effectively never burn out) and every destructible prop
+  with its health. **Restore scenery** sets every damaged or destroyed prop back to full health.
 
 The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
 pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.

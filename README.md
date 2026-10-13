@@ -32,7 +32,8 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory**, **Galaxy** (influence, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
-  objectives, countdown timers and reinforcements. Newer than the rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).
+  objectives, countdown timers, reinforcements, fire zones and destructible scenery, and the enemy threat tier. Newer than the
+  rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).
 
 See the [user guide](docs/user-guide.md) for each screen in detail.
 
