@@ -41,7 +41,10 @@ Utility items and weapon mods, with how many you own. Use the search box to find
 **Add items** is a tab for items you never had, such as the reward you did not pick from a meditation (Tel's Jedi Meditation
 missions let you choose one of several utility items). It lists every utility item and weapon mod the game defines, marked
 *never owned* or *owned n*; **+** queues a new copy and **Apply to save** puts it in your inventory. The save keeps each copy as its
-own entry, so two of an item are two entries. It needs the [game data](game-data.md) (the item list comes from there), and it
+own entry, so two of an item are two entries. The list is long (about 150 items), so the tab has filters and a sort: **Show** (all,
+utility items, all weapon mods, or one mod slot such as Scope or Barrel), **Tier**, **Rarity**, **Never owned only**, **Queued only**,
+and **Sort by** name, tier, rarity or fewest owned; the search box matches every word you type, in any order, against the name,
+description, slot and rarity, and **Clear filters** resets it all. It needs the [game data](game-data.md) (the item list comes from there), and it
 can't add resources, which already have an editable amount. Try it on a copy first: it has not been tried in the game yet.
 
 ## Galaxy

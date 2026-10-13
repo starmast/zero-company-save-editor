@@ -18,6 +18,14 @@ public static class ArmoryOps
     /// <summary>"UtilityItem" or "Modification" for an addable item name, else null (resources and anything unrecognised).</summary>
     public static string? KindOf(string name) => NameRx.Match(name) is { Success: true } m ? m.Groups[1].Value : null;
 
+
+    /// <summary>The slot a weapon mod goes in, read from its name ("Modification_Scope_LongRange_T2" is "Scope"); "" for anything else.</summary>
+    public static string SlotOf(string name)
+    {
+        if (KindOf(name) != "Modification") return "";
+        var parts = name.Split('_');
+        return parts.Length >= 3 ? parts[1] : "";
+    }
     /// <summary>The object path and soft path the save stores for an item, e.g. <c>.../UtilityItems/UtilityItem_X.UtilityItem_X</c> and <c>.../UtilityItems/UtilityItem_X</c>.</summary>
     public static (string Object, string Soft) ItemPaths(string name)
     {

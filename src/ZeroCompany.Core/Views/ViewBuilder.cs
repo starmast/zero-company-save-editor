@@ -211,7 +211,7 @@ public static class ViewBuilder
             {
                 Asset = name, Kind = kind == "UtilityItem" ? "Utility" : "Modification", Tier = info.Tier, Rarity = info.Rarity,
                 Name = (m.Db.ItemLabel(name) ?? Naming.Pretty(name)) + (info.Tier is int t and not 0 ? $" (T{t})" : ""),
-                Description = info.Description, Owned = owned.GetValueOrDefault(name),
+                Description = info.Description, Owned = owned.GetValueOrDefault(name), Slot = ArmoryOps.SlotOf(name),
             });
         }
         addable = addable.OrderBy(x => KindOrder(x.Kind)).ThenBy(x => x.Name, Ord).ToList();

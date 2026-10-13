@@ -61,6 +61,48 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Armory_add_items_filters_sort_and_clear()
+    {
+        using var rig = Open("armory");
+        var vm = Assert.IsType<ArmoryViewModel>(rig.Main.Screen);
+        Headless.Run(() => Assert.Single(vm.Tabs, t => t.Key == "Add").Command.Execute(null));
+        Skip.IfNot(vm.HasGameData, "no game data in this test setup");
+        int total = vm.VisibleAdd.Count;
+        rig.Shot("10b-armory-add-items");
+        Assert.True(vm.ShowAddTools);
+        Assert.StartsWith($"Showing {total} of {total}", vm.AddSummary);
+
+        Headless.Run(() => vm.NeverOwnedOnly = true);
+        Assert.NotEmpty(vm.VisibleAdd);
+        Assert.All(vm.VisibleAdd, c => Assert.True(c.NeverOwned));
+        Headless.Run(() => vm.NeverOwnedOnly = false);
+
+        var mods = vm.GroupChoices.FirstOrDefault(g => g.Value == "Mods");
+        Skip.If(mods == null, "the game data has no weapon mods");
+        Headless.Run(() => vm.SelGroup = mods!);
+        Assert.NotEmpty(vm.VisibleAdd);
+        Assert.All(vm.VisibleAdd, c => Assert.Equal("Modification", c.Kind));
+
+        Headless.Run(() => vm.SelSort = vm.SortChoices.First(s => s.Value == "TierHigh"));
+        var tiers = vm.VisibleAdd.Select(c => c.Item.Tier ?? 0).ToList();
+        Assert.Equal(tiers.OrderByDescending(t => t).ToList(), tiers);
+
+        var card = vm.VisibleAdd[0];
+        Headless.Run(() => card.Plus.Execute(null));
+        Headless.Run(() => vm.QueuedOnly = true);
+        Assert.Equal(new[] { card }, vm.VisibleAdd);                         // only the queued item
+        Assert.Contains("1 copy queued", vm.AddSummary);
+        Headless.Run(() => card.Minus.Execute(null));
+        Assert.Empty(vm.VisibleAdd);                                         // un-queuing drops it from "queued only"
+
+        Headless.Run(() => vm.ClearFilters.Execute(null));
+        Assert.Equal(total, vm.VisibleAdd.Count);
+        Assert.False(vm.QueuedOnly);
+        Assert.Equal("All", vm.SelGroup.Value);
+        Assert.Equal("Name", vm.SelSort.Value);
+    }
+
+    [SkippableFact]
     public void Medbay_renders_slots_and_costs()
     {
         using var rig = Open("medbay");

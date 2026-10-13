@@ -45,8 +45,47 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
+    <Border Classes="panel" Padding="14,10" IsVisible="{Binding ShowAddTools}">
+      <StackPanel Spacing="8">
+        <WrapPanel>
+          <StackPanel Margin="0,0,12,6" Spacing="2">
+            <TextBlock Classes="caps mute small" Text="SHOW" />
+            <ComboBox Width="210" ItemsSource="{Binding GroupChoices}" SelectedItem="{Binding SelGroup, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Margin="0,0,12,6" Spacing="2">
+            <TextBlock Classes="caps mute small" Text="TIER" />
+            <ComboBox Width="130" ItemsSource="{Binding TierChoices}" SelectedItem="{Binding SelTier, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Margin="0,0,12,6" Spacing="2">
+            <TextBlock Classes="caps mute small" Text="RARITY" />
+            <ComboBox Width="150" ItemsSource="{Binding RarityChoices}" SelectedItem="{Binding SelRarity, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Margin="0,0,12,6" Spacing="2">
+            <TextBlock Classes="caps mute small" Text="SORT BY" />
+            <ComboBox Width="190" ItemsSource="{Binding SortChoices}" SelectedItem="{Binding SelSort, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Margin="0,16,0,6" Orientation="Horizontal" Spacing="16">
+            <CheckBox Content="Never owned only" IsChecked="{Binding NeverOwnedOnly, Mode=TwoWay}" />
+            <CheckBox Content="Queued only" IsChecked="{Binding QueuedOnly, Mode=TwoWay}" />
+          </StackPanel>
+        </WrapPanel>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="mute" Text="{Binding AddSummary}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Clear filters" Command="{Binding ClearFilters}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
     <TextBlock Classes="mute small" TextWrapping="Wrap" IsVisible="{Binding ShowAdd}"
-               Text="Items the game defines, including ones you never got (for example the rewards of a meditation you did not choose). + queues a new copy; Apply to save adds it to the inventory. The save keeps each copy as its own entry, so two of an item are two entries. Weapon mods and utility items only; resources already have an editable amount. Not yet tried in the game." />
+               Text="Items the game defines, including ones you never got (for example the rewards of a meditation you did not choose). Search matches every word you type, in any order. + queues a new copy; Apply to save adds it to the inventory. The save keeps each copy as its own entry, so two of an item are two entries. Weapon mods and utility items only; resources already have an editable amount. Not yet tried in the game." />
 
     <ItemsControl ItemsSource="{Binding VisibleAdd}" IsVisible="{Binding ShowAdd}">
       <ItemsControl.ItemsPanel>
@@ -58,16 +97,16 @@
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="2">
                 <TextBlock Classes="h2" FontSize="19" Text="{Binding Name}" TextWrapping="Wrap" />
-                <TextBlock Classes="caps ice small" Text="{Binding Meta}" />
+                <TextBlock Classes="caps ice small" Text="{Binding Meta}" TextWrapping="Wrap" />
                 <TextBlock Classes="caps mute small" Text="{Binding Owned}" />
                 <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
               </StackPanel>
               <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2" HorizontalAlignment="Right">
                 <TextBlock Classes="caps mute small" Text="ADD" HorizontalAlignment="Right" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Button Content="-" Command="{Binding Minus}" Width="32" />
+                  <Button Content="−" Command="{Binding Minus}" Width="34" Height="34" Padding="0" FontSize="20" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
                   <TextBlock Text="{Binding QueuedText}" Width="34" TextAlignment="Center" VerticalAlignment="Center" />
-                  <Button Content="+" Command="{Binding Plus}" Width="32" />
+                  <Button Content="+" Command="{Binding Plus}" Width="34" Height="34" Padding="0" FontSize="20" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
                 </StackPanel>
               </StackPanel>
             </Grid>

@@ -173,6 +173,8 @@ public sealed class ArmoryAddView
     public string Description { get; init; } = "";
     /// <summary>How many entries of it the save already has.</summary>
     public int Owned { get; init; }
+    /// <summary>The weapon-mod slot (Scope, Barrel, Stabilizer, Cells ...), or "" for utility items.</summary>
+    public string Slot { get; init; } = "";
 }
 
 public sealed class ArmoryView
