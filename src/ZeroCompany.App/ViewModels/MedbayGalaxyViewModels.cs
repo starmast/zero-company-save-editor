@@ -143,7 +143,15 @@ public sealed class MissionRowViewModel : ViewModelBase, IDisposable
     }
 
     public string Title => _m.Title;
-    public string Detail => $"{_m.Kind} · {_m.Status}" + (_m.TurnAdded >= 0 ? $" · offered turn {_m.TurnAdded}" : "");
+    public string Detail => string.Join(" · ", new[]
+    {
+        _m.Kind, _m.Place, _m.Difficulty, _m.UsualFaction.Length > 0 ? "normally vs " + _m.UsualFaction : "", _m.Status,
+        _m.TurnAdded >= 0 ? $"offered cycle {_m.TurnAdded}" : "", _m.Lifespan > 0 ? $"lasts {_m.Lifespan} cycle{(_m.Lifespan == 1 ? "" : "s")}" : "",
+    }.Where(s => s.Length > 0));
+    public string Summary => _m.Summary;
+    public bool HasSummary => _m.Summary.Length > 0;
+    public string Objective => _m.Objective.Length > 0 ? "Objective: " + _m.Objective : "";
+    public bool HasObjective => _m.Objective.Length > 0;
     public bool CanEdit => _m.CanEdit;
     public bool CannotEdit => !_m.CanEdit;
     public string CurrentLabel => _m.Current.Length == 0 ? "No enemy set saved" : ZeroCompany.Core.Actions.CombatOps.SpawnSetLabel(_m.Current);
@@ -162,16 +170,23 @@ public sealed class MissionRowViewModel : ViewModelBase, IDisposable
 
 public sealed class GalaxyViewModel : ScreenViewModel
 {
+    readonly MainViewModel _main;
     readonly PendingChanges _pending;
+    string _active;
 
     public GalaxyViewModel(MainViewModel main, OpenSave open)
     {
+        _main = main;
         _pending = main.Session.Pending;
         var fields = Own(new FieldSet(_pending));
         foreach (var r in open.View.Galaxy.Regions) Regions.Add(new RegionCardViewModel(r, fields));
         foreach (var m in open.View.Galaxy.Missions) Missions.Add(Own(new MissionRowViewModel(_pending, m)));
         foreach (var u in open.View.Coil.Active) Coil.Add(Own(new CoilRowViewModel(_pending, u)));
         CoilHeading = "Active Coil upgrades: " + Coil.Count;
+        foreach (var (key, label) in new[] { ("influence", "Influence"), ("operations", "Operations"), ("missions", $"Missions {Missions.Count}"), ("coil", $"Coil upgrades {Coil.Count}") })
+            Tabs.Add(new TabViewModel(key, label, Select));
+        _active = Tabs.Any(t => t.Key == main.Memory.GalaxyTab) ? main.Memory.GalaxyTab : "influence";
+        Refresh();
         RemoveAll = Own(new ToggleActionViewModel(_pending, () => AllOn("Available"), () => Bulk("Available"), "Remove all", "Undo all"));
         PreventAll = Own(new ToggleActionViewModel(_pending, () => AllOn("Prevented"), () => Bulk("Prevented"), "Prevent all", "Undo all"));
     }
@@ -179,7 +194,22 @@ public sealed class GalaxyViewModel : ScreenViewModel
     public ObservableCollection<RegionCardViewModel> Regions { get; } = new();
     public ObservableCollection<CoilRowViewModel> Coil { get; } = new();
     public ObservableCollection<MissionRowViewModel> Missions { get; } = new();
+    public ObservableCollection<TabViewModel> Tabs { get; } = new();
+    public bool ShowInfluence => _active == "influence";
+    public bool ShowOperations => _active == "operations";
+    public bool ShowMissions => _active == "missions";
+    public bool ShowCoil => _active == "coil";
+    public string ActiveTab => _active;
+
+    void Select(string key) { _active = key; _main.Memory.GalaxyTab = key; Refresh(); }
+
+    void Refresh()
+    {
+        foreach (var t in Tabs) t.IsActive = t.Key == _active;
+        foreach (var n in new[] { nameof(ShowInfluence), nameof(ShowOperations), nameof(ShowMissions), nameof(ShowCoil), nameof(ActiveTab) }) OnPropertyChanged(n);
+    }
     public bool HasMissions => Missions.Count > 0;
+    public bool NoMissions => Missions.Count == 0;
     public string CoilHeading { get; }
     public bool HasRegions => Regions.Count > 0;
     public bool NoRegions => Regions.Count == 0;

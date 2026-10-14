@@ -27,6 +27,8 @@ public sealed class GameDatabase
     public Dictionary<string, CoilEffectInfo> CoilEffects { get; set; } = new();
     /// <summary>Coil unit code ('Striker') -> in-game unit name.</summary>
     public Dictionary<string, string> CoilUnits { get; set; } = new();
+    /// <summary>Mission asset name ("SK_Brentaal_035") -> its in-game name, summary, place and difficulty. Empty on databases extracted by older versions.</summary>
+    public Dictionary<string, MissionInfo> Missions { get; set; } = new();
     /// <summary>Every localized "*_Name" string by key (plain text); ability names are looked up here.</summary>
     public Dictionary<string, string> NameStrings { get; set; } = new();
 
@@ -183,6 +185,25 @@ public sealed class UpgradeIndex
     }
 
     public UpgradeRecipe? Get(string name) => ByName.GetValueOrDefault(name);
+}
+
+public sealed class MissionInfo
+{
+    public string Name { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public string Objective { get; set; } = "";
+    /// <summary>The place row, e.g. "BrentaalIV".</summary>
+    public string Location { get; set; } = "";
+    /// <summary>The map region, e.g. "CoreEast".</summary>
+    public string Region { get; set; } = "";
+    public string Difficulty { get; set; } = "";
+    /// <summary>The faction it normally fights, e.g. "Imperial".</summary>
+    public string Faction { get; set; } = "";
+    public string Type { get; set; } = "";
+    public int MinSquad { get; set; }
+    public int MaxSquad { get; set; }
+    /// <summary>How many cycles it stays on the map once offered.</summary>
+    public int Lifespan { get; set; }
 }
 
 public sealed class ItemInfo

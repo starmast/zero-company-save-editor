@@ -19,6 +19,7 @@ public sealed class UiMemory
     public string UpgradeTab { get; set; } = "Facilities";
     public string ArmoryTab { get; set; } = "Utility";
     public string CombatTab { get; set; } = "allies";
+    public string GalaxyTab { get; set; } = "influence";
     public string ArmoryFilter { get; set; } = "";
     public string AdvancedTab { get; set; } = "";
     public string AdvancedFilter { get; set; } = "";

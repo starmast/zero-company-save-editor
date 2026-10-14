@@ -16,6 +16,8 @@ public sealed class RawGameData
     public JObject Crisis { get; set; } = new();
     /// <summary>Missions that give inventory items, from <c>RewardReader</c>: { recipe, title, tiers:[{ choices, items:[{ item, amount }] }] }.</summary>
     public JArray Rewards { get; set; } = new();
+    /// <summary>Every mission's own description, from <c>MissionReader</c>.</summary>
+    public JArray Missions { get; set; } = new();
     /// <summary>namespace -> key -> text from Game.locres.</summary>
     public Dictionary<string, Dictionary<string, string>> Strings { get; set; } = new();
 
@@ -31,6 +33,7 @@ public sealed class RawGameData
         raw.Focus = Read(Path.Combine(dir, "raw_focus.json")) as JObject ?? new();
         raw.Crisis = Read(Path.Combine(dir, "raw_crisis.json")) as JObject ?? new();
         raw.Rewards = Read(Path.Combine(dir, "raw_rewards.json")) as JArray ?? new();           // optional: made by `zcassets rewards --json`
+        raw.Missions = Read(Path.Combine(dir, "raw_missions.json")) as JArray ?? new();         // optional: made by `zcassets missions --json`
         if (Read(Path.Combine(dir, "strings_en.json")) is JObject s)
             foreach (var ns in s.Properties())
                 raw.Strings[ns.Name] = ((JObject)ns.Value).Properties().ToDictionary(p => p.Name, p => (string?)p.Value ?? "");
@@ -69,11 +72,30 @@ public static class Distiller
             Effects = Effects(raw.Effects),
             FocusThresholds = Thresholds(raw.Focus),
             CoilEffects = Crisis(raw.Crisis),
+            Missions = Missions(raw.Missions),
             CoilUnits = CrisisUnitKeys.Where(k => flat.ContainsKey(k.Key)).ToDictionary(k => k.Unit, k => flat[k.Key]),
             NameStrings = flat.Where(kv => kv.Key.EndsWith("_Name", StringComparison.Ordinal))
                               .OrderBy(kv => kv.Key, StringComparer.Ordinal)
                               .ToDictionary(kv => kv.Key, kv => GameDatabase.Plain(kv.Value)),
         };
+    }
+
+    static Dictionary<string, MissionInfo> Missions(JArray missions)
+    {
+        var d = new Dictionary<string, MissionInfo>();
+        foreach (var m in missions.OfType<JObject>())
+        {
+            var asset = (string?)m["asset"];
+            if (string.IsNullOrEmpty(asset) || d.ContainsKey(asset)) continue;
+            d[asset] = new MissionInfo
+            {
+                Name = (string?)m["name"] ?? "", Summary = (string?)m["summary"] ?? "", Objective = (string?)m["objective"] ?? "",
+                Location = (string?)m["location"] ?? "", Region = (string?)m["region"] ?? "", Difficulty = (string?)m["difficulty"] ?? "",
+                Faction = (string?)m["faction"] ?? "", Type = (string?)m["type"] ?? "",
+                MinSquad = (int?)m["minSquad"] ?? 0, MaxSquad = (int?)m["maxSquad"] ?? 0, Lifespan = (int?)m["lifespan"] ?? 0,
+            };
+        }
+        return d;
     }
 
     /// <summary>Record, on each item, which missions (and which player choice) give it. Items the database does not know are skipped.</summary>

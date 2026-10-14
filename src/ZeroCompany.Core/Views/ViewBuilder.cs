@@ -234,14 +234,26 @@ public static class ViewBuilder
         "Optional" => "Mission", "CrisisMissions" => "Crisis mission", "AuthoredHero" => "Hero mission", _ => Naming.Pretty(folder),
     };
 
+    /// <summary>The mission's in-game name (from its own asset, else its localized name string), else its asset name made readable.</summary>
+    public static string MissionTitle(GameDatabase db, string asset)
+    {
+        if (db.Missions.TryGetValue(asset, out var i) && !string.IsNullOrWhiteSpace(i.Name)) return i.Name;
+        if (db.NameStrings.TryGetValue(asset + "_Name", out var t) && !string.IsNullOrWhiteSpace(t)) return GameDatabase.Plain(t);
+        return Naming.Pretty(asset);
+    }
+
     /// <summary>The missions offered in the Den, each with the enemy spawn sets it can be switched to.</summary>
     public static List<MissionView> Missions(SaveModel m) => MissionOps.Available(m.G).Select(x =>
     {
+        m.Db.Missions.TryGetValue(x.Asset, out var info);
         var choices = x.SpawnSet.Length == 0 ? new List<string>() : CombatOps.SpawnSetChoices(x.SpawnSet);
         return new MissionView
         {
             Id = x.Id, Kind = MissionKind(x.Folder), Status = x.Status, TurnAdded = x.TurnAdded, Current = x.SpawnSet,
-            Title = m.Db.NameStrings.TryGetValue(x.Asset + "_Name", out var t) && !string.IsNullOrWhiteSpace(t) ? GameDatabase.Plain(t) : Naming.Pretty(x.Asset),
+            Title = MissionTitle(m.Db, x.Asset),
+            Place = info == null ? "" : string.Join(", ", new[] { Naming.Pretty(info.Location), Naming.Pretty(info.Region) }.Where(s => s.Length > 0)),
+            Summary = info?.Summary ?? "", Objective = info?.Objective ?? "", Difficulty = info?.Difficulty ?? "",
+            UsualFaction = info?.Faction ?? "", Lifespan = info?.Lifespan ?? 0,
             CanEdit = x.Available && choices.Count > 0,
             Choices = choices.Select(c => (c, CombatOps.SpawnSetLabel(c) + (CombatOps.IsOtherFaction(x.SpawnSet, c) ? " (other faction)" : ""))).ToList(),
         };

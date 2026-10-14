@@ -210,6 +210,14 @@ public sealed class MissionView
     public string Status { get; init; } = "";
     public long TurnAdded { get; init; }
     public string Current { get; init; } = "";
+    /// <summary>"Brentaal IV, Core East" (empty when the game data has no place for it).</summary>
+    public string Place { get; init; } = "";
+    public string Summary { get; init; } = "";
+    public string Objective { get; init; } = "";
+    public string Difficulty { get; init; } = "";
+    /// <summary>The faction the mission normally fights (before any change here).</summary>
+    public string UsualFaction { get; init; } = "";
+    public int Lifespan { get; init; }
     public bool CanEdit { get; init; }
     public List<(string Value, string Label)> Choices { get; init; } = new();
 }

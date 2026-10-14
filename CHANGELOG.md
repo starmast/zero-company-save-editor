@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Galaxy: split into Influence, Operations, Missions and Coil upgrades tabs (Operations only explains that they are not editable yet). The
+  Missions tab now shows each mission's in-game name, place, difficulty, the faction it normally fights, how long it lasts, its summary
+  and objective. These come from the game's mission assets, so re-extract the game data (it adds a `Missions` list; without it the list
+  falls back to name strings and readable asset names). `zcassets missions [--json]` prints them.
 - Galaxy: a "Missions in the Den" list for saves taken at the Den. Each available mission has a drop-down for the enemy faction and threat
   tier it will spawn (its SelectedSpawnSet), which is the one place that choice can be made before a mission starts; the threat tier inside
   a running encounter does nothing. Confirmed in the game: Brentaal 035, changed from Imperial to Coil, launched with Coil units and Coil waves.

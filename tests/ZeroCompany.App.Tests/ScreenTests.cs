@@ -163,9 +163,19 @@ public class ScreenTests
     {
         using var rig = Open("galaxy");
         var vm = Assert.IsType<GalaxyViewModel>(rig.Main.Screen);
+        Assert.Equal(new[] { "influence", "operations", "missions", "coil" }, vm.Tabs.Select(t => t.Key));
+        Assert.True(vm.ShowInfluence); Assert.False(vm.ShowMissions);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "missions").Command.Execute(null));
+        Assert.True(vm.ShowMissions); Assert.False(vm.ShowInfluence); Assert.False(vm.ShowCoil);
         var row = vm.Missions.FirstOrDefault(m => m.CanEdit);
         Skip.If(row == null, "the sample save offers no editable mission");
         Assert.False(row!.IsChanged);
+        if (rig.Main.Session.Current!.Model.Db.Missions.Count > 0)
+        {
+            Assert.DoesNotContain("SK ", row.Title);                                  // a real name, not the asset name
+            Assert.True(row.HasSummary);
+            Assert.Contains("normally vs", row.Detail);
+        }
         var other = row.Choices.First(c => c.Label.EndsWith("(other faction)"));
         Headless.Run(() => row.Selected = other);
         Assert.True(row.IsChanged);

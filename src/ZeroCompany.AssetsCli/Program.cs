@@ -13,6 +13,7 @@ const string Usage = """
       zcassets dump <asset> [--grep TEXT] [--merged]
                                                   an asset's objects as JSON (--grep: only the properties mentioning TEXT)
       zcassets scan <path-part> <text> [--limit N] search inside every asset whose path contains <path-part> for TEXT
+      zcassets missions [path-part] [--json]      every mission's in-game name, place, difficulty and faction (--json: raw, for the editor's dev dumps)
       zcassets rewards [path-part] [--json]       inventory-item rewards of missions, grouped by the player choice that unlocks them (--json: raw, for the editor's dev dumps)
 
     <asset> is a package path (/Game/Game/Core/...), a file name, or a part of the path that matches exactly one asset.
@@ -39,8 +40,8 @@ try
     bool merged = Flag("--merged");
     bool asJson = Flag("--json");
     var cmd = a[0]; a.RemoveAt(0);
-    if (cmd is not ("find" or "dump" or "scan" or "rewards")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
-    if ((a.Count == 0 && cmd != "rewards") || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
+    if (cmd is not ("find" or "dump" or "scan" or "rewards" or "missions")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
+    if ((a.Count == 0 && cmd is not ("rewards" or "missions")) || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
 
     var env = new AppEnvironment();
     var s = AppSettings.Load(env);
@@ -72,6 +73,15 @@ try
 
     switch (cmd)
     {
+        case "missions":
+        {
+            var part = a.Count > 0 ? a[0] : "";
+            var all = MissionReader.Read(reader, log, default);
+            if (asJson) { Console.WriteLine(all.ToString(Formatting.Indented)); return 0; }
+            foreach (var m in all.Where(m => ((string)m["asset"]!).Contains(part, StringComparison.OrdinalIgnoreCase)))
+                Console.WriteLine($"{m["asset"],-34} \"{m["name"]}\"  {m["location"]} ({m["region"]})  {m["difficulty"]} vs {m["faction"]}  squad {m["minSquad"]}-{m["maxSquad"]}  lasts {m["lifespan"]}");
+            return 0;
+        }
         case "rewards":
         {
             var part = a.Count > 0 ? a[0] : "";
