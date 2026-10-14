@@ -73,7 +73,8 @@ public static partial class CombatOps
         if (structure is not (TurnStandard or TurnThreeWay)) throw new GvasException("unknown turn structure");
         var archive = MissionArchive(g) ?? throw new GvasException("this save has no mission actor");
         var node = TurnNode(g);
-        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(archive)));
+        // only the TurnStructure property may differ: the verifier keys properties by name, so adding or removing it moves no sibling
+        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(archive), "TurnStructure"));
         cut.TurnStructure = structure;
         if (structure == TurnStandard)
             return node == null ? g : g.RemoveFromArchive(archive, node.Start, node.End);
