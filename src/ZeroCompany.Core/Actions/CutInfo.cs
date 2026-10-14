@@ -20,6 +20,8 @@ public sealed class CutInfo
     public List<(string Asset, string Guid)> AddedItems { get; } = new();
     /// <summary>Combat scenery: the state each changed prop (full object path) must end up in, "Pristine" or "Destroyed".</summary>
     public Dictionary<string, string> SceneryStates { get; } = new();
+    /// <summary>Missions: expected enemy spawn set per available mission id (hex) after a change.</summary>
+    public Dictionary<string, string> MissionSets { get; } = new();
     public Dictionary<int, bool> UnitDead { get; } = new();
     /// <summary>Combat: expected active-effect count per unit index after the edit.</summary>
     public Dictionary<int, int> EffectCounts { get; } = new();

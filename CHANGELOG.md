@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Galaxy: a "Missions in the Den" list for saves taken at the Den. Each available mission has a drop-down for the enemy faction and threat
+  tier it will spawn (its SelectedSpawnSet), which is the one place that choice can be made before a mission starts; the threat tier inside
+  a running encounter does nothing. Not yet tried in the game.
 - Armory: an Add items tab for utility items and weapon mods you never had (for example the meditation rewards you did not pick). It
   lists what the game defines (with filters for type, mod slot, tier, rarity and mission choice rewards, a sort, and a never-owned / queued-only
   toggle; the game data now records which mission and choice gives each item, so re-extract it) and adds

@@ -37,8 +37,8 @@ public class SaveParityTests : IDisposable
         return new SaveService(new Dictionary<string, string> { ["t"] = dir }, Path.Combine(_tmp, "backups"), LoadDb(), () => null);
     }
 
-    /// <summary>Fields the Python editor never had: portraits are checked elsewhere, and "addable" is the C# Armory's add-items list.</summary>
-    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable" };
+    /// <summary>Fields the Python editor never had: portraits are checked elsewhere, and "addable" is the C# Armory's add-items list and "missions" the Galaxy screen's Den missions.</summary>
+    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions" };
 
     [SkippableFact]
     public void Fields_match_the_python_model()

@@ -360,6 +360,10 @@ public sealed class SaveService
                     if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
                     for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
                     break;
+                case SaveAction.SetMissionSpawnSet ms:
+                    if (!seen.Add("mission" + ms.Mission)) throw new EditException("duplicate mission change");
+                    g = MissionOps.SetSpawnSet(g, ms.Mission, ms.Set, cut);
+                    break;
                 case SaveAction.StartUpgrade s:
                     g = RunUpgrade(c, g, s.Id, s.Name, start: true, expedite: false, seen, touched);
                     break;
@@ -587,6 +591,14 @@ public sealed class SaveService
             foreach (var (actor, state) in cut.SceneryStates)
                 if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
                     throw new EditException("verification failed: a scenery prop's health does not match its state");
+        }
+        if (cut.MissionSets.Count > 0)
+        {
+            var now = MissionOps.Available(g2).ToDictionary(m => m.Id);
+            var was = MissionOps.Available(old).ToDictionary(m => m.Id);
+            if (now.Count != was.Count) throw new EditException("verification failed: the number of available missions changed");
+            foreach (var (id, set) in cut.MissionSets)
+                if (!now.TryGetValue(id, out var m) || m.SpawnSet != set) throw new EditException("verification failed: a mission's enemy set is not what was intended");
         }
         if (cut.AddedItems.Count > 0)
         {

@@ -159,6 +159,26 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Galaxy_lists_the_dens_missions_and_a_new_enemy_set_is_queued_and_described()
+    {
+        using var rig = Open("galaxy");
+        var vm = Assert.IsType<GalaxyViewModel>(rig.Main.Screen);
+        var row = vm.Missions.FirstOrDefault(m => m.CanEdit);
+        Skip.If(row == null, "the sample save offers no editable mission");
+        Assert.False(row!.IsChanged);
+        var other = row.Choices.First(c => c.Label.EndsWith("(other faction)"));
+        Headless.Run(() => row.Selected = other);
+        Assert.True(row.IsChanged);
+        var pending = rig.Main.Session.Pending;
+        Assert.Single(pending.MissionSetChanges);
+        Assert.Contains(rig.Main.Session.Current!.View.Galaxy.Missions.Where(m => m.CanEdit), m => pending.MissionSetChanges.ContainsKey(m.Id));
+        Assert.Contains(pending.Describe(rig.Main.Session.Current!), l => l.Text.Contains("enemies"));
+        rig.Shot("23-galaxy-missions");
+        Headless.Run(() => row.Selected = row.Choices[0]);                 // back to the saved set clears the change
+        Assert.Empty(pending.MissionSetChanges);
+    }
+
+    [SkippableFact]
     public void Discard_clears_everything_and_the_screen_follows()
     {
         using var rig = Open("galaxy");

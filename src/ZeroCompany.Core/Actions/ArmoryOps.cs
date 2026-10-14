@@ -118,7 +118,7 @@ public static class ArmoryOps
     /// A SoftObjectProperty value is three FStrings in a row: the package path, the asset name and a sub-path (empty here, just a zero
     /// length). Replace it, after checking that is the layout the node really has.
     /// </summary>
-    static GvasFile SetSoftPath(GvasFile g, GvasNode n, string packagePath, string assetName)
+    internal static GvasFile SetSoftPath(GvasFile g, GvasNode n, string packagePath, string assetName)
     {
         int len1 = BitConverter.ToInt32(g.Data, n.ValueOffset);
         int len2 = len1 >= 1 && 4 + len1 + 4 <= n.Size ? BitConverter.ToInt32(g.Data, n.ValueOffset + 4 + len1) : -1;
@@ -135,7 +135,7 @@ public static class ArmoryOps
     /// The GUID in a struct of four tagged IntProperty children A, B, C and D (this map's key and the value's ItemId), as 32 hex chars.
     /// The key is NOT a raw 16-byte GUID here (each part has its own property tag), so <see cref="GvasExtensions.GuidHex"/> does not apply.
     /// </summary>
-    static string StructGuid(GvasFile g, GvasNode s) =>
+    internal static string StructGuid(GvasFile g, GvasNode s) =>
         string.Concat(new[] { "A", "B", "C", "D" }.Select(n => unchecked((uint)(int)g.GetInt(g.Child(s, n) ?? throw new GvasException("unexpected GUID layout"))).ToString("X8")));
 
     /// <summary>Match <see cref="GvasExtensions.GuidHex"/>: the four little-endian parts as upper-case hex in A B C D order.</summary>

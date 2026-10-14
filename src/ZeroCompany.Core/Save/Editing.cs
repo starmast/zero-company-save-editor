@@ -27,6 +27,8 @@ public abstract record SaveAction
     public sealed record RemoveCoilUpgrades(IReadOnlyList<CoilChange> Changes) : SaveAction;
     /// <summary>Give the squad <c>Copies</c> new copies of an item it may never have had (a utility item or weapon mod, by asset name).</summary>
     public sealed record AddInventoryItem(string Asset, int Copies) : SaveAction;
+    /// <summary>Point an available Den mission (by its id) at another enemy spawn set: the faction and threat tier it will spawn.</summary>
+    public sealed record SetMissionSpawnSet(string Mission, string Set) : SaveAction;
     public sealed record StartUpgrade(string Id, string Name) : SaveAction;
     public sealed record ExpediteUpgrade(string Id, string Name) : SaveAction;
     public sealed record StartExpediteUpgrade(string Id, string Name) : SaveAction;

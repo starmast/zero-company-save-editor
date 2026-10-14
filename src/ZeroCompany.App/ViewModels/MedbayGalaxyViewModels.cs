@@ -129,6 +129,37 @@ public sealed class CoilRowViewModel : IDisposable
 }
 
 /// <summary>Galaxy (Holotable): one card per map region, plus the Coil's permanent upgrades, each of which can be removed.</summary>
+/// <summary>A mission offered in the Den, with a drop-down for the enemy faction and threat tier it will spawn.</summary>
+public sealed class MissionRowViewModel : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _p;
+    readonly MissionView _m;
+
+    public MissionRowViewModel(PendingChanges p, MissionView m)
+    {
+        _p = p; _m = m;
+        Choices = m.Choices.Select(c => new GroupChoice(c.Value, c.Label)).ToList();
+        p.Changed += OnChanged;
+    }
+
+    public string Title => _m.Title;
+    public string Detail => $"{_m.Kind} · {_m.Status}" + (_m.TurnAdded >= 0 ? $" · offered turn {_m.TurnAdded}" : "");
+    public bool CanEdit => _m.CanEdit;
+    public bool CannotEdit => !_m.CanEdit;
+    public string CurrentLabel => _m.Current.Length == 0 ? "No enemy set saved" : ZeroCompany.Core.Actions.CombatOps.SpawnSetLabel(_m.Current);
+    public IReadOnlyList<GroupChoice> Choices { get; }
+
+    public GroupChoice? Selected
+    {
+        get => Choices.FirstOrDefault(c => c.Value == _p.MissionSetWanted(_m.Id, _m.Current));
+        set { if (value != null) _p.SetMissionSet(_m.Id, value.Value, _m.Current); }
+    }
+
+    public bool IsChanged => _p.MissionSetChanges.ContainsKey(_m.Id);
+    void OnChanged() { OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(IsChanged)); }
+    public void Dispose() => _p.Changed -= OnChanged;
+}
+
 public sealed class GalaxyViewModel : ScreenViewModel
 {
     readonly PendingChanges _pending;
@@ -138,6 +169,7 @@ public sealed class GalaxyViewModel : ScreenViewModel
         _pending = main.Session.Pending;
         var fields = Own(new FieldSet(_pending));
         foreach (var r in open.View.Galaxy.Regions) Regions.Add(new RegionCardViewModel(r, fields));
+        foreach (var m in open.View.Galaxy.Missions) Missions.Add(Own(new MissionRowViewModel(_pending, m)));
         foreach (var u in open.View.Coil.Active) Coil.Add(Own(new CoilRowViewModel(_pending, u)));
         CoilHeading = "Active Coil upgrades: " + Coil.Count;
         RemoveAll = Own(new ToggleActionViewModel(_pending, () => AllOn("Available"), () => Bulk("Available"), "Remove all", "Undo all"));
@@ -146,6 +178,8 @@ public sealed class GalaxyViewModel : ScreenViewModel
 
     public ObservableCollection<RegionCardViewModel> Regions { get; } = new();
     public ObservableCollection<CoilRowViewModel> Coil { get; } = new();
+    public ObservableCollection<MissionRowViewModel> Missions { get; } = new();
+    public bool HasMissions => Missions.Count > 0;
     public string CoilHeading { get; }
     public bool HasRegions => Regions.Count > 0;
     public bool NoRegions => Regions.Count == 0;

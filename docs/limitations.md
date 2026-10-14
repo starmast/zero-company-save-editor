@@ -38,6 +38,9 @@ against saves the game wrote and re-read after editing, but not played through (
     save that has it. This matches the game's own data (read with `zcassets`, see [development.md](development.md)): the team
     assets list only themselves as friends for Enemy and Enemy2, so they are hostile to each other, and the Enemy2 turn group
     exists only in the three-way turn structure.
+- **Mission enemy set** (Galaxy screen, *Missions in the Den*): changes which faction and tier an available mission spawns when you
+  launch it. This is the intended way to change who you fight; it is not yet confirmed in the game. The crisis-elite set that
+  missions also carry is not offered.
 - **Enemy threat tier** (Reinforcements tab, *Mission settings*): swaps the mission's enemy spawn set, for example Coil threat 10
   for 5. **It does nothing for the encounter you are in.** The tier is only read when an encounter starts; after that the enemies on the
   map and the reinforcement waves already have their groups fixed in the save. This was tried on a hero mission: with the set changed

@@ -201,9 +201,23 @@ public sealed class RegionView
     public FieldRef? Reward { get; init; }
 }
 
+/// <summary>A mission the Den offers, with the enemy faction and threat tier it will spawn.</summary>
+public sealed class MissionView
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Kind { get; init; } = "";
+    public string Status { get; init; } = "";
+    public long TurnAdded { get; init; }
+    public string Current { get; init; } = "";
+    public bool CanEdit { get; init; }
+    public List<(string Value, string Label)> Choices { get; init; } = new();
+}
+
 public sealed class GalaxyView
 {
     public List<RegionView> Regions { get; init; } = new();
+    public List<MissionView> Missions { get; init; } = new();
 }
 
 public sealed class CoilRowView

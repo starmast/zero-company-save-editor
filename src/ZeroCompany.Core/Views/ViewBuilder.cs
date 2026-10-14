@@ -226,7 +226,26 @@ public static class ViewBuilder
             Tag = r.Tag, Name = r.Name, Influence = FieldRef.From(r.Influence), Contacts = FieldRef.From(r.Contacts),
             Reward = FieldRef.From(r.Reward),
         }).ToList(),
+        Missions = Missions(m),
     };
+
+    static string MissionKind(string folder) => folder switch
+    {
+        "Optional" => "Optional mission", "Hero" => "Hero mission", "Crisis" => "Crisis mission", "Main" or "Story" => "Story mission", _ => Naming.Pretty(folder),
+    };
+
+    /// <summary>The missions offered in the Den, each with the enemy spawn sets it can be switched to.</summary>
+    public static List<MissionView> Missions(SaveModel m) => MissionOps.Available(m.G).Select(x =>
+    {
+        var choices = x.SpawnSet.Length == 0 ? new List<string>() : CombatOps.SpawnSetChoices(x.SpawnSet);
+        return new MissionView
+        {
+            Id = x.Id, Kind = MissionKind(x.Folder), Status = x.Status, TurnAdded = x.TurnAdded, Current = x.SpawnSet,
+            Title = m.Db.NameStrings.TryGetValue(x.Asset + "_Name", out var t) && !string.IsNullOrWhiteSpace(t) ? GameDatabase.Plain(t) : Naming.Pretty(x.Asset),
+            CanEdit = x.Available && choices.Count > 0,
+            Choices = choices.Select(c => (c, CombatOps.SpawnSetLabel(c) + (CombatOps.IsOtherFaction(x.SpawnSet, c) ? " (other faction)" : ""))).ToList(),
+        };
+    }).ToList();
 
     /// <summary>Permanent Coil enemy upgrades (gained by failing Crisis missions); each can be removed.</summary>
     public static CoilView CoilUpgrades(SaveModel m)

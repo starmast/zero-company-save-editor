@@ -39,6 +39,38 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
+    <!-- Missions offered in the Den -->
+    <Border Classes="panel" IsVisible="{Binding HasMissions}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Missions in the Den" /></Border>
+        <ItemsControl ItemsSource="{Binding Missions}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:MissionRowViewModel">
+              <Border Classes="hairline" Padding="14,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" FontSize="19" Text="{Binding Title}" />
+                    <TextBlock Classes="mute small" Text="{Binding Detail}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Classes="caps mute small" Text="Enemies" />
+                    <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" MinWidth="240" IsVisible="{Binding CanEdit}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding CurrentLabel}" IsVisible="{Binding CannotEdit}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
+                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission. Not yet tried in the game." />
+      </StackPanel>
+    </Border>
+
     <!-- Coil upgrades -->
     <Border Classes="panel">
       <StackPanel>
