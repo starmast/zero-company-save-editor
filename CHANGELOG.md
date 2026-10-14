@@ -38,12 +38,31 @@ All notable changes to this project are documented here. The format follows
 - Combat: in a three-way battle the Reinforcements tab can switch the turn structure to standard and back. Trying to add the
   three-way structure to an ordinary mission did not work (the game loaded it as empty), so it is not offered there.
 
+### Fixed
+- Total focus could be written out of step with focus spent + unspent: raising unspent focus on the Overview and then levelling an
+  ability on the Focus tab (spending it, or granting more) dropped or overwrote the change to the total. The total now follows at once,
+  and the pending list shows it.
+- Bringing an operator back from the Memorial and reordering the roster in the same apply was always refused ("the roster changed").
+  A queued return now appears at the end of the roster strip and can be dragged into place.
+- A save locked by the game (for example mid-autosave), a read-only folder or an unexpected save layout closed the editor. These are
+  now error messages; anything else unexpected is shown in the banner and written to `crash.log` in the editor's data folder.
+- Screens could still be edited while a write was running, and those edits were silently lost. Everything but the progress is now
+  locked until the write ends.
+- Reloading the game data discarded pending edits without saying so; they are now kept unless the save changed on disk.
+- "Save as copy" dropped your pending edits; they now stay, since the open save is unchanged. Two copies made in the same second no
+  longer overwrite each other.
+- Linux/macOS: a save folder inside a Proton prefix was numbered by its position among all prefixes, so installing another Proton game
+  could hide its backup history. Ids no longer depend on other games; older history is moved over the first time it is needed.
+- Backups made in the same second were listed (and pruned) in the wrong order.
+- A turn-structure change no longer lets the verifier accept unrelated changes elsewhere in the mission actor.
+
 ### Security
 - The Oodle library that the game-data extractor downloads is checked against a pinned SHA-256 before it is loaded; anything else
   is deleted and refused. A copy you place yourself is not checked.
 - Portraits in saves (which may be someone else's) are decoded only as OpenEXR, never by format detection, with a size cap, and
   oversized entries in the portrait archive are skipped.
 - Magick.NET updated to 15.0.0.
+- A ZIP entry in a save that unpacks to more than 64 MB is refused instead of being read into memory.
 - The GitHub Actions are pinned to exact commits, and Dependabot now proposes weekly updates for NuGet packages and Actions.
 
 ## [0.5.0] - 2026-10-11
