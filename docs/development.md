@@ -108,7 +108,7 @@ zcdebug dump <object>      every simple property with its value (attribute struc
 zcdebug effects <unit>     the unit's active gameplay effects (Burning, Spotted ...)
 zcdebug set ... --write    change a property in the running game   (also: exec <console command>, eval <lua>)
 zcdebug attr <unit> <Attribute> <n> --write   set a stat (Health, ActionPoints ...) in the game and on the HUD
-zcdebug fx <unit> add|remove <Name> --write   add or remove a status effect (Burning, Spotted ...)
+zcdebug fx <unit> add|remove <Name> [n] --write   add (n stacks) or remove a status effect (Burning, Spotted ...)
 zcdebug repl [--write]     the same, interactively
 ```
 

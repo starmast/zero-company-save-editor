@@ -14,7 +14,7 @@ const string Usage = """
       zcdebug set <object|Class> <Property> <value> --write     change one property
       zcdebug attr <unit> <Attribute> <n> --write  set a stat (Health, ActionPoints ...) in the game and on the HUD
       zcdebug effects <unit>                  the unit's active gameplay effects (Burning, Spotted ...)
-      zcdebug fx <unit> add|remove <Name> --write  add or remove a status effect
+      zcdebug fx <unit> add|remove <Name> [n] --write  add (n stacks) or remove a status effect
       zcdebug exec <console command> --write  run an Unreal console command
       zcdebug eval <lua> --write              run Lua inside the game (UE4SS API: FindAllOf, StaticFindObject ...)
       zcdebug repl [--write]                  the same commands interactively

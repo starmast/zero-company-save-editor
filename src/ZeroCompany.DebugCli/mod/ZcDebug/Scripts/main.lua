@@ -266,7 +266,12 @@ local function effectNames(asc)
     for i = 1, math.min(#ge, 60) do
         local ok, n = pcall(function()
             local d = ge[i].Spec.Def
-            if d and d:IsValid() then return (d:GetFName():ToString():gsub("^Default__GE_", ""):gsub("_C$", "")) end
+            if d and d:IsValid() then
+                local n = d:GetFName():ToString():gsub("^Default__GE_", ""):gsub("_C$", "")
+                local stacks = ge[i].Spec.StackCount
+                if type(stacks) == "number" and stacks > 1 then n = n .. " x" .. stacks end   -- stackable effects (Burning ...)
+                return n
+            end
             return "?"
         end)
         names[i] = ok and n or "?"
@@ -283,8 +288,10 @@ end
 function commands.fx(args)
     local a = splitArgs(args, 3)
     local asc = unitAsc(a[1])
-    local verb, name = a[2], a[3]
-    if (verb ~= "add" and verb ~= "remove") or not name or name == "" then error("usage: fx <unit> add|remove <Name>") end
+    local verb = a[2]
+    local name, count = (a[3] or ""):match("^(%S+)%s*(%d*)")
+    count = math.max(1, math.min(tonumber(count) or 1, 20))
+    if (verb ~= "add" and verb ~= "remove") or not name then error("usage: fx <unit> add|remove <Name> [count]") end
     local cls
     if name:find("/") then
         cls = StaticFindObject(name)
@@ -293,13 +300,17 @@ function commands.fx(args)
         cls = StaticFindObject("/Game/Game/GameData/Abilities/ResultEffects/StatusEffects/GE_" .. base .. ".GE_" .. base .. "_C")
     end
     if not (cls and cls:IsValid()) then error("effect class not found: " .. name .. " (give a full class path if it is not a status effect)") end
-    local before = #effectNames(asc)
     if verb == "add" then
-        asc:BP_ApplyGameplayEffectToSelf(cls, 1.0, asc:MakeEffectContext())
+        -- each application is one stack; stackable effects (Burning) merge into one entry up to their limit
+        for _ = 1, count do asc:BP_ApplyGameplayEffectToSelf(cls, 1.0, asc:MakeEffectContext()) end
     else
-        asc:RemoveActiveGameplayEffectBySourceEffect(cls, nil, -1)
+        asc:RemoveActiveGameplayEffectBySourceEffect(cls, nil, -1)    -- removes every stack
     end
-    return verb .. " " .. name .. ": " .. before .. " -> " .. #effectNames(asc) .. " effect(s)"
+    local after = effectNames(asc)
+    local shown = {}
+    for _, n in ipairs(after) do if n:find(name, 1, true) then shown[#shown + 1] = n end end
+    return verb .. " " .. name .. (verb == "add" and (" x" .. count) or "") .. ": " .. #after .. " effect(s); now " ..
+        (#shown > 0 and table.concat(shown, ", ") or "none of it")
 end
 
 function commands.exec(args)

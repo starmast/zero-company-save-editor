@@ -53,7 +53,7 @@ public static class Session
             line = line.Trim();
             if (line.Length == 0) continue;
             if (line is "quit" or "exit" or "q") return 0;
-            if (line == "help") { Console.WriteLine("ping | find <Class> [n] | props <o> | dump <o> | get <o> <P> | set <o> <P> <v> | attr <unit> <Attr> <n> | effects <unit> | fx <unit> add|remove <Name> | exec <cmd> | eval <lua> | status"); continue; }
+            if (line == "help") { Console.WriteLine("ping | find <Class> [n] | props <o> | dump <o> | get <o> <P> | set <o> <P> <v> | attr <unit> <Attr> <n> | effects <unit> | fx <unit> add|remove <Name> [n] | exec <cmd> | eval <lua> | status"); continue; }
             if (line == "status") { Status(b); continue; }
             var sp = line.IndexOf(' ');
             var cmd = sp < 0 ? line : line[..sp]; var rest = sp < 0 ? "" : line[(sp + 1)..];
