@@ -137,6 +137,36 @@ public class PendingAndEnvTests : IDisposable
     }
 
     [Fact]
+    public void Proton_folder_ids_do_not_change_when_other_games_are_installed()
+    {
+        string Pfx(string app) => Path.Combine(_tmp, ".local", "share", "Steam", "steamapps", "compatdata", app, "pfx", "drive_c", "users",
+            "steamuser", "AppData", "Local", "SWZeroCompany", "Saved", "SaveGames");
+        var zc = Pfx("500"); Directory.CreateDirectory(zc);
+        Directory.CreateDirectory(Path.Combine(_tmp, ".local", "share", "Steam", "steamapps", "compatdata", "100", "pfx", "drive_c", "users", "steamuser"));
+        Assert.Equal(new[] { ("game", zc) }, AppEnvironment.ProtonIds(AppEnvironment.ProtonSaveDirs(_tmp)));
+        // another Proton game (no Zero Company saves) sorts first: nothing moves
+        Directory.CreateDirectory(Path.Combine(_tmp, ".local", "share", "Steam", "steamapps", "compatdata", "050", "pfx", "drive_c", "users", "steamuser"));
+        Assert.Equal(new[] { ("game", zc) }, AppEnvironment.ProtonIds(AppEnvironment.ProtonSaveDirs(_tmp)));
+        var second = Pfx("900"); Directory.CreateDirectory(second);
+        var ids = AppEnvironment.ProtonIds(AppEnvironment.ProtonSaveDirs(_tmp)).ToList();
+        Assert.Equal(("game", zc), ids[0]);
+        Assert.Matches("^proton-[0-9a-f]{8}$", ids[1].Id);
+    }
+
+    [Fact]
+    public void Backups_of_an_old_numbered_proton_folder_move_to_the_game_folder()
+    {
+        var saves = Path.Combine(_tmp, "saves"); Directory.CreateDirectory(saves);
+        var root = Path.Combine(_tmp, "backups");
+        var old = Path.Combine(root, "proton3", "Slot1"); Directory.CreateDirectory(old);
+        File.WriteAllText(Path.Combine(old, "20260101-000000.orig.sav"), "x");
+        var svc = new SaveService(new Dictionary<string, string> { ["game"] = saves }, root);
+        var d = svc.BackupDir("Slot1.sav", "game");
+        Assert.True(File.Exists(Path.Combine(d, "20260101-000000.orig.sav")));
+        Assert.False(Directory.Exists(old));
+    }
+
+    [Fact]
     public void User_folders_get_stable_ids_and_missing_ones_are_skipped()
     {
         var env = new AppEnvironment(Path.Combine(_tmp, "data")) { UseSystemSaveDirs = false };

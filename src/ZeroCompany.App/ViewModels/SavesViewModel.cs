@@ -65,7 +65,7 @@ public sealed partial class SavesViewModel : ScreenViewModel
     static string FolderName(string id) => id switch
     {
         "game" => "Game folder",
-        _ when id.StartsWith("proton", StringComparison.Ordinal) => "Proton prefix " + id[6..],
+        _ when id.StartsWith("proton", StringComparison.Ordinal) => "Proton prefix",
         _ when id.StartsWith("user", StringComparison.Ordinal) => "Added folder " + id[4..],
         _ => id,
     };

@@ -27,7 +27,8 @@ public sealed class AppEnvironment
     // ---- save folders -----------------------------------------------------------------
     /// <summary>
     /// Folders to look for saves in (id -> path). The id is stable per folder so backups of same-named saves in different
-    /// folders never share history: "game" for the install's own folder, then "proton1".., then "user1"...
+    /// folders never share history: "game" for the install's own folder (on Linux/macOS the first Wine prefix that has one),
+    /// "proton-&lt;hash of its path&gt;" for any further prefix, then "user1", "user2"... in the order folders were added.
     /// Only folders that exist are returned.
     /// </summary>
     public Dictionary<string, string> DiscoverSaveDirs(IEnumerable<string>? userDirs = null, string? home = null)
@@ -42,14 +43,25 @@ public sealed class AppEnvironment
             Add("game", Path.Combine(local, "SWZeroCompany", "Saved", "SaveGames"));
         }
         else
-        {
-            int n = 0;
-            foreach (var p in ProtonSaveDirs(home ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)))
-                Add(n++ == 0 ? "game" : $"proton{n}", p);
-        }
+            foreach (var (id, p) in ProtonIds(ProtonSaveDirs(home ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))))
+                Add(id, p);
         int u = 1;
         foreach (var d in userDirs ?? Array.Empty<string>()) Add($"user{u++}", d);
         return found;
+    }
+
+    /// <summary>
+    /// Ids for the Wine-prefix save folders that exist. They must not depend on what else is installed: every Proton game has a prefix,
+    /// so numbering them by position renamed the folder (and hid its backups) whenever a game was installed or removed.
+    /// </summary>
+    public static IEnumerable<(string Id, string Path)> ProtonIds(IEnumerable<string> candidates)
+    {
+        bool first = true;
+        foreach (var p in candidates.Where(Directory.Exists).Distinct().OrderBy(p => p, StringComparer.Ordinal))
+        {
+            yield return (first ? "game" : "proton-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(p)))[..8].ToLowerInvariant(), p);
+            first = false;
+        }
     }
 
     /// <summary>Save folders inside Steam/Heroic/Lutris Wine prefixes under <paramref name="home"/> (best effort).</summary>

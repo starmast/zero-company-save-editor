@@ -82,8 +82,25 @@ public sealed class SaveService
         dirId ??= Current?.DirId;
         if (dirId == null || !Dirs.ContainsKey(dirId)) throw new EditException("unknown save folder");
         var d = Path.Combine(_backupRoot, dirId, Path.GetFileNameWithoutExtension(name));
+        if (dirId == "game" && !Directory.Exists(d)) AdoptLegacyBackups(d, Path.GetFileNameWithoutExtension(name));
         Directory.CreateDirectory(d);
         return d;
+    }
+
+    static readonly Regex LegacyProtonId = new(@"^proton\d+$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Before 0.5 a Wine-prefix folder was numbered by its position ("proton3"), which changed whenever a game was installed. If exactly one
+    /// such folder holds history for this save name, it is this folder's: move it under "game", where it is found from now on.
+    /// </summary>
+    void AdoptLegacyBackups(string dest, string stem)
+    {
+        if (!Directory.Exists(_backupRoot)) return;
+        var old = Directory.GetDirectories(_backupRoot).Where(x => LegacyProtonId.IsMatch(Path.GetFileName(x)))
+                           .Select(x => Path.Combine(x, stem)).Where(Directory.Exists).ToList();
+        if (old.Count != 1) return;
+        try { Directory.CreateDirectory(Path.GetDirectoryName(dest)!); Directory.Move(old[0], dest); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     // -- images (read-only) ------------------------------------------------
