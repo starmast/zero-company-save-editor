@@ -101,7 +101,7 @@ public sealed partial class PersonnelViewModel : ScreenViewModel
     {
         Live.Clear(); Memorial.Clear();
         foreach (var g in Order().Where(_byGuid.ContainsKey)) Live.Add(Chip(_byGuid[g]));
-        foreach (var o in _open.View.Personnel.Memorial) Memorial.Add(Chip(o));
+        foreach (var o in _open.View.Personnel.Memorial.Where(o => !_pending.Revives.Contains(o.Guid))) Memorial.Add(Chip(o));    // a queued revive shows in the roster
         OnPropertyChanged(nameof(HasMemorial));
         RefreshChips();
     }

@@ -667,8 +667,10 @@ public sealed class SaveService
             if (!ReviveOps.DiedMap(g2).Keys.ToHashSet().SetEquals(ReviveOps.DiedMap(old).Keys.Where(x => !gone.Contains(x))))
                 throw new EditException("verification failed: the death records are not what was intended");
             var ro = ReviveOps.RosterOrder(g2); var ro0 = ReviveOps.RosterOrder(old);
-            if (!ro.Take(ro0.Count).SequenceEqual(ro0) || !ro.Skip(ro0.Count).ToHashSet().SetEquals(gone))
-                throw new EditException("verification failed: the roster is not what was intended");
+            bool rosterOk = cut.Roster != null                    // reordered too: the order itself is checked against cut.Roster below
+                ? ro.Count == ro0.Count + gone.Count && ro.ToHashSet().SetEquals(ro0.Concat(gone))
+                : ro.Take(ro0.Count).SequenceEqual(ro0) && ro.Skip(ro0.Count).ToHashSet().SetEquals(gone);
+            if (!rosterOk) throw new EditException("verification failed: the roster is not what was intended");
             var recBefore = ReviveOps.RecruitedMap(old); var recAfter = ReviveOps.RecruitedMap(g2);
             var rest = recAfter.Where(kv => !gone.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
             if (rest.Count != recBefore.Count || rest.Any(kv => !recBefore.TryGetValue(kv.Key, out var v) || v != kv.Value) || !gone.IsSubsetOf(recAfter.Keys))

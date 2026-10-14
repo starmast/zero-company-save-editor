@@ -183,7 +183,16 @@ public sealed class PendingChanges
     public void ToggleExpedite(string id, bool? on = null) { Toggle(_expedites, id, on); Raise(); }
     public void ToggleHeal(string guid, bool? on = null) { Toggle(_heals, guid, on); Raise(); }
     public void ToggleTreeFix(string guid, bool? on = null) { Toggle(_treeFixes, guid, on); Raise(); }
-    public void ToggleRevive(string guid, bool? on = null) { Toggle(_revives, guid, on); Raise(); }
+    public void ToggleRevive(string guid, bool? on = null)
+    {
+        Toggle(_revives, guid, on);
+        if (!_revives.Contains(guid) && RosterOrderOverride != null)        // an operator who stays fallen has no place in the roster
+        {
+            var order = RosterOrderOverride.Where(g => g != guid).ToList();
+            RosterOrderOverride = IsDefaultOrder(order) ? null : order;
+        }
+        Raise();
+    }
 
     /// <summary>Queue many upgrade starts / expedites at once (one change notification).</summary>
     public void QueueUpgrades(IEnumerable<string> starts, IEnumerable<string> expedites)
@@ -280,13 +289,28 @@ public sealed class PendingChanges
     }
 
     // ---- roster order ----------------------------------------------------------------
-    public IReadOnlyList<string> RosterOrder(SaveView view) =>
-        RosterOrderOverride ?? view.Personnel.Roster.Select(o => o.Guid).ToList();
+    IReadOnlyList<string> _liveRoster = Array.Empty<string>();          // the saved roster, as of the last reorder
+
+    /// <summary>The order a write produces with no reorder: the saved roster, then the queued revives.</summary>
+    bool IsDefaultOrder(IEnumerable<string> order) => order.SequenceEqual(_liveRoster.Concat(_revives));
+
+    /// <summary>The pending order with any revive queued after it was made added at the end (what the writer needs).</summary>
+    IReadOnlyList<string>? FullOverride() =>
+        RosterOrderOverride?.Concat(_revives.Where(g => !RosterOrderOverride.Contains(g))).ToList();
+
+    /// <summary>
+    /// The roster as it will be written: the pending order, else the saved one, with operators queued to come back from the Memorial at
+    /// the end (where the game, and a revive, put a returning operator) unless the pending order already places them.
+    /// </summary>
+    public IReadOnlyList<string> RosterOrder(SaveView view)
+    {
+        return FullOverride() ?? view.Personnel.Roster.Select(o => o.Guid).Concat(_revives).ToList();
+    }
 
     void SetRosterOrder(IReadOnlyList<string> order, SaveView view)
     {
-        var saved = view.Personnel.Roster.Select(o => o.Guid).ToList();
-        RosterOrderOverride = order.SequenceEqual(saved) ? null : order.ToList();
+        _liveRoster = view.Personnel.Roster.Select(o => o.Guid).ToList();
+        RosterOrderOverride = IsDefaultOrder(order) ? null : order.ToList();
         Raise();
     }
 
@@ -329,7 +353,7 @@ public sealed class PendingChanges
         @out.AddRange(_missionTurns.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionTurnAdded(kv.Key, kv.Value)));
         @out.AddRange(_missionCrisis.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionCrisisEffect(kv.Key, kv.Value)));
         @out.AddRange(_missionSets.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionSpawnSet(kv.Key, kv.Value)));
-        if (RosterOrderOverride != null) @out.Add(new SaveAction.ReorderRoster(RosterOrderOverride));
+        if (FullOverride() is { } order) @out.Add(new SaveAction.ReorderRoster(order));             // after the revives, so it can place them
         if (_coil.Count > 0) @out.Add(new SaveAction.RemoveCoilUpgrades(_coil.Select(kv => new CoilChange(kv.Key, kv.Value)).ToList()));
         return @out;
     }
@@ -388,12 +412,8 @@ public sealed class PendingChanges
         foreach (var g in _heals) @out.Add(new PendingLine("Medbay", "", null, null, $"Heal {Op(g)} (free, instant)"));
         foreach (var g in _treeFixes) @out.Add(new PendingLine("Personnel", "", null, null, $"Complete focus tree: {Op(g)}"));
         foreach (var g in _revives) @out.Add(new PendingLine("Personnel", "", null, null, $"Bring back {Op(g)} from the Memorial"));
-        if (RosterOrderOverride != null)
-        {
-            var names = v.Personnel.Roster.ToDictionary(o => o.Guid, o => o.Name);
-            @out.Add(new PendingLine("Personnel", "", null, null,
-                "Roster order: " + string.Join(", ", RosterOrderOverride.Select(g => names.GetValueOrDefault(g, "?")))));
-        }
+        if (FullOverride() is { } order)
+            @out.Add(new PendingLine("Personnel", "", null, null, "Roster order: " + string.Join(", ", order.Select(Op))));
         if (save.Combat is { } cb)
         {
             string U(int i) => i >= 0 && i < cb.Units.Count ? $"{cb.Units[i].Name} ({cb.Units[i].Team})" : "unit";

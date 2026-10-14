@@ -247,6 +247,39 @@ public class ServiceGuardTests : IDisposable
     }
 
     [SkippableFact]
+    public void A_revived_operator_can_be_placed_in_the_roster_in_the_same_write()
+    {
+        var r = NewRig();
+        var fallen = r.Svc.Current!.View.Personnel.Memorial.FirstOrDefault()?.Guid;
+        Skip.If(fallen == null, "no fallen operator");
+        var p = new PendingChanges();
+        var view = r.Svc.Current.View;
+        p.ToggleRevive(fallen!);
+        var live = RosterOps.Order(r.Svc.Current.Gvas);
+        Assert.Equal(live.Append(fallen!), p.RosterOrder(view));                  // a revive joins at the end ...
+        p.MoveOperatorTo(fallen!, 0, view);                                      // ... and can be moved to the front
+        r.Svc.Apply(Array.Empty<FieldChange>(), force: true, actions: p.BuildActions(r.Svc.Current.Upgrades));
+        Assert.Equal(new[] { fallen! }.Concat(live), RosterOps.Order(r.Svc.Current!.Gvas));
+        Assert.DoesNotContain(fallen!, ReviveOps.DeadGuids(r.Svc.Current.Gvas));
+    }
+
+    [Fact]
+    public void Unqueuing_a_revive_takes_the_operator_out_of_a_pending_order()
+    {
+        var p = new PendingChanges();
+        var view = new ZeroCompany.Core.Views.SaveView
+        {
+            Personnel = new() { Roster = new[] { "A", "B" }.Select(g => new ZeroCompany.Core.Views.OperatorView { Guid = g }).ToList() },
+        };
+        p.ToggleRevive("D");
+        p.MoveOperatorTo("D", 0, view);
+        Assert.Equal(new[] { "D", "A", "B" }, p.RosterOrder(view));
+        p.ToggleRevive("D");                                                     // stays fallen after all
+        Assert.Null(p.RosterOrderOverride);
+        Assert.Equal(new[] { "A", "B" }, p.RosterOrder(view));
+    }
+
+    [SkippableFact]
     public void Revive_refuses_when_the_roster_is_full()
     {
         var r = NewRig();
