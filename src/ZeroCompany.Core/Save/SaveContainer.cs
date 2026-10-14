@@ -22,6 +22,8 @@ public sealed record ZipEntryInfo(string Name, DateTimeOffset LastWrite, bool De
 public sealed class SaveContainer
 {
     public const string MainEntry = "SaveGame";
+    /// <summary>Largest entry we unpack. Real payloads are a few MB; a save may be someone else's, so a bogus giant entry is refused.</summary>
+    public const int MaxEntryBytes = 64 << 20;
     static readonly byte[] GvasMagic = "GVAS"u8.ToArray();
 
     public bool IsZip { get; }
@@ -54,10 +56,9 @@ public sealed class SaveContainer
                     var e = z.Entries[i];
                     bool deflated = methods.Count > i ? methods[i] == 8 : true;
                     infos.Add(new ZipEntryInfo(e.FullName, e.LastWriteTime, deflated, (uint)e.ExternalAttributes));
+                    if (e.Length > MaxEntryBytes) throw new SaveFormatException($"zip entry {e.FullName} is too large");
                     using var s = e.Open();
-                    using var ms = new MemoryStream();
-                    s.CopyTo(ms);                   // throws InvalidDataException on a corrupt entry (CRC checked by the caller's test)
-                    blobs[e.FullName] = ms.ToArray();
+                    blobs[e.FullName] = ReadCapped(s, e.FullName);      // throws InvalidDataException on a corrupt entry
                 }
             }
             catch (InvalidDataException e) { throw new SaveFormatException($"bad zip: {e.Message}"); }
@@ -90,6 +91,20 @@ public sealed class SaveContainer
             }
         }
         return @out.ToArray();
+    }
+
+    /// <summary>Read a whole entry, refusing one that unpacks to more than <see cref="MaxEntryBytes"/> (whatever its header claims).</summary>
+    static byte[] ReadCapped(Stream s, string name)
+    {
+        using var ms = new MemoryStream();
+        var buf = new byte[81920];
+        int n;
+        while ((n = s.Read(buf, 0, buf.Length)) > 0)
+        {
+            if (ms.Length + n > MaxEntryBytes) throw new SaveFormatException($"zip entry {name} is too large");
+            ms.Write(buf, 0, n);
+        }
+        return ms.ToArray();
     }
 
     /// <summary>Compression method (0 = stored, 8 = deflate) of each central-directory record, in order.</summary>

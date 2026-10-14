@@ -174,15 +174,26 @@ public sealed class SaveService
         for (int n = 1; File.Exists(dest); n++) dest = Path.Combine(d, $"{stamp}-{n}.sav");
         File.Copy(path, dest);
         var snaps = Directory.EnumerateFiles(d).Select(Path.GetFileName).Where(f => !f!.EndsWith(".orig.sav", StringComparison.Ordinal))
-                             .OrderBy(f => f, StringComparer.Ordinal).ToList();
+                             .OrderBy(f => SnapKey(f!)).ToList();
         foreach (var old in snaps.Take(Math.Max(0, snaps.Count - KeepBackups))) File.Delete(Path.Combine(d, old!));
         return dest;
+    }
+
+    /// <summary>
+    /// Age order of a backup name: its "yyyyMMdd-HHmmss" stamp, then the "-n" a second backup in the same second gets. (Plain text order
+    /// would put "…-1.sav" before "….sav", since '-' sorts before '.'.)
+    /// </summary>
+    static (string Stamp, int N) SnapKey(string file)
+    {
+        var stem = file.EndsWith(".orig.sav", StringComparison.Ordinal) ? file[..^".orig.sav".Length] : Path.GetFileNameWithoutExtension(file);
+        int dash = stem.Length > 15 ? stem.IndexOf('-', 15) : -1;
+        return dash > 0 && int.TryParse(stem[(dash + 1)..], out var n) ? (stem[..dash], n) : (stem, 0);
     }
 
     public List<BackupInfo> ListBackups(string name)
     {
         var d = BackupDir(name);
-        return new DirectoryInfo(d).GetFiles().OrderByDescending(f => f.Name, StringComparer.Ordinal)
+        return new DirectoryInfo(d).GetFiles().OrderByDescending(f => SnapKey(f.Name))
             .Select(f => new BackupInfo(f.Name, f.Length, f.LastWriteTimeUtc, f.Name.EndsWith(".orig.sav", StringComparison.Ordinal))).ToList();
     }
 
@@ -314,8 +325,11 @@ public sealed class SaveService
         if (asCopy)
         {
             var ext = Path.GetExtension(c.Name);
-            var destName = $"{Path.GetFileNameWithoutExtension(c.Name)}.edited-{DateTime.Now:HHmmss}{ext}";
-            Io("write the copy", () => { AtomicReplace(Path.Combine(Path.GetDirectoryName(c.Path)!, destName), newFile); return 0; });
+            var dir = Path.GetDirectoryName(c.Path)!;
+            var stem = $"{Path.GetFileNameWithoutExtension(c.Name)}.edited-{DateTime.Now:yyyyMMdd-HHmmss}";
+            var destName = stem + ext;
+            for (int n = 1; File.Exists(Path.Combine(dir, destName)); n++) destName = $"{stem}-{n}{ext}";      // never overwrite an earlier copy
+            Io("write the copy", () => { AtomicReplace(Path.Combine(dir, destName), newFile); return 0; });
             return new ApplyResult(destName, true, count, null);
         }
         var snap = Io("back up the save (nothing was written)", () => Snapshot(c.Name, c.Path));

@@ -186,6 +186,43 @@ public class ServiceGuardTests : IDisposable
         Assert.Single(list, b => b.Original);
     }
 
+    [SkippableFact]
+    public void Two_copies_in_the_same_second_are_both_kept()
+    {
+        var r = NewRig();
+        var credits = r.Svc.Current!.View.Header.Resources.First(x => x.Key == "Credits");
+        var a = r.Svc.Apply(new[] { new FieldChange(credits.Id, credits.Value + 1) }, asCopy: true);
+        var b = r.Svc.Apply(new[] { new FieldChange(credits.Id, credits.Value + 2) }, asCopy: true);
+        Assert.NotEqual(a.Written, b.Written);
+        Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(r.Path)!, a.Written)));
+        Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(r.Path)!, b.Written)));
+    }
+
+    [SkippableFact]
+    public void Backups_from_the_same_second_are_listed_newest_first()
+    {
+        var r = NewRig();
+        var d = r.Svc.BackupDir(r.Name);
+        foreach (var f in new[] { "20260101-120000.sav", "20260101-120000-1.sav", "20260101-120000-2.sav", "20260101-115959.sav" })
+            File.WriteAllText(Path.Combine(d, f), "x");
+        var list = r.Svc.ListBackups(r.Name).Where(b => !b.Original).Select(b => b.File).ToList();
+        Assert.Equal(new[] { "20260101-120000-2.sav", "20260101-120000-1.sav", "20260101-120000.sav", "20260101-115959.sav" }, list);
+    }
+
+    [Fact]
+    public void An_oversized_zip_entry_is_refused()
+    {
+        using var ms = new MemoryStream();
+        using (var z = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using var s = z.CreateEntry("SaveGame", System.IO.Compression.CompressionLevel.Optimal).Open();
+            s.Write("GVAS"u8);
+            var zeros = new byte[1 << 20];
+            for (int i = 0; i <= SaveContainer.MaxEntryBytes >> 20; i++) s.Write(zeros);      // compresses to almost nothing
+        }
+        Assert.Throws<SaveFormatException>(() => SaveContainer.Load(ms.ToArray()));
+    }
+
     // ---------------------------------------------------------------- structural refusals
     [SkippableFact]
     public void Verifier_refuses_a_file_whose_metadata_sizes_were_not_synced()
