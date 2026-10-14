@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Galaxy, Missions tab: each available mission also has Shorter / Longer / Full time for how long it stays on offer (it is counted from
+  the cycle it was added on), and a crisis mission has a drop-down for which Coil upgrade it is about. Neither is tried in the game yet.
+  The mission and operation lists no longer show the game's description, summary, objective or options text (the game shows those; the
+  names are there to identify each entry).
 - Galaxy: the Operations tab lists the Holotable's operations by name, with their description, options and how many cycles each has
   left before it expires. Shorter, Longer and Full time change that (the save counts the cycles an operation has been on offer; the
   game removes it at its limit). Not yet tried in the game. Re-extract the game data for names and limits; `zcassets operations` prints them.

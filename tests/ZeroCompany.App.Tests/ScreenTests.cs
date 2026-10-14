@@ -182,6 +182,30 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Galaxy_missions_can_be_given_more_time_and_crisis_missions_another_coil_upgrade()
+    {
+        var src = Repo.CombatSaveNamed("Hub_Missions.sav");
+        Skip.If(src == null, "no Hub_Missions.sav fixture");
+        using var rig = new TestRig(combatFile: "Hub_Missions.sav");
+        rig.Start();
+        Headless.Run(() => rig.Main.Navigate("galaxy"));
+        var vm = Assert.IsType<GalaxyViewModel>(rig.Main.Screen);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "missions").Command.Execute(null));
+        var timed = vm.Missions.First(m => m.CanEditTime && m.Expires.Length > 0);
+        var pending = rig.Main.Session.Pending;
+        Headless.Run(() => timed.FullTime.Execute(null));
+        Assert.Single(pending.MissionTurnChanges);
+        Assert.StartsWith("Expires in", timed.Expires);
+        Headless.Run(() => timed.Shorter.Execute(null));
+        var crisis = vm.Missions.First(m => m.IsCrisis);
+        var other = crisis.CrisisChoices.First(c => c.Value != crisis.SelectedCrisis!.Value);
+        Headless.Run(() => crisis.SelectedCrisis = other);
+        Assert.Single(pending.MissionCrisisChanges);
+        Assert.Contains(pending.Describe(rig.Main.Session.Current!), l => l.Text!.Contains("Coil upgrade"));
+        rig.Shot("25-galaxy-missions-time");
+    }
+
+    [SkippableFact]
     public void Galaxy_lists_the_dens_missions_and_a_new_enemy_set_is_queued_and_described()
     {
         using var rig = Open("galaxy");
@@ -196,7 +220,6 @@ public class ScreenTests
         if (rig.Main.Session.Current!.Model.Db.Missions.Count > 0)
         {
             Assert.DoesNotContain("SK ", row.Title);                                  // a real name, not the asset name
-            Assert.True(row.HasSummary);
             Assert.Contains("normally vs", row.Detail);
         }
         var other = row.Choices.First(c => c.Label.EndsWith("(other faction)"));

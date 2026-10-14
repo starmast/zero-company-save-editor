@@ -76,12 +76,25 @@ public static class Distiller
             FocusThresholds = Thresholds(raw.Focus),
             CoilEffects = Crisis(raw.Crisis),
             Missions = Missions(raw.Missions),
+            CrisisEffectPaths = CrisisPaths(raw.Crisis),
             Operations = Operations(raw.Operations),
             CoilUnits = CrisisUnitKeys.Where(k => flat.ContainsKey(k.Key)).ToDictionary(k => k.Unit, k => flat[k.Key]),
             NameStrings = flat.Where(kv => kv.Key.EndsWith("_Name", StringComparison.Ordinal))
                               .OrderBy(kv => kv.Key, StringComparer.Ordinal)
                               .ToDictionary(kv => kv.Key, kv => GameDatabase.Plain(kv.Value)),
         };
+    }
+
+    static readonly Regex CrisisAssetRx = new(@"^DA_(?<u>[A-Za-z0-9]+)_Crisis_(?<t>Major|Minor)_(?<ab>[AB])$", RegexOptions.Compiled);
+
+    /// <summary>The crisis effect assets (DA_Guardian_Crisis_Major_A and so on) by the id the Coil upgrade list uses.</summary>
+    static Dictionary<string, string> CrisisPaths(JObject crisis)
+    {
+        var d = new Dictionary<string, string>();
+        foreach (var p in crisis.Properties())
+            if (CrisisAssetRx.Match(p.Name) is { Success: true } m && (string?)p.Value["path"] is { } path)
+                d[$"{m.Groups["t"].Value}.{m.Groups["u"].Value}_{m.Groups["ab"].Value}"] = $"{path}.{p.Name}";
+        return d;
     }
 
     static Dictionary<string, OperationInfo> Operations(JArray ops)

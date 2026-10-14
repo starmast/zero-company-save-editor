@@ -31,6 +31,14 @@ public sealed class GameDatabase
     public Dictionary<string, MissionInfo> Missions { get; set; } = new();
     /// <summary>Operation recipe ("OT_0055_TheIronVow") -> its in-game name, description, expiry and options. Empty on databases extracted by older versions.</summary>
     public Dictionary<string, OperationInfo> Operations { get; set; } = new();
+    /// <summary>Crisis effect id ("Major.Guardian_A", as in <see cref="CoilEffects"/>) -> full object path of the crisis effect asset.</summary>
+    public Dictionary<string, string> CrisisEffectPaths { get; set; } = new();
+    /// <summary>"/.../DA_Guardian_Crisis_Major_A.DA_Guardian_Crisis_Major_A" -> "Major.Guardian_A" (the id <see cref="CoilEffects"/> uses).</summary>
+    public static string CrisisIdOf(string path)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(path, @"DA_(?<u>[A-Za-z0-9]+)_Crisis_(?<t>Major|Minor)_(?<ab>[AB])\.");
+        return m.Success ? $"{m.Groups["t"].Value}.{m.Groups["u"].Value}_{m.Groups["ab"].Value}" : "";
+    }
     /// <summary>Every localized "*_Name" string by key (plain text); ability names are looked up here.</summary>
     public Dictionary<string, string> NameStrings { get; set; } = new();
 

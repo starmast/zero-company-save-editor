@@ -364,6 +364,14 @@ public sealed class SaveService
                     if (!seen.Add("operation" + oa.Operation)) throw new EditException("duplicate operation change");
                     g = OperationOps.SetAge(g, oa.Operation, oa.Age, cut);
                     break;
+                case SaveAction.SetMissionTurnAdded mt:
+                    if (!seen.Add("missionturn" + mt.Mission)) throw new EditException("duplicate mission change");
+                    g = MissionOps.SetTurnAdded(g, mt.Mission, mt.Turn, cut);
+                    break;
+                case SaveAction.SetMissionCrisisEffect mc:
+                    if (!seen.Add("missioncrisis" + mc.Mission)) throw new EditException("duplicate mission change");
+                    g = MissionOps.SetCrisisEffect(g, mc.Mission, mc.Effect, cut);
+                    break;
                 case SaveAction.SetMissionSpawnSet ms:
                     if (!seen.Add("mission" + ms.Mission)) throw new EditException("duplicate mission change");
                     g = MissionOps.SetSpawnSet(g, ms.Mission, ms.Set, cut);
@@ -602,6 +610,15 @@ public sealed class SaveService
             if (now.Count != OperationOps.Active(old).Count) throw new EditException("verification failed: the number of operations changed");
             foreach (var (id, age) in cut.OperationAges)
                 if (!now.TryGetValue(id, out var o) || o.AvailableTurns != age) throw new EditException("verification failed: an operation's cycle count is not what was intended");
+        }
+        if (cut.MissionTurns.Count > 0 || cut.MissionCrisis.Count > 0)
+        {
+            var now = MissionOps.Available(g2).ToDictionary(m => m.Id);
+            if (now.Count != MissionOps.Available(old).Count) throw new EditException("verification failed: the number of available missions changed");
+            foreach (var (id, turn) in cut.MissionTurns)
+                if (!now.TryGetValue(id, out var m) || m.TurnAdded != turn) throw new EditException("verification failed: a mission's cycle is not what was intended");
+            foreach (var (id, effect) in cut.MissionCrisis)
+                if (!now.TryGetValue(id, out var m) || m.CrisisEffect != effect) throw new EditException("verification failed: a crisis mission's upgrade is not what was intended");
         }
         if (cut.MissionSets.Count > 0)
         {

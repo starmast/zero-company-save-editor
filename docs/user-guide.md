@@ -56,12 +56,13 @@ The Galaxy screen has four tabs.
 
 **Influence**: influence, contacts and reward tier for each region.
 
-**Operations**: the Holotable's operations by name, with their description, options and "Expires in N of M cycles". **Longer** and
+**Operations**: the Holotable's operations by name, with "Expires in N of M cycles". **Longer** and
 **Full time** give an operation that is about to expire more time; **Shorter** takes it away. Not yet tried in the game. Operations
 cannot be added, launched or completed from here.
 
-**Missions**: the missions the Den offers. Each shows its in-game name, place, difficulty, the faction it normally fights, how long it
-lasts, and its summary and objective (re-extract the game data to get these). Each available mission has an **Enemies** drop-down (for
+**Missions**: the missions the Den offers. Each shows its in-game name, place, difficulty, the faction it normally fights and how long it
+lasts (re-extract the game data to get these). **Shorter**, **Longer** and **Full time** change how long it has left before it expires (not yet tried in the game).
+A crisis mission also has a **Coil upgrade** drop-down: which permanent Coil upgrade the crisis is about (not yet tried in the game). Each available mission has an **Enemies** drop-down (for
 example *Coil threat 10*, or a tier of another faction, marked "other faction"). The game decides who a mission spawns when it starts, so
 change it here, apply, then launch the mission. Missions already launched or finished are shown but not editable. Confirmed working in the game.
 

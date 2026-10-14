@@ -238,7 +238,7 @@ public static class ViewBuilder
         return new OperationView
         {
             Id = o.Id, Title = info is { Name.Length: > 0 } ? info.Name : Naming.Pretty(o.Recipe),
-            Description = info?.Description ?? "", Choices = info?.Choices ?? new(), Age = (int)o.AvailableTurns, Expiration = info?.Expiration ?? 0,
+            Age = (int)o.AvailableTurns, Expiration = info?.Expiration ?? 0,
             Detail = string.Join(" · ", new[] { where, o.Status, o.TurnAdded >= 0 ? $"offered cycle {o.TurnAdded}" : "" }.Where(s => s.Length > 0)),
             CanEdit = o.Available && (info?.Expiration ?? 0) > 0,
         };
@@ -248,6 +248,14 @@ public static class ViewBuilder
     {
         "Optional" => "Mission", "CrisisMissions" => "Crisis mission", "AuthoredHero" => "Hero mission", _ => Naming.Pretty(folder),
     };
+
+    /// <summary>Every crisis effect the game has, labelled with the Coil upgrade it gives; the current one first.</summary>
+    static List<(string, string)> CrisisEffectChoices(GameDatabase db, string current)
+    {
+        string Label(string path) => db.CoilEffect(GameDatabase.CrisisIdOf(path))?.Title is { Length: > 0 } t ? t + " (" + Naming.Pretty(GameDatabase.CrisisIdOf(path)) + ")" : Naming.Pretty(Naming.AssetName(path));
+        var paths = db.CrisisEffectPaths.Values.Append(current).Distinct().OrderBy(p => p != current).ThenBy(p => p, StringComparer.Ordinal);
+        return paths.Select(p => (p, Label(p))).ToList();
+    }
 
     /// <summary>The mission's in-game name (from its own asset, else its localized name string), else its asset name made readable.</summary>
     public static string MissionTitle(GameDatabase db, string asset)
@@ -267,7 +275,9 @@ public static class ViewBuilder
             Id = x.Id, Kind = MissionKind(x.Folder), Status = x.Status, TurnAdded = x.TurnAdded, Current = x.SpawnSet,
             Title = MissionTitle(m.Db, x.Asset),
             Place = info == null ? "" : string.Join(", ", new[] { Naming.Pretty(info.Location), Naming.Pretty(info.Region) }.Where(s => s.Length > 0)),
-            Summary = info?.Summary ?? "", Objective = info?.Objective ?? "", Difficulty = info?.Difficulty ?? "",
+            TurnNow = (int)MissionOps.StrategyTurn(m.G), CrisisEffect = x.CrisisEffect,
+            CrisisChoices = x.CrisisEffect.Length == 0 ? new() : CrisisEffectChoices(m.Db, x.CrisisEffect),
+            Difficulty = info?.Difficulty ?? "",
             UsualFaction = info?.Faction ?? "", Lifespan = info?.Lifespan ?? 0,
             CanEdit = x.Available && choices.Count > 0,
             Choices = choices.Select(c => (c, CombatOps.SpawnSetLabel(c) + (CombatOps.IsOtherFaction(x.SpawnSet, c) ? " (other faction)" : ""))).ToList(),

@@ -23,6 +23,8 @@ public sealed class PendingChanges
     readonly Dictionary<int, string> _spawnSet = new();                                    // combat: wanted enemy spawn set (key 0)
     readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
     readonly Dictionary<string, int> _operationAges = new();                              // Holotable: operation id -> cycles on offer
+    readonly Dictionary<string, int> _missionTurns = new();                               // Den: mission id -> cycle it was added on
+    readonly Dictionary<string, string> _missionCrisis = new();                           // Den: crisis mission id -> crisis effect path
     readonly Dictionary<string, string> _missionSets = new();                             // Den: mission id -> enemy spawn set path
     readonly Dictionary<string, int> _itemAdds = new();                                   // armory: item asset name -> copies to add
     readonly SortedSet<string> _sceneryRestores = new(StringComparer.Ordinal);               // combat: destroyed props (full object paths) to bring back
@@ -64,6 +66,8 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<string, int> ItemAdds => _itemAdds;
     public IReadOnlyDictionary<string, string> MissionSetChanges => _missionSets;
     public IReadOnlyDictionary<string, int> OperationAgeChanges => _operationAges;
+    public IReadOnlyDictionary<string, int> MissionTurnChanges => _missionTurns;
+    public IReadOnlyDictionary<string, string> MissionCrisisChanges => _missionCrisis;
     public IReadOnlySet<string> SceneryRestores => _sceneryRestores;
     public IReadOnlySet<string> SceneryDestroys => _sceneryDestroys;
     public IReadOnlyCollection<(int Unit, int Index)> EffectRemovals => _effectRemovals;
@@ -73,7 +77,7 @@ public sealed class PendingChanges
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -127,7 +131,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -181,6 +185,10 @@ public sealed class PendingChanges
     public void SetTurn(string wanted, string saved) { SetOrClear(_turn, 0, wanted, saved); Raise(); }
     public string TurnWanted(string saved) => _turn.GetValueOrDefault(0, saved);
 
+    public void SetMissionTurn(string mission, int wanted, int saved) { SetOrClear(_missionTurns, mission, wanted, saved); Raise(); }
+    public int MissionTurnWanted(string mission, int saved) => _missionTurns.GetValueOrDefault(mission, saved);
+    public void SetMissionCrisis(string mission, string wanted, string saved) { SetOrClear(_missionCrisis, mission, wanted, saved); Raise(); }
+    public string MissionCrisisWanted(string mission, string saved) => _missionCrisis.GetValueOrDefault(mission, saved);
     public void SetOperationAge(string operation, int wanted, int saved) { SetOrClear(_operationAges, operation, wanted, saved); Raise(); }
     public int OperationAgeWanted(string operation, int saved) => _operationAges.GetValueOrDefault(operation, saved);
     public void SetMissionSet(string mission, string wanted, string saved) { SetOrClear(_missionSets, mission, wanted, saved); Raise(); }
@@ -279,6 +287,8 @@ public sealed class PendingChanges
         @out.AddRange(_revives.Select(g => (SaveAction)new SaveAction.ReviveOperator(g)));
         @out.AddRange(_itemAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.AddInventoryItem(kv.Key, kv.Value)));
         @out.AddRange(_operationAges.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetOperationAge(kv.Key, kv.Value)));
+        @out.AddRange(_missionTurns.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionTurnAdded(kv.Key, kv.Value)));
+        @out.AddRange(_missionCrisis.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionCrisisEffect(kv.Key, kv.Value)));
         @out.AddRange(_missionSets.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionSpawnSet(kv.Key, kv.Value)));
         if (RosterOrderOverride != null) @out.Add(new SaveAction.ReorderRoster(RosterOrderOverride));
         if (_coil.Count > 0) @out.Add(new SaveAction.RemoveCoilUpgrades(_coil.Select(kv => new CoilChange(kv.Key, kv.Value)).ToList()));
@@ -331,6 +341,9 @@ public sealed class PendingChanges
             @out.Add(new PendingLine("Armory", "", null, null, $"Add {(n > 1 ? n + " x " : "")}{save.Model.Db.ItemLabel(asset) ?? Naming.Pretty(asset)}"));
         foreach (var (id, age) in _operationAges.OrderBy(kv => kv.Key, StringComparer.Ordinal))
             @out.Add(new PendingLine("Galaxy", "", null, null, $"{save.View.Galaxy.Operations.FirstOrDefault(o => o.Id == id)?.Title ?? "Operation"}: {age} cycle{(age == 1 ? "" : "s")} on offer"));
+        string MissionName(string id) => save.View.Galaxy.Missions.FirstOrDefault(m => m.Id == id)?.Title ?? "Mission";
+        foreach (var (id, turn) in _missionTurns.OrderBy(kv => kv.Key, StringComparer.Ordinal)) @out.Add(new PendingLine("Galaxy", "", null, null, $"{MissionName(id)}: added on cycle {turn}"));
+        foreach (var (id, fx) in _missionCrisis.OrderBy(kv => kv.Key, StringComparer.Ordinal)) @out.Add(new PendingLine("Galaxy", "", null, null, $"{MissionName(id)}: Coil upgrade {Naming.Pretty(Naming.AssetName(fx))}"));
         foreach (var (id, set) in _missionSets.OrderBy(kv => kv.Key, StringComparer.Ordinal))
             @out.Add(new PendingLine("Galaxy", "", null, null, $"{save.View.Galaxy.Missions.FirstOrDefault(m => m.Id == id)?.Title ?? "Mission"}: enemies {CombatOps.SpawnSetLabel(set)}"));
         foreach (var g in _heals) @out.Add(new PendingLine("Medbay", "", null, null, $"Heal {Op(g)} (free, instant)"));

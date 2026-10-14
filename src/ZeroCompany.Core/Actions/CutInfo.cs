@@ -24,6 +24,9 @@ public sealed class CutInfo
     public Dictionary<string, string> MissionSets { get; } = new();
     /// <summary>Operations: expected cycles on offer per operation id (hex) after a change.</summary>
     public Dictionary<string, int> OperationAges { get; } = new();
+    /// <summary>Missions: expected TurnAdded and crisis effect per available mission id (hex) after a change.</summary>
+    public Dictionary<string, int> MissionTurns { get; } = new();
+    public Dictionary<string, string> MissionCrisis { get; } = new();
     public Dictionary<int, bool> UnitDead { get; } = new();
     /// <summary>Combat: expected active-effect count per unit index after the edit.</summary>
     public Dictionary<int, int> EffectCounts { get; } = new();

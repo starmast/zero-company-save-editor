@@ -30,6 +30,10 @@ public abstract record SaveAction
     /// <summary>Point an available Den mission (by its id) at another enemy spawn set: the faction and threat tier it will spawn.</summary>
     /// <summary>Set how many cycles a Holotable operation has been on offer (0 = fresh), which decides how long it has left.</summary>
     public sealed record SetOperationAge(string Operation, int Age) : SaveAction;
+    /// <summary>Set the cycle an available Den mission was added on; a later one gives it more time before it expires.</summary>
+    public sealed record SetMissionTurnAdded(string Mission, int Turn) : SaveAction;
+    /// <summary>Change which Coil upgrade an available crisis mission is about (the full object path of a crisis effect).</summary>
+    public sealed record SetMissionCrisisEffect(string Mission, string Effect) : SaveAction;
     public sealed record SetMissionSpawnSet(string Mission, string Set) : SaveAction;
     public sealed record StartUpgrade(string Id, string Name) : SaveAction;
     public sealed record ExpediteUpgrade(string Id, string Name) : SaveAction;

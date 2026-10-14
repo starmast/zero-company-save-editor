@@ -212,8 +212,11 @@ public sealed class MissionView
     public string Current { get; init; } = "";
     /// <summary>"Brentaal IV, Core East" (empty when the game data has no place for it).</summary>
     public string Place { get; init; } = "";
-    public string Summary { get; init; } = "";
-    public string Objective { get; init; } = "";
+    /// <summary>The cycle it was added on, the save's current cycle, and how many cycles it lasts (0 when unknown).</summary>
+    public int TurnNow { get; init; }
+    /// <summary>The crisis effect (a Coil upgrade) a crisis mission is about, or "" for other missions.</summary>
+    public string CrisisEffect { get; init; } = "";
+    public List<(string Value, string Label)> CrisisChoices { get; init; } = new();
     public string Difficulty { get; init; } = "";
     /// <summary>The faction the mission normally fights (before any change here).</summary>
     public string UsualFaction { get; init; } = "";
@@ -227,9 +230,7 @@ public sealed class OperationView
 {
     public string Id { get; init; } = "";
     public string Title { get; init; } = "";
-    public string Description { get; init; } = "";
     public string Detail { get; init; } = "";
-    public List<string> Choices { get; init; } = new();
     /// <summary>Cycles it has been on offer, as saved.</summary>
     public int Age { get; init; }
     /// <summary>Cycles it lasts in all (0 when the game data does not say, so nothing can be worked out).</summary>

@@ -146,10 +146,6 @@ public sealed class OperationRowViewModel : ViewModelBase, IDisposable
 
     public string Title => _o.Title;
     public string Detail => _o.Detail;
-    public string Description => _o.Description;
-    public bool HasDescription => _o.Description.Length > 0;
-    public string Options => _o.Choices.Count == 0 ? "" : "Options: " + string.Join(" / ", _o.Choices);
-    public bool HasOptions => _o.Choices.Count > 0;
     public bool CanEdit => _o.CanEdit;
     public int Age => _p.OperationAgeWanted(_o.Id, _o.Age);
 
@@ -182,6 +178,10 @@ public sealed class MissionRowViewModel : ViewModelBase, IDisposable
     {
         _p = p; _m = m;
         Choices = m.Choices.Select(c => new GroupChoice(c.Value, c.Label)).ToList();
+        CrisisChoices = m.CrisisChoices.Select(c => new GroupChoice(c.Value, c.Label)).ToList();
+        Longer = new RelayCommand(() => SetAdded(Added + 1), () => CanEditTime && Added < _m.TurnNow);
+        Shorter = new RelayCommand(() => SetAdded(Added - 1), () => CanEditTime && Left > 1);
+        FullTime = new RelayCommand(() => SetAdded(_m.TurnNow), () => CanEditTime && Added < _m.TurnNow);
         p.Changed += OnChanged;
     }
 
@@ -191,10 +191,26 @@ public sealed class MissionRowViewModel : ViewModelBase, IDisposable
         _m.Kind, _m.Place, _m.Difficulty, _m.UsualFaction.Length > 0 ? "normally vs " + _m.UsualFaction : "", _m.Status,
         _m.TurnAdded >= 0 ? $"offered cycle {_m.TurnAdded}" : "", _m.Lifespan > 0 ? $"lasts {_m.Lifespan} cycle{(_m.Lifespan == 1 ? "" : "s")}" : "",
     }.Where(s => s.Length > 0));
-    public string Summary => _m.Summary;
-    public bool HasSummary => _m.Summary.Length > 0;
-    public string Objective => _m.Objective.Length > 0 ? "Objective: " + _m.Objective : "";
-    public bool HasObjective => _m.Objective.Length > 0;
+
+    // time on offer: the mission runs out when the cycle it was added on plus its lifespan passes the current cycle
+    public bool CanEditTime => _m.CanEdit && _m.Lifespan > 0 && _m.TurnNow >= 0 && _m.TurnAdded >= 0;
+    int Added => _p.MissionTurnWanted(_m.Id, (int)_m.TurnAdded);
+    int Left => _m.Lifespan - (_m.TurnNow - Added);
+    public string Expires => _m.Lifespan <= 0 || _m.TurnNow < 0 ? "" : $"Expires in {Math.Max(0, Left)} of {_m.Lifespan} cycle{(_m.Lifespan == 1 ? "" : "s")}";
+    public bool HasExpires => Expires.Length > 0;
+    public RelayCommand Longer { get; private set; } = null!;
+    public RelayCommand Shorter { get; private set; } = null!;
+    public RelayCommand FullTime { get; private set; } = null!;
+    void SetAdded(int turn) => _p.SetMissionTurn(_m.Id, Math.Clamp(turn, _m.TurnNow - _m.Lifespan + 1, _m.TurnNow), (int)_m.TurnAdded);
+
+    // crisis missions: which Coil upgrade the crisis is about
+    public bool IsCrisis => _m.CanEdit && _m.CrisisEffect.Length > 0;
+    public IReadOnlyList<GroupChoice> CrisisChoices { get; private set; } = Array.Empty<GroupChoice>();
+    public GroupChoice? SelectedCrisis
+    {
+        get => CrisisChoices.FirstOrDefault(c => c.Value == _p.MissionCrisisWanted(_m.Id, _m.CrisisEffect));
+        set { if (value != null) _p.SetMissionCrisis(_m.Id, value.Value, _m.CrisisEffect); }
+    }
     public bool CanEdit => _m.CanEdit;
     public bool CannotEdit => !_m.CanEdit;
     public string CurrentLabel => _m.Current.Length == 0 ? "No enemy set saved" : ZeroCompany.Core.Actions.CombatOps.SpawnSetLabel(_m.Current);
@@ -206,8 +222,13 @@ public sealed class MissionRowViewModel : ViewModelBase, IDisposable
         set { if (value != null) _p.SetMissionSet(_m.Id, value.Value, _m.Current); }
     }
 
-    public bool IsChanged => _p.MissionSetChanges.ContainsKey(_m.Id);
-    void OnChanged() { OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(IsChanged)); }
+    public bool IsChanged => _p.MissionSetChanges.ContainsKey(_m.Id) || _p.MissionTurnChanges.ContainsKey(_m.Id) || _p.MissionCrisisChanges.ContainsKey(_m.Id);
+    void OnChanged()
+    {
+        OnPropertyChanged(nameof(Selected)); OnPropertyChanged(nameof(SelectedCrisis)); OnPropertyChanged(nameof(IsChanged));
+        OnPropertyChanged(nameof(Expires)); OnPropertyChanged(nameof(HasExpires));
+        Longer.NotifyCanExecuteChanged(); Shorter.NotifyCanExecuteChanged(); FullTime.NotifyCanExecuteChanged();
+    }
     public void Dispose() => _p.Changed -= OnChanged;
 }
 

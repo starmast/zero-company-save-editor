@@ -65,8 +65,6 @@
                   <StackPanel>
                     <TextBlock Classes="title" FontSize="19" Text="{Binding Title}" />
                     <TextBlock Classes="mute small" Text="{Binding Detail}" TextWrapping="Wrap" />
-                    <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
-                    <TextBlock Classes="mute small" Text="{Binding Options}" TextWrapping="Wrap" IsVisible="{Binding HasOptions}" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Expires}" HorizontalAlignment="Right" />
@@ -99,8 +97,6 @@
                   <StackPanel>
                     <TextBlock Classes="title" FontSize="19" Text="{Binding Title}" />
                     <TextBlock Classes="mute small" Text="{Binding Detail}" TextWrapping="Wrap" />
-                    <TextBlock Classes="mute" Text="{Binding Summary}" TextWrapping="Wrap" IsVisible="{Binding HasSummary}" Margin="0,4,0,0" />
-                    <TextBlock Classes="mute small" Text="{Binding Objective}" TextWrapping="Wrap" IsVisible="{Binding HasObjective}" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="2" Margin="12,0,0,0" VerticalAlignment="Center">
                     <TextBlock Classes="caps mute small" Text="Enemies" />
@@ -110,6 +106,18 @@
                       </ComboBox.ItemTemplate>
                     </ComboBox>
                     <TextBlock Text="{Binding CurrentLabel}" IsVisible="{Binding CannotEdit}" />
+                    <TextBlock Classes="caps mute small" Text="Coil upgrade" IsVisible="{Binding IsCrisis}" Margin="0,6,0,0" />
+                    <ComboBox ItemsSource="{Binding CrisisChoices}" SelectedItem="{Binding SelectedCrisis}" MinWidth="240" IsVisible="{Binding IsCrisis}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding Expires}" IsVisible="{Binding HasExpires}" Margin="0,6,0,0" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanEditTime}">
+                      <Button Content="Shorter" Command="{Binding Shorter}" />
+                      <Button Content="Longer" Command="{Binding Longer}" />
+                      <Button Content="Full time" Command="{Binding FullTime}" />
+                    </StackPanel>
                   </StackPanel>
                 </Grid>
               </Border>
@@ -117,7 +125,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission." />
+                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission. Shorter, Longer and Full time change how long a mission stays on offer; on a crisis mission you can also pick which Coil upgrade it is about (not yet tried in the game)." />
       </StackPanel>
     </Border>
 
