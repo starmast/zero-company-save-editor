@@ -15,7 +15,6 @@ public sealed class CutInfo
     public List<(string Guid, Dictionary<string, List<byte[]>> Expected)> Focus { get; } = new();
     /// <summary>Expected roster order after a reorder.</summary>
     public List<string>? Roster { get; set; }
-    /// <summary>Combat: expected dead flag per unit index after the edit.</summary>
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>
     public List<(string Asset, string Guid)> AddedItems { get; } = new();
     /// <summary>Combat scenery: the state each changed prop (full object path) must end up in, "Pristine" or "Destroyed".</summary>
@@ -27,6 +26,7 @@ public sealed class CutInfo
     /// <summary>Missions: expected TurnAdded and crisis effect per available mission id (hex) after a change.</summary>
     public Dictionary<string, int> MissionTurns { get; } = new();
     public Dictionary<string, string> MissionCrisis { get; } = new();
+    /// <summary>Combat: expected dead flag per unit index after the edit.</summary>
     public Dictionary<int, bool> UnitDead { get; } = new();
     /// <summary>Combat: expected active-effect count per unit index after the edit.</summary>
     public Dictionary<int, int> EffectCounts { get; } = new();

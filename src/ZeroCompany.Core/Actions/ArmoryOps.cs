@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ZeroCompany.Core.Gvas;
+using ZeroCompany.Core.Model;
 
 namespace ZeroCompany.Core.Actions;
 
@@ -48,16 +49,9 @@ public static class ArmoryOps
         {
             var v = Value(g, e);
             if (v == null || g.Child(v, "ItemAsset") is not { } a || g.Child(v, "ItemCount") is not { } c) continue;
-            list.Add((Naming_AssetName(g.GetStr(a)), StructGuid(g, e.Children![0]), g.GetInt(c)));
+            list.Add((Naming.AssetName(g.GetStr(a)), StructGuid(g, e.Children![0]), g.GetInt(c)));
         }
         return list;
-    }
-
-    static string Naming_AssetName(string path)
-    {
-        var last = path[(path.LastIndexOf('/') + 1)..];
-        var dot = last.IndexOf('.');
-        return dot < 0 ? last : last[..dot];
     }
 
     /// <summary>An existing entry to copy: same kind, count 1, nobody has it equipped.</summary>

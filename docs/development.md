@@ -111,6 +111,10 @@ zcdebug repl [--write]     the same, interactively
 Reads need no flag; anything that changes the running game (`set`, `exec`, `eval`) is refused without `--write`. `<object>` is a
 full object path or a short class name (its first live instance).
 
+The `--write` check is in `zcdebug` only. The mod itself runs whatever request it finds, `eval` included (arbitrary Lua inside the
+game), so while it is installed any program running as your Windows user can drive the game through the request file. That gives
+nothing such a program could not already do, but uninstall the mod (`zcdebug uninstall`) when you are not using it.
+
 **How it talks to the game.** Lua has no sockets or JSON library, so both sides use three small files in
 `%LOCALAPPDATA%\ZeroCompanyEditor\debug`: `request.txt` (written by `zcdebug`), `response.txt` (written by the mod) and
 `heartbeat.txt` (the mod, about once a second, which is how `status` knows the game is up). Each is one tab-separated line ending

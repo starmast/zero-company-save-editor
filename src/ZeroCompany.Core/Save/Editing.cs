@@ -27,13 +27,13 @@ public abstract record SaveAction
     public sealed record RemoveCoilUpgrades(IReadOnlyList<CoilChange> Changes) : SaveAction;
     /// <summary>Give the squad <c>Copies</c> new copies of an item it may never have had (a utility item or weapon mod, by asset name).</summary>
     public sealed record AddInventoryItem(string Asset, int Copies) : SaveAction;
-    /// <summary>Point an available Den mission (by its id) at another enemy spawn set: the faction and threat tier it will spawn.</summary>
     /// <summary>Set how many cycles a Holotable operation has been on offer (0 = fresh), which decides how long it has left.</summary>
     public sealed record SetOperationAge(string Operation, int Age) : SaveAction;
     /// <summary>Set the cycle an available Den mission was added on; a later one gives it more time before it expires.</summary>
     public sealed record SetMissionTurnAdded(string Mission, int Turn) : SaveAction;
     /// <summary>Change which Coil upgrade an available crisis mission is about (the full object path of a crisis effect).</summary>
     public sealed record SetMissionCrisisEffect(string Mission, string Effect) : SaveAction;
+    /// <summary>Point an available Den mission (by its id) at another enemy spawn set: the faction and threat tier it will spawn.</summary>
     public sealed record SetMissionSpawnSet(string Mission, string Set) : SaveAction;
     public sealed record StartUpgrade(string Id, string Name) : SaveAction;
     public sealed record ExpediteUpgrade(string Id, string Name) : SaveAction;
@@ -50,11 +50,11 @@ public abstract record SaveAction
     public sealed record SetUnitTeam(int Unit, string Team) : CombatAction;
     /// <summary>Set the spawn group of a queued reinforcement wave (<c>Kind</c> "wave") or a wave definition ("config").</summary>
     public sealed record SetSpawnGroup(string Kind, int Logic, int Index, string Group) : CombatAction;
-    /// <summary>Swap the mission's enemy threat tier (EnemySelectedSpawnSet) for another known tier of the same faction.</summary>
     /// <summary>Bring destroyed scenery props (by full object path) back: their actor record goes from Destroyed to Pristine and their health to maximum.</summary>
     public sealed record RestoreScenery(IReadOnlyList<string> Actors) : CombatAction;
     /// <summary>Wreck intact or damaged scenery props (by full object path): their actor record goes to Destroyed (and health to 0 where a health entry exists).</summary>
     public sealed record DestroyScenery(IReadOnlyList<string> Actors) : CombatAction;
+    /// <summary>Swap the mission's enemy threat tier (EnemySelectedSpawnSet) for another known tier, of its own or (experimental) another faction.</summary>
     public sealed record SetEnemySpawnSet(string Set) : CombatAction;
     /// <summary>Experimental: standard or three-way turn structure (Enemy2 needs the three-way one to stay a separate team).</summary>
     public sealed record SetTurnStructure(string Structure) : CombatAction;
