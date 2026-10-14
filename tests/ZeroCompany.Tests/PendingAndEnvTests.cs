@@ -202,4 +202,25 @@ public class PendingAndEnvTests : IDisposable
         Assert.Contains(s.Service.ListBackups(Path.GetFileName(src!)), b => b.Original);
         Assert.Equal(2, s.Service.ListBackups(Path.GetFileName(src!)).Count);       // original + the pre-edit snapshot
     }
+    [SkippableFact]
+    public void Reading_the_save_again_keeps_pending_edits_unless_the_file_changed()
+    {
+        var src = Repo.SampleSave();
+        var other = Repo.CombatSaveNamed("Hub_Missions.sav");
+        Skip.If(src == null || other == null, "no sample saves");
+        var env = new AppEnvironment(Path.Combine(_tmp, "data")) { UseSystemSaveDirs = false };
+        var saves = Path.Combine(_tmp, "saves"); Directory.CreateDirectory(saves);
+        var path = Path.Combine(saves, Path.GetFileName(src!));
+        File.Copy(src!, path);
+        var s = new EditorSession(env, () => null);
+        s.Settings.SaveDirs.Add(saves); s.Refresh();
+        var open = s.Open(s.Service.ListSaves().Single().Dir, Path.GetFileName(src!));
+        var credits = open.View.Header.Resources.First(r => r.Key == "Credits");
+        s.Pending.SetEdit(credits, credits.Value + 1);
+        Assert.True(s.Reload());                                                   // e.g. after extracting game data
+        Assert.Equal(1, s.Pending.Count);
+        File.Copy(other!, path, overwrite: true);                                  // the game wrote the slot meanwhile
+        Assert.False(s.Reload());
+        Assert.Equal(0, s.Pending.Count);
+    }
 }

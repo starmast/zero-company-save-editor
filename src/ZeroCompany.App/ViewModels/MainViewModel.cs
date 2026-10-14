@@ -232,9 +232,13 @@ public sealed partial class MainViewModel : ViewModelBase
         var open = Session.Current;
         if (open != null)
         {
-            try { Session.Open(open.DirId, open.Name); }
+            bool kept = true;
+            try { kept = Session.Reload(); }
             catch (EditException) { }
             catch (Exception e) { ReportUnexpected("Could not re-read the save", e); }
+            ReloadScreen();
+            if (!kept) SetBanner("The save changed on disk (the game may have autosaved), so your pending edits were discarded.", "err");
+            return;
         }
         ReloadScreen();
     }

@@ -58,6 +58,20 @@ public sealed class EditorSession
     }
 
     /// <summary>
+    /// Read the open save again (e.g. so a new game database names things). Pending edits are kept when the file on disk is the one
+    /// they were made against, since field ids are byte offsets into it; returns false when it changed and they had to be dropped.
+    /// </summary>
+    public bool Reload()
+    {
+        var cur = Service.Current ?? throw new EditException("no save open");
+        var open = Service.Open(cur.DirId, cur.Name);
+        if (open.DiskHash == cur.DiskHash) { Pending.Relink(open); return true; }
+        bool had = Pending.Count > 0;
+        Pending.Reset(open);
+        return !had;
+    }
+
+    /// <summary>
     /// Write the pending changes to the save (or to a copy). A successful in-place write clears the pending set; after a copy the
     /// open save is unchanged, so the edits stay pending.
     /// </summary>

@@ -111,6 +111,12 @@ public sealed class PendingChanges
     public void Reset(OpenSave? save)
     {
         Clear();
+        Relink(save);
+    }
+
+    /// <summary>Learn the links of <paramref name="save"/> without touching pending edits (the same file read again).</summary>
+    public void Relink(OpenSave? save)
+    {
         _links.Clear();
         if (save == null) return;
         foreach (var op in save.View.Personnel.Roster.Concat(save.View.Personnel.Memorial))
