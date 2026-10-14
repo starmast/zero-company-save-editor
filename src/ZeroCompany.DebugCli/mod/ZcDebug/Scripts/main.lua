@@ -130,11 +130,19 @@ function commands.props(args)
     local o, err = resolve(args:match("^%s*(%S+)"))
     if not o then error(err) end
     local out = { o:GetFullName() }
-    o:GetClass():ForEachProperty(function(p)
-        local ty = "?"
-        pcall(function() ty = p:GetClass():GetFName():ToString() end)
-        out[#out + 1] = p:GetFName():ToString() .. " : " .. ty
-    end)
+    -- ForEachProperty lists only the class's own properties; walk up to include inherited ones
+    local c = o:GetClass()
+    while c and c:IsValid() do
+        local owner = c:GetFName():ToString()
+        c:ForEachProperty(function(p)
+            local ty = "?"
+            pcall(function() ty = p:GetClass():GetFName():ToString() end)
+            out[#out + 1] = p:GetFName():ToString() .. " : " .. ty .. "  (" .. owner .. ")"
+        end)
+        local ok, super = pcall(function() return c:GetSuperStruct() end)
+        if not ok then break end
+        c = super
+    end
     return table.concat(out, "\n")
 end
 
@@ -142,7 +150,55 @@ function commands.get(args)
     local a = splitArgs(args, 2)
     local o, err = resolve(a[1])
     if not o then error(err) end
-    return fmt(o[a[2]])
+    -- a path like SpawnedAttributes.1.Health: numbers index arrays (1-based), names read properties
+    local v = o
+    for part in a[2]:gmatch("[^%.]+") do
+        local n = tonumber(part)
+        local ok, nxt = pcall(function() if n then return v[n] end return v[part] end)
+        if not ok then error("cannot read '" .. part .. "': " .. tostring(nxt)) end
+        v = nxt
+        if v == nil then error("'" .. part .. "' is nil") end
+    end
+    -- an array with no index: list its elements
+    local ok, count = pcall(function() return #v end)
+    if type(v) == "userdata" and ok and type(count) == "number" and not pcall(function() return v:GetFullName() end) then
+        local out = { "[array of " .. count .. "]" }
+        for i = 1, math.min(count, 50) do out[#out + 1] = i .. ": " .. fmt(v[i]) end
+        return table.concat(out, "\n")
+    end
+    return fmt(v)
+end
+
+-- every simple-valued property of an object (own and inherited) with its current value
+function commands.dump(args)
+    local o, err = resolve(args:match("^%s*(%S+)"))
+    if not o then error(err) end
+    local out = { o:GetFullName() }
+    local c = o:GetClass()
+    while c and c:IsValid() do
+        local owner = c:GetFName():ToString()
+        c:ForEachProperty(function(p)
+            local name = p:GetFName():ToString()
+            local ty = "?"
+            pcall(function() ty = p:GetClass():GetFName():ToString() end)
+            if ty:find("Delegate") then return end
+            local ok, v = pcall(function() return o[name] end)
+            if ok and v ~= nil and (type(v) ~= "userdata") then
+                out[#out + 1] = name .. " = " .. fmt(v) .. "  (" .. ty .. ", " .. owner .. ")"
+            elseif ok and ty == "StructProperty" and v ~= nil then
+                -- a GameplayAttributeData: show base and current value
+                local okb, base = pcall(function() return v.BaseValue end)
+                local okc, cur = pcall(function() return v.CurrentValue end)
+                if okb and okc and type(base) == "number" then
+                    out[#out + 1] = name .. " base=" .. fmt(base) .. " cur=" .. fmt(cur) .. "  (" .. owner .. ")"
+                end
+            end
+        end)
+        local ok, super = pcall(function() return c:GetSuperStruct() end)
+        if not ok then break end
+        c = super
+    end
+    return table.concat(out, "\n")
 end
 
 function commands.set(args)
@@ -151,6 +207,99 @@ function commands.set(args)
     if not o then error(err) end
     o[a[2]] = coerce(a[3])
     return "set " .. a[2] .. " = " .. fmt(o[a[2]])
+end
+
+-- attr <unit> <Attribute> <value>: write a gameplay attribute (base and current) on one unit, then
+-- update the UI view-models that show it and broadcast the change, so the HUD follows the logic.
+function commands.attr(args)
+    local a = splitArgs(args, 3)
+    local unit, err = resolve(a[1])
+    if not unit then error(err) end
+    local name, value = a[2], tonumber(a[3])
+    if not name or name == "" or not value then error("usage: attr <unit> <Attribute> <number>") end
+
+    local asc = unit.AbilitySystemComponent
+    if not (asc and asc:IsValid()) then error("no AbilitySystemComponent on " .. unit:GetFullName()) end
+    local sets, done = asc.SpawnedAttributes, nil
+    for i = 1, #sets do
+        local set = sets[i]
+        local ok, data = pcall(function() return set[name] end)
+        if ok and data ~= nil then
+            local okb, base = pcall(function() return data.BaseValue end)
+            if okb and type(base) == "number" then
+                data.BaseValue = value
+                data.CurrentValue = value
+                done = set:GetFName():ToString() .. "." .. name
+                break
+            end
+        end
+    end
+    if not done then error("no attribute '" .. name .. "' on " .. unit:GetFullName()) end
+
+    local fullName, views = unit:GetFullName(), 0
+    for _, v in ipairs(FindAllOf("BrunoGameplayAttributeViewModel") or {}) do
+        local ok = pcall(function()
+            if v.ContextObject:GetFullName() == fullName and v.CurrentValueAttribute.AttributeName:ToString() == name then
+                v.CurrentValue = value
+                if value > v.MaxValue then v.MaxValue = value end
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("MaxValue") })
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("CurrentValue") })
+                views = views + 1
+            end
+        end)
+    end
+    return done .. " = " .. value .. " (" .. views .. " UI view-model(s) updated)"
+end
+
+-- One unit's ability system. Struct arrays are only ever walked for a single named unit and with
+-- guards: looping over every character crashed the game once.
+local function unitAsc(spec)
+    local unit, err = resolve(spec)
+    if not unit then error(err) end
+    local asc = unit.AbilitySystemComponent
+    if not (asc and asc:IsValid()) then error("no AbilitySystemComponent on " .. unit:GetFullName()) end
+    return asc
+end
+
+local function effectNames(asc)
+    local ge, names = asc.ActiveGameplayEffects.GameplayEffects_Internal, {}
+    for i = 1, math.min(#ge, 60) do
+        local ok, n = pcall(function()
+            local d = ge[i].Spec.Def
+            if d and d:IsValid() then return (d:GetFName():ToString():gsub("^Default__GE_", ""):gsub("_C$", "")) end
+            return "?"
+        end)
+        names[i] = ok and n or "?"
+    end
+    return names
+end
+
+function commands.effects(args)
+    local names = effectNames(unitAsc(args:match("^%s*(%S+)")))
+    return #names .. " effect(s)" .. (#names > 0 and ("\n" .. table.concat(names, "\n")) or "")
+end
+
+-- fx <unit> add|remove <Name | /full/class/path>: Name is a status effect such as Burning, Spotted
+function commands.fx(args)
+    local a = splitArgs(args, 3)
+    local asc = unitAsc(a[1])
+    local verb, name = a[2], a[3]
+    if (verb ~= "add" and verb ~= "remove") or not name or name == "" then error("usage: fx <unit> add|remove <Name>") end
+    local cls
+    if name:find("/") then
+        cls = StaticFindObject(name)
+    else
+        local base = name:gsub("^GE_", ""):gsub("_C$", "")
+        cls = StaticFindObject("/Game/Game/GameData/Abilities/ResultEffects/StatusEffects/GE_" .. base .. ".GE_" .. base .. "_C")
+    end
+    if not (cls and cls:IsValid()) then error("effect class not found: " .. name .. " (give a full class path if it is not a status effect)") end
+    local before = #effectNames(asc)
+    if verb == "add" then
+        asc:BP_ApplyGameplayEffectToSelf(cls, 1.0, asc:MakeEffectContext())
+    else
+        asc:RemoveActiveGameplayEffectBySourceEffect(cls, nil, -1)
+    end
+    return verb .. " " .. name .. ": " .. before .. " -> " .. #effectNames(asc) .. " effect(s)"
 end
 
 function commands.exec(args)
