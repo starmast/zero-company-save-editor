@@ -71,7 +71,7 @@ public sealed class TestRig : IDisposable
     public NullUiServices Ui { get; } = new();
     public string SaveName { get; }
 
-    public TestRig(bool withGameData = true, bool combat = false, string? combatFile = null)
+    public TestRig(bool withGameData = true, bool combat = false, string? combatFile = null, Func<string?>? gameRunning = null)
     {
         var env = new AppEnvironment(Path.Combine(Tmp, "data")) { UseSystemSaveDirs = false };
         var saves = Path.Combine(Tmp, "saves");
@@ -86,7 +86,7 @@ public sealed class TestRig : IDisposable
         }
         var settings = new AppSettings { SaveDirs = { saves } };
         settings.Save(env);
-        Session = new EditorSession(env, () => null);
+        Session = new EditorSession(env, gameRunning ?? (() => null));
     }
 
     /// <summary>Create the window (on the UI thread) and optionally open the sample save.</summary>

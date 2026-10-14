@@ -188,8 +188,10 @@ public sealed partial class MainViewModel : ViewModelBase
         PendingBar.Busy = true;
         try
         {
-            var res = await Task.Run(() => Session.Apply(copy, force));
-            SetBanner(copy ? $"Saved a copy: {res.Written}" : $"Applied {res.Count} change(s). Backup: {res.Backup}", "ok");
+            var batch = Session.PrepareApply();                          // on the UI thread, which owns the pending set
+            var res = await Task.Run(() => Session.Write(batch, copy, force));
+            Session.FinishApply(copy);
+            SetBanner(copy ? $"Saved a copy: {res.Written}. The open save is unchanged and your edits are still pending." : $"Applied {res.Count} change(s). Backup: {res.Backup}", "ok");
             ReloadScreenAfterApply(copy);
         }
         catch (EditException e) { SetBanner(e.Message, "err"); }

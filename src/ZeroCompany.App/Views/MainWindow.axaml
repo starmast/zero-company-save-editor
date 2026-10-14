@@ -60,7 +60,7 @@
     </Border>
 
     <!-- facility navigation -->
-    <Grid Grid.Row="1" Margin="12,8,12,0" ColumnDefinitions="*,Auto">
+    <Grid Grid.Row="1" Margin="12,8,12,0" ColumnDefinitions="*,Auto" IsEnabled="{Binding !PendingBar.Busy}">
       <ItemsControl Grid.Column="0" ItemsSource="{Binding Nav}" IsVisible="{Binding HasSave}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
@@ -88,7 +88,8 @@
 
     <!-- the current screen -->
     <ScrollViewer Grid.Row="3" Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
-      <ContentControl Content="{Binding Screen}" Margin="12,0,12,12" />
+      <!-- nothing can be edited while a write is running: the batch was taken when it started -->
+      <ContentControl Content="{Binding Screen}" Margin="12,0,12,12" IsEnabled="{Binding !PendingBar.Busy}" />
     </ScrollViewer>
 
     <!-- pending changes -->
@@ -118,7 +119,7 @@
                     IsVisible="{Binding PendingBar.ShowGameWarning}" IsChecked="{Binding PendingBar.Force}"
                     Content="Game seems to be running - override" Foreground="{StaticResource BadBrush}" />
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-            <Button Content="Discard" Command="{Binding PendingBar.DiscardCommand}" />
+            <Button Content="Discard" Command="{Binding PendingBar.DiscardCommand}" IsEnabled="{Binding !PendingBar.Busy}" />
             <Button Content="Save as copy" Command="{Binding PendingBar.ApplyCopyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
             <Button Classes="primary" Content="{Binding PendingBar.ApplyLabel}" Command="{Binding PendingBar.ApplyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
           </StackPanel>

@@ -57,14 +57,34 @@ public sealed class EditorSession
         return open;
     }
 
-    /// <summary>Write the pending changes to the save (or to a copy). A successful in-place write clears the pending set.</summary>
+    /// <summary>
+    /// Write the pending changes to the save (or to a copy). A successful in-place write clears the pending set; after a copy the
+    /// open save is unchanged, so the edits stay pending.
+    /// </summary>
     public ApplyResult Apply(bool asCopy, bool force)
+    {
+        var batch = PrepareApply();
+        var res = Write(batch, asCopy, force);
+        FinishApply(asCopy);
+        return res;
+    }
+
+    /// <summary>The pending changes and actions as one batch. Call it on the thread that edits <see cref="Pending"/>.</summary>
+    public (List<FieldChange> Changes, List<SaveAction> Actions) PrepareApply()
     {
         var cur = Service.Current ?? throw new EditException("no save open");
         var actions = Pending.BuildActions(cur.Upgrades);
         if (cur.Combat != null) actions.AddRange(Pending.BuildCombatActions(cur.Combat));
-        var res = Service.Apply(Pending.BuildChanges(), force, asCopy, actions);
-        Pending.Reset(Service.Current);
-        return res;
+        return (Pending.BuildChanges(), actions);
+    }
+
+    /// <summary>Write a prepared batch (safe to run on a worker thread: it does not touch <see cref="Pending"/>).</summary>
+    public ApplyResult Write((List<FieldChange> Changes, List<SaveAction> Actions) batch, bool asCopy, bool force) =>
+        Service.Apply(batch.Changes, force, asCopy, batch.Actions);
+
+    /// <summary>After a successful write: an in-place one re-opened the save, so the old field ids no longer apply.</summary>
+    public void FinishApply(bool asCopy)
+    {
+        if (!asCopy) Pending.Reset(Service.Current);
     }
 }

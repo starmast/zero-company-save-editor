@@ -1,9 +1,12 @@
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using ZeroCompany.App.ViewModels;
 
 namespace ZeroCompany.App.Tests;
 
 public class ShellTests
 {
+
     [SkippableFact]
     public void Saves_screen_lists_the_sample_save()
     {
@@ -27,6 +30,49 @@ public class ShellTests
         Assert.True(rig.Main.HasSave);
         Assert.Contains(rig.Main.Header!.Chips, c => c.Label == "Credits");
         rig.Shot("02-command");
+    }
+
+    [SkippableFact]
+    public void Nothing_can_be_edited_while_a_write_is_running_and_a_copy_keeps_the_edits()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var gate = new ManualResetEventSlim();
+        using var parked = new ManualResetEventSlim();
+        int ui = Headless.Run(() => Environment.CurrentManagedThreadId);
+        bool armed = false;
+        // the writer asks whether the game is running from its worker thread: hold it there until the screen has been checked
+        using var rig = new TestRig(gameRunning: () =>
+        {
+            if (Volatile.Read(ref armed) && Environment.CurrentManagedThreadId != ui) { parked.Set(); gate.Wait(TimeSpan.FromSeconds(20)); }
+            return null;
+        });
+        rig.Start();
+        var credits = rig.Main.Header!.Chips.First(c => c.Label == "Credits");
+        Headless.Run(() => { credits.Field.Text = ((long)credits.Field.Value + 7).ToString(); });
+
+        Headless.RunAsync(() => rig.Main.ApplyAsync(copy: true, force: false)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        Assert.Equal(1, rig.Main.Session.Pending.Count);                     // a copy leaves the open save, and the edit, as they were
+
+        Volatile.Write(ref armed, true);
+        bool busy = false, screenEnabled = true, discardEnabled = true;
+        Headless.RunAsync(async () =>
+        {
+            var apply = rig.Main.ApplyAsync(copy: false, force: false);
+            while (!parked.IsSet) await Task.Delay(10);
+            rig.Pump();
+            busy = rig.Main.PendingBar.Busy;
+            screenEnabled = rig.Window.GetVisualDescendants().OfType<ContentControl>().First(c => ReferenceEquals(c.Content, rig.Main.Screen)).IsEffectivelyEnabled;
+            discardEnabled = rig.Window.GetVisualDescendants().OfType<Button>().First(b => b.Content as string == "Discard").IsEffectivelyEnabled;
+            gate.Set();
+            await apply;
+        }).GetAwaiter().GetResult();
+        Assert.True(busy);
+        Assert.False(screenEnabled);
+        Assert.False(discardEnabled);
+        Assert.Equal("ok", rig.Main.BannerKind);
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+        Assert.False(rig.Main.PendingBar.Busy);
     }
 
     [SkippableFact]
