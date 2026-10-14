@@ -130,6 +130,25 @@ public class ServiceGuardTests : IDisposable
         Assert.Equal(op.TotalFocus, after.TotalFocus);                     // total did not follow
     }
 
+    [SkippableFact]
+    public void Linked_focus_follows_on_top_of_a_direct_total_edit_in_either_order()
+    {
+        var results = new List<(double Avail, long? Total)>();
+        foreach (var availFirst in new[] { true, false })
+        {
+            var r = NewRig();
+            var op = r.Svc.Current!.Model.Operators.Values.First(o => o.Focus is { Linked.Count: > 0 } && o.TotalField != null);
+            var avail = new FieldChange(op.Focus!.Id, op.Focus.Value + 5);
+            var total = new FieldChange(op.TotalField!.Id, op.TotalField.Value + 3);
+            r.Svc.Apply(availFirst ? new[] { avail, total } : new[] { total, avail }, force: true);
+            var after = r.Svc.Current!.Model.Operators[op.Guid];
+            Assert.Equal(op.TotalFocus + 8, after.TotalFocus);            // the direct +3, plus the +5 that follows unspent
+            results.Add((after.Focus!.Value, after.TotalFocus));
+            Dispose(); Directory.CreateDirectory(_tmp);
+        }
+        Assert.Equal(results[0], results[1]);
+    }
+
     // ---------------------------------------------------------------- paths and folders
     [SkippableFact]
     public void Path_traversal_and_unknown_folders_are_blocked()

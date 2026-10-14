@@ -59,8 +59,10 @@ public sealed class OverviewTabViewModel : PersonnelTabViewModel
     public bool IsInjured => InjuredLine.Length > 0;
     public EditableField? Unspent { get; }
     public bool HasFocus => Unspent != null;
+    /// <summary>Total focus as it will be written: the pending total, which an unspent-focus edit already moves with it.</summary>
     public string TotalText => _focus == null || Unspent == null ? "" :
-        ((_focus.Total ?? 0) + (Unspent.Value - Unspent.Original)).ToString("N0", CultureInfo.InvariantCulture);
+        (_focus.TotalRef != null ? _pending.GetValue(_focus.TotalRef) : (_focus.Total ?? 0) + (Unspent.Value - Unspent.Original))
+            .ToString("N0", CultureInfo.InvariantCulture);
     public List<EffectRowViewModel> Effects { get; } = new();
     public bool NoEffects => Effects.Count == 0;
 

@@ -109,6 +109,38 @@ public class PersonnelTests
     }
 
     [SkippableFact]
+    public void Raising_unspent_focus_then_spending_it_keeps_the_total_in_step()
+    {
+        using var rig = Open("personnel");
+        var op = rig.Main.Session.Current!.View.Personnel.Roster
+            .FirstOrDefault(o => o.Focus?.TotalRef != null && o.Abilities.Any(a => a.Thresholds is { Length: > 2 } && a.Level != null && a.Spent != null));
+        Skip.If(op == null, "no operator with a known focus cost table");
+        Headless.Run(() => rig.Main.Navigate("personnel", op!.Guid, "overview"));
+        var overview = (OverviewTabViewModel)Vm(rig).Content!;
+        Headless.Run(() => rig.Main.Navigate("personnel", op!.Guid, "focus"));
+        var tab = (FocusTabViewModel)Vm(rig).Content!;
+        var row = tab.Groups.SelectMany(g => g.Rows).First(r => r.IsLevelled && r.Ability.Thresholds!.Length > 2);
+        var a = row.Ability;
+        int top = a.Thresholds!.Length;
+        double need = a.Thresholds[top - 1] - a.Spent!.Value;
+        Skip.If(need <= 0, "ability already at its top level");
+        double total0 = op!.Focus!.TotalRef!.Value, avail0 = op.Focus.Value;
+        var pending = rig.Main.Session.Pending;
+        Headless.Run(() => overview.Unspent!.SetTo(avail0 + need));                // grant exactly what the level costs ...
+        Headless.Run(() => tab.SpendMode = true);
+        Headless.Run(() => row.Pips[top - 1].Command.Execute(null));            // ... then spend it
+        Assert.Equal("", tab.Notice);
+        Assert.Equal(avail0, pending.GetValue(op.Focus));
+        Assert.Equal(total0 + need, pending.GetValue(op.Focus.TotalRef));      // the grant stays in the total
+
+        Headless.RunAsync(() => rig.Main.ApplyAsync(copy: false, force: false)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        var after = rig.Main.Session.Current!.Model.Operators[op.Guid];
+        Assert.Equal((long)(total0 + need), after.TotalFocus);
+        Assert.Equal(avail0, after.Focus!.Value);
+    }
+
+    [SkippableFact]
     public void Roster_order_changes_apply_to_the_save()
     {
         using var rig = Open("personnel");

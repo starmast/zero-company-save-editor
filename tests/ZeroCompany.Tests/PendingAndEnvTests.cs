@@ -56,6 +56,26 @@ public class PendingAndEnvTests : IDisposable
     }
 
     [Fact]
+    public void A_linked_edit_moves_its_follower_at_once_and_a_revert_takes_it_back()
+    {
+        var p = new PendingChanges();
+        var unspent = Ref("o1", 5); var total = Ref("o2", 50, max: 5000);
+        p.AddLink("o1", total);
+        p.SetEdit(unspent, 10);                              // +5 unspent: total follows
+        Assert.Equal(55, p.GetValue(total));
+        p.SetEdit(unspent, 7, link: false);                  // spending 3 points: total stays
+        Assert.Equal(55, p.GetValue(total));
+        p.SetEdit(total, p.GetValue(total) + 4);             // granting 4 points on top
+        Assert.Equal(59, p.GetValue(total));
+        p.SetEdit(unspent, 9);                               // +2 more unspent, linked again
+        Assert.Equal(61, p.GetValue(total));
+        Assert.All(p.BuildChanges(), c => Assert.False(c.Link));          // nothing is left for the writer to add twice
+        p.Revert(unspent);                                   // takes back the +5 and +2 it moved, keeps the grant
+        Assert.Equal(54, p.GetValue(total));
+        Assert.False(p.IsChanged(unspent));
+    }
+
+    [Fact]
     public void Roster_moves_track_the_pending_order_and_clear_when_back_to_the_saved_one()
     {
         var p = new PendingChanges();

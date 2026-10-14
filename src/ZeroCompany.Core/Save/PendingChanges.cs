@@ -14,8 +14,9 @@ public sealed record PendingLine(string Where, string Label, double? From, doubl
 public sealed class PendingChanges
 {
     readonly Dictionary<string, double> _edits = new();
-    readonly Dictionary<string, FieldRef> _refs = new();
     readonly HashSet<string> _noLink = new();
+    readonly Dictionary<string, FieldRef> _links = new();             // field id -> the field that follows it (unspent focus -> total focus)
+    readonly Dictionary<string, double> _linkedDelta = new();         // field id -> how far its edits have moved the field that follows it
     readonly List<string> _starts = new(), _expedites = new(), _heals = new(), _treeFixes = new(), _revives = new();
     readonly Dictionary<string, string> _coil = new();
     readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
@@ -103,9 +104,43 @@ public sealed class PendingChanges
         Raise();
     }
 
+    /// <summary>
+    /// Forget everything and learn the open save's linked fields: each operator's unspent focus drives their total focus, so that
+    /// points spent stay the same. (Field ids are byte offsets, so links are re-learned whenever a save is (re)opened.)
+    /// </summary>
+    public void Reset(OpenSave? save)
+    {
+        Clear();
+        _links.Clear();
+        if (save == null) return;
+        foreach (var op in save.View.Personnel.Roster.Concat(save.View.Personnel.Memorial))
+            if (op.Focus is { TotalRef: { } total } focus) AddLink(focus.Id, total);
+    }
+
+    /// <summary>Make <paramref name="target"/> follow every linked edit of field <paramref name="sourceId"/>.</summary>
+    public void AddLink(string sourceId, FieldRef target) => _links[sourceId] = target;
+
+    /// <summary>
+    /// A linked edit moves the field that follows it right away, by the same amount, so the pending value of that field is always the
+    /// one that will be written (whatever else edits it, in whatever order). The move is recorded so a revert can take it back.
+    /// </summary>
     void Store(FieldRef r, double value, bool link)
     {
-        _refs[r.Id] = r;
+        if (link && _links.TryGetValue(r.Id, out var target))
+        {
+            double delta = value - GetValue(r);
+            if (delta != 0)
+            {
+                StoreValue(target, GetValue(target) + delta, false);
+                _linkedDelta[r.Id] = _linkedDelta.GetValueOrDefault(r.Id) + delta;
+            }
+            link = false;                                        // already applied: the writer must not add it again
+        }
+        StoreValue(r, value, link);
+    }
+
+    void StoreValue(FieldRef r, double value, bool link)
+    {
         if (value == r.Value) { _edits.Remove(r.Id); _noLink.Remove(r.Id); }
         else
         {
@@ -116,6 +151,10 @@ public sealed class PendingChanges
 
     public void Revert(FieldRef r)
     {
+        if (_links.TryGetValue(r.Id, out var target) && _linkedDelta.Remove(r.Id, out var delta))
+            StoreValue(target, GetValue(target) - delta, false);
+        foreach (var (source, t) in _links)                     // reverting the follower drops what its leader had moved
+            if (t.Id == r.Id) _linkedDelta.Remove(source);
         _edits.Remove(r.Id); _noLink.Remove(r.Id);
         Raise();
     }
@@ -126,10 +165,10 @@ public sealed class PendingChanges
         Raise();
     }
 
-    /// <summary>Forget everything without notifying (used when a save is (re)opened).</summary>
+    /// <summary>Forget every pending edit and action without notifying; the open save's links stay (see <see cref="Reset"/>).</summary>
     public void Clear()
     {
-        _edits.Clear(); _noLink.Clear(); _refs.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
+        _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
         _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }

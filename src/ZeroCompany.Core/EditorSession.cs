@@ -53,7 +53,7 @@ public sealed class EditorSession
     public OpenSave Open(string dirId, string name)
     {
         var open = Service.Open(dirId, name);
-        Pending.Clear();
+        Pending.Reset(open);
         return open;
     }
 
@@ -64,7 +64,7 @@ public sealed class EditorSession
         var actions = Pending.BuildActions(cur.Upgrades);
         if (cur.Combat != null) actions.AddRange(Pending.BuildCombatActions(cur.Combat));
         var res = Service.Apply(Pending.BuildChanges(), force, asCopy, actions);
-        Pending.Clear();
+        Pending.Reset(Service.Current);
         return res;
     }
 }

@@ -216,7 +216,7 @@ public sealed partial class MainViewModel : ViewModelBase
         try
         {
             var (restored, previous) = await Task.Run(() => Session.Service.Restore(file, force || running != null));
-            Session.Pending.Clear();
+            Session.Pending.Reset(Session.Current);
             ReloadScreen();
             SetBanner($"Restored {restored}. Previous version kept as {previous}", "ok");
         }

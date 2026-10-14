@@ -237,6 +237,7 @@ public sealed class SaveService
 
         // 1) validate and compute every scalar write up front
         var writes = new Dictionary<int, (GvasNode Node, double Value)>();
+        var links = new List<(GvasNode Node, double Delta, string Label)>();
         foreach (var ch in changes)
         {
             if (!c.Scalars.TryGetValue(ch.Id, out var node)) throw new EditException($"unknown field '{ch.Id}'");
@@ -251,14 +252,16 @@ public sealed class SaveService
             double old = c.Gvas.GetDouble(node);
             writes[node.ValueOffset] = (node, neu);
             if (f != null && f.Linked.Count > 0 && neu != old && ch.Link)
-                foreach (var ln in f.Linked)
-                {
-                    double cur = writes.TryGetValue(ln.ValueOffset, out var w) ? w.Value : c.Gvas.GetDouble(ln);
-                    double lnNew = cur + (neu - old);
-                    var llr = TypeRanges[ln.TName];
-                    if (lnNew < llr.Lo || lnNew > llr.Hi) throw new EditException($"{f.Label}: linked value out of range");
-                    writes[ln.ValueOffset] = (ln, lnNew);
-                }
+                foreach (var ln in f.Linked) links.Add((ln, neu - old, f.Label));
+        }
+        // linked fields follow by the same amount, on top of whatever value they end up with otherwise (so the order of changes does not matter)
+        foreach (var (ln, delta, label) in links)
+        {
+            double cur = writes.TryGetValue(ln.ValueOffset, out var w) ? w.Value : c.Gvas.GetDouble(ln);
+            double lnNew = cur + delta;
+            var llr = TypeRanges[ln.TName];
+            if (lnNew < llr.Lo || lnNew > llr.Hi) throw new EditException($"{label}: linked value out of range");
+            writes[ln.ValueOffset] = (ln, lnNew);
         }
 
         // 2) patch an independent copy (scalars are in place, offsets unchanged)
