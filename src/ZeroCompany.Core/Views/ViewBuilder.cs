@@ -231,7 +231,7 @@ public static class ViewBuilder
 
     static string MissionKind(string folder) => folder switch
     {
-        "Optional" => "Optional mission", "Hero" => "Hero mission", "Crisis" => "Crisis mission", "Main" or "Story" => "Story mission", _ => Naming.Pretty(folder),
+        "Optional" => "Mission", "CrisisMissions" => "Crisis mission", "AuthoredHero" => "Hero mission", _ => Naming.Pretty(folder),
     };
 
     /// <summary>The missions offered in the Den, each with the enemy spawn sets it can be switched to.</summary>
