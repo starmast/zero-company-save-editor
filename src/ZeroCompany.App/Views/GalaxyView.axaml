@@ -56,8 +56,33 @@
     <Border Classes="panel" IsVisible="{Binding ShowOperations}">
       <StackPanel>
         <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Operations" /></Border>
-        <TextBlock Classes="mute" Margin="14,12" TextWrapping="Wrap"
-                   Text="Operations (the story and field tasks on the Holotable's Operations tab, such as Listening In) are not editable yet. The save keeps them as active recipes, which this editor does not change." />
+        <TextBlock Classes="mute" Margin="14,12" Text="This save has no operations on offer." IsVisible="{Binding NoOperations}" />
+        <ItemsControl ItemsSource="{Binding Operations}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:OperationRowViewModel">
+              <Border Classes="hairline" Padding="14,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" FontSize="19" Text="{Binding Title}" />
+                    <TextBlock Classes="mute small" Text="{Binding Detail}" TextWrapping="Wrap" />
+                    <TextBlock Classes="mute" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
+                    <TextBlock Classes="mute small" Text="{Binding Options}" TextWrapping="Wrap" IsVisible="{Binding HasOptions}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Expires}" HorizontalAlignment="Right" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" IsVisible="{Binding CanEdit}">
+                      <Button Content="Shorter" Command="{Binding Shorter}" />
+                      <Button Content="Longer" Command="{Binding Longer}" />
+                      <Button Content="Full time" Command="{Binding Reset}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
+                   Text="The save counts how many cycles each operation has been on offer; the game removes it when that reaches its limit. Longer and Full time lower the count, so an operation that is about to expire stays. Not yet tried in the game." />
       </StackPanel>
     </Border>
 

@@ -227,7 +227,22 @@ public static class ViewBuilder
             Reward = FieldRef.From(r.Reward),
         }).ToList(),
         Missions = Missions(m),
+        Operations = Operations(m),
     };
+
+    /// <summary>The operations on the Holotable's Operations tab, by name.</summary>
+    public static List<OperationView> Operations(SaveModel m) => OperationOps.Active(m.G).Select(o =>
+    {
+        m.Db.Operations.TryGetValue(o.Recipe, out var info);
+        var where = o.Location.Length > 0 ? Naming.Pretty(o.Location) : "";
+        return new OperationView
+        {
+            Id = o.Id, Title = info is { Name.Length: > 0 } ? info.Name : Naming.Pretty(o.Recipe),
+            Description = info?.Description ?? "", Choices = info?.Choices ?? new(), Age = (int)o.AvailableTurns, Expiration = info?.Expiration ?? 0,
+            Detail = string.Join(" · ", new[] { where, o.Status, o.TurnAdded >= 0 ? $"offered cycle {o.TurnAdded}" : "" }.Where(s => s.Length > 0)),
+            CanEdit = o.Available && (info?.Expiration ?? 0) > 0,
+        };
+    }).ToList();
 
     static string MissionKind(string folder) => folder switch
     {

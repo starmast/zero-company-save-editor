@@ -29,6 +29,8 @@ public sealed class GameDatabase
     public Dictionary<string, string> CoilUnits { get; set; } = new();
     /// <summary>Mission asset name ("SK_Brentaal_035") -> its in-game name, summary, place and difficulty. Empty on databases extracted by older versions.</summary>
     public Dictionary<string, MissionInfo> Missions { get; set; } = new();
+    /// <summary>Operation recipe ("OT_0055_TheIronVow") -> its in-game name, description, expiry and options. Empty on databases extracted by older versions.</summary>
+    public Dictionary<string, OperationInfo> Operations { get; set; } = new();
     /// <summary>Every localized "*_Name" string by key (plain text); ability names are looked up here.</summary>
     public Dictionary<string, string> NameStrings { get; set; } = new();
 
@@ -185,6 +187,18 @@ public sealed class UpgradeIndex
     }
 
     public UpgradeRecipe? Get(string name) => ByName.GetValueOrDefault(name);
+}
+
+public sealed class OperationInfo
+{
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    /// <summary>Cycles it stays on offer once added; 0 when the game gives no limit.</summary>
+    public int Expiration { get; set; }
+    /// <summary>"Opportunity" and the like.</summary>
+    public string Kind { get; set; } = "";
+    /// <summary>The options the player picks between when launching it.</summary>
+    public List<string> Choices { get; set; } = new();
 }
 
 public sealed class MissionInfo

@@ -360,6 +360,10 @@ public sealed class SaveService
                     if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
                     for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
                     break;
+                case SaveAction.SetOperationAge oa:
+                    if (!seen.Add("operation" + oa.Operation)) throw new EditException("duplicate operation change");
+                    g = OperationOps.SetAge(g, oa.Operation, oa.Age, cut);
+                    break;
                 case SaveAction.SetMissionSpawnSet ms:
                     if (!seen.Add("mission" + ms.Mission)) throw new EditException("duplicate mission change");
                     g = MissionOps.SetSpawnSet(g, ms.Mission, ms.Set, cut);
@@ -591,6 +595,13 @@ public sealed class SaveService
             foreach (var (actor, state) in cut.SceneryStates)
                 if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
                     throw new EditException("verification failed: a scenery prop's health does not match its state");
+        }
+        if (cut.OperationAges.Count > 0)
+        {
+            var now = OperationOps.Active(g2).ToDictionary(o => o.Id);
+            if (now.Count != OperationOps.Active(old).Count) throw new EditException("verification failed: the number of operations changed");
+            foreach (var (id, age) in cut.OperationAges)
+                if (!now.TryGetValue(id, out var o) || o.AvailableTurns != age) throw new EditException("verification failed: an operation's cycle count is not what was intended");
         }
         if (cut.MissionSets.Count > 0)
         {

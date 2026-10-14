@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Galaxy: the Operations tab lists the Holotable's operations by name, with their description, options and how many cycles each has
+  left before it expires. Shorter, Longer and Full time change that (the save counts the cycles an operation has been on offer; the
+  game removes it at its limit). Not yet tried in the game. Re-extract the game data for names and limits; `zcassets operations` prints them.
 - Galaxy: split into Influence, Operations, Missions and Coil upgrades tabs (Operations only explains that they are not editable yet). The
   Missions tab now shows each mission's in-game name, place, difficulty, the faction it normally fights, how long it lasts, its summary
   and objective. These come from the game's mission assets, so re-extract the game data (it adds a `Missions` list; without it the list

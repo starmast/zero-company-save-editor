@@ -222,8 +222,24 @@ public sealed class MissionView
     public List<(string Value, string Label)> Choices { get; init; } = new();
 }
 
+/// <summary>A Holotable operation with how long it has left on offer.</summary>
+public sealed class OperationView
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Description { get; init; } = "";
+    public string Detail { get; init; } = "";
+    public List<string> Choices { get; init; } = new();
+    /// <summary>Cycles it has been on offer, as saved.</summary>
+    public int Age { get; init; }
+    /// <summary>Cycles it lasts in all (0 when the game data does not say, so nothing can be worked out).</summary>
+    public int Expiration { get; init; }
+    public bool CanEdit { get; init; }
+}
+
 public sealed class GalaxyView
 {
+    public List<OperationView> Operations { get; init; } = new();
     public List<RegionView> Regions { get; init; } = new();
     public List<MissionView> Missions { get; init; } = new();
 }

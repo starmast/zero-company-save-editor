@@ -56,7 +56,9 @@ The Galaxy screen has four tabs.
 
 **Influence**: influence, contacts and reward tier for each region.
 
-**Operations**: not editable yet.
+**Operations**: the Holotable's operations by name, with their description, options and "Expires in N of M cycles". **Longer** and
+**Full time** give an operation that is about to expire more time; **Shorter** takes it away. Not yet tried in the game. Operations
+cannot be added, launched or completed from here.
 
 **Missions**: the missions the Den offers. Each shows its in-game name, place, difficulty, the faction it normally fights, how long it
 lasts, and its summary and objective (re-extract the game data to get these). Each available mission has an **Enemies** drop-down (for

@@ -94,6 +94,9 @@ public static class GameExtractor
         log.Report("Reading missions");
         raw.Missions = MissionReader.Read(pkg, log, ct);
 
+        log.Report("Reading operations");
+        raw.Operations = OperationReader.Read(pkg, log, ct);
+
         log.Report("Reading text");
         raw.Strings = ReadStrings(provider);
 

@@ -18,6 +18,8 @@ public sealed class RawGameData
     public JArray Rewards { get; set; } = new();
     /// <summary>Every mission's own description, from <c>MissionReader</c>.</summary>
     public JArray Missions { get; set; } = new();
+    /// <summary>The Holotable operations, from <c>OperationReader</c>.</summary>
+    public JArray Operations { get; set; } = new();
     /// <summary>namespace -> key -> text from Game.locres.</summary>
     public Dictionary<string, Dictionary<string, string>> Strings { get; set; } = new();
 
@@ -34,6 +36,7 @@ public sealed class RawGameData
         raw.Crisis = Read(Path.Combine(dir, "raw_crisis.json")) as JObject ?? new();
         raw.Rewards = Read(Path.Combine(dir, "raw_rewards.json")) as JArray ?? new();           // optional: made by `zcassets rewards --json`
         raw.Missions = Read(Path.Combine(dir, "raw_missions.json")) as JArray ?? new();         // optional: made by `zcassets missions --json`
+        raw.Operations = Read(Path.Combine(dir, "raw_operations.json")) as JArray ?? new();     // optional: made by `zcassets operations --json`
         if (Read(Path.Combine(dir, "strings_en.json")) is JObject s)
             foreach (var ns in s.Properties())
                 raw.Strings[ns.Name] = ((JObject)ns.Value).Properties().ToDictionary(p => p.Name, p => (string?)p.Value ?? "");
@@ -73,11 +76,28 @@ public static class Distiller
             FocusThresholds = Thresholds(raw.Focus),
             CoilEffects = Crisis(raw.Crisis),
             Missions = Missions(raw.Missions),
+            Operations = Operations(raw.Operations),
             CoilUnits = CrisisUnitKeys.Where(k => flat.ContainsKey(k.Key)).ToDictionary(k => k.Unit, k => flat[k.Key]),
             NameStrings = flat.Where(kv => kv.Key.EndsWith("_Name", StringComparison.Ordinal))
                               .OrderBy(kv => kv.Key, StringComparer.Ordinal)
                               .ToDictionary(kv => kv.Key, kv => GameDatabase.Plain(kv.Value)),
         };
+    }
+
+    static Dictionary<string, OperationInfo> Operations(JArray ops)
+    {
+        var d = new Dictionary<string, OperationInfo>();
+        foreach (var o in ops.OfType<JObject>())
+        {
+            var recipe = (string?)o["recipe"];
+            if (string.IsNullOrEmpty(recipe) || d.ContainsKey(recipe)) continue;
+            d[recipe] = new OperationInfo
+            {
+                Name = (string?)o["name"] ?? "", Description = (string?)o["description"] ?? "", Expiration = (int?)o["expiration"] ?? 0,
+                Kind = (string?)o["kind"] ?? "", Choices = ((o["choices"] as JArray) ?? new JArray()).Select(c => (string?)c ?? "").ToList(),
+            };
+        }
+        return d;
     }
 
     static Dictionary<string, MissionInfo> Missions(JArray missions)

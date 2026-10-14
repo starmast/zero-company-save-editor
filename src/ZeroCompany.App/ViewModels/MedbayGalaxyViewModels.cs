@@ -129,6 +129,49 @@ public sealed class CoilRowViewModel : IDisposable
 }
 
 /// <summary>Galaxy (Holotable): one card per map region, plus the Coil's permanent upgrades, each of which can be removed.</summary>
+/// <summary>A Holotable operation with how long it has left on offer, and buttons to give it more time.</summary>
+public sealed class OperationRowViewModel : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _p;
+    readonly OperationView _o;
+
+    public OperationRowViewModel(PendingChanges p, OperationView o)
+    {
+        _p = p; _o = o;
+        Longer = new RelayCommand(() => Set(Age - 1), () => CanEdit && Age > 0);
+        Shorter = new RelayCommand(() => Set(Age + 1), () => CanEdit && Age < _o.Expiration - 1);
+        Reset = new RelayCommand(() => Set(0), () => CanEdit && Age > 0);
+        p.Changed += OnChanged;
+    }
+
+    public string Title => _o.Title;
+    public string Detail => _o.Detail;
+    public string Description => _o.Description;
+    public bool HasDescription => _o.Description.Length > 0;
+    public string Options => _o.Choices.Count == 0 ? "" : "Options: " + string.Join(" / ", _o.Choices);
+    public bool HasOptions => _o.Choices.Count > 0;
+    public bool CanEdit => _o.CanEdit;
+    public int Age => _p.OperationAgeWanted(_o.Id, _o.Age);
+
+    /// <summary>"Expires in 2 cycles", or that nothing is known about it.</summary>
+    public string Expires => _o.Expiration <= 0 ? "Expiry unknown (extract the game data)"
+        : $"Expires in {Math.Max(0, _o.Expiration - Age)} of {_o.Expiration} cycle{(_o.Expiration == 1 ? "" : "s")}";
+
+    public bool IsChanged => _p.OperationAgeChanges.ContainsKey(_o.Id);
+    public RelayCommand Longer { get; }
+    public RelayCommand Shorter { get; }
+    public RelayCommand Reset { get; }
+
+    void Set(int age) => _p.SetOperationAge(_o.Id, Math.Clamp(age, 0, Math.Max(0, _o.Expiration - 1)), _o.Age);
+
+    void OnChanged()
+    {
+        OnPropertyChanged(nameof(Age)); OnPropertyChanged(nameof(Expires)); OnPropertyChanged(nameof(IsChanged));
+        Longer.NotifyCanExecuteChanged(); Shorter.NotifyCanExecuteChanged(); Reset.NotifyCanExecuteChanged();
+    }
+    public void Dispose() => _p.Changed -= OnChanged;
+}
+
 /// <summary>A mission offered in the Den, with a drop-down for the enemy faction and threat tier it will spawn.</summary>
 public sealed class MissionRowViewModel : ViewModelBase, IDisposable
 {
@@ -180,10 +223,11 @@ public sealed class GalaxyViewModel : ScreenViewModel
         _pending = main.Session.Pending;
         var fields = Own(new FieldSet(_pending));
         foreach (var r in open.View.Galaxy.Regions) Regions.Add(new RegionCardViewModel(r, fields));
+        foreach (var o in open.View.Galaxy.Operations) Operations.Add(Own(new OperationRowViewModel(_pending, o)));
         foreach (var m in open.View.Galaxy.Missions) Missions.Add(Own(new MissionRowViewModel(_pending, m)));
         foreach (var u in open.View.Coil.Active) Coil.Add(Own(new CoilRowViewModel(_pending, u)));
         CoilHeading = "Active Coil upgrades: " + Coil.Count;
-        foreach (var (key, label) in new[] { ("influence", "Influence"), ("operations", "Operations"), ("missions", $"Missions {Missions.Count}"), ("coil", $"Coil upgrades {Coil.Count}") })
+        foreach (var (key, label) in new[] { ("influence", "Influence"), ("operations", $"Operations {Operations.Count}"), ("missions", $"Missions {Missions.Count}"), ("coil", $"Coil upgrades {Coil.Count}") })
             Tabs.Add(new TabViewModel(key, label, Select));
         _active = Tabs.Any(t => t.Key == main.Memory.GalaxyTab) ? main.Memory.GalaxyTab : "influence";
         Refresh();
@@ -193,6 +237,8 @@ public sealed class GalaxyViewModel : ScreenViewModel
 
     public ObservableCollection<RegionCardViewModel> Regions { get; } = new();
     public ObservableCollection<CoilRowViewModel> Coil { get; } = new();
+    public ObservableCollection<OperationRowViewModel> Operations { get; } = new();
+    public bool NoOperations => Operations.Count == 0;
     public ObservableCollection<MissionRowViewModel> Missions { get; } = new();
     public ObservableCollection<TabViewModel> Tabs { get; } = new();
     public bool ShowInfluence => _active == "influence";

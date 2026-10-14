@@ -159,6 +159,29 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Galaxy_operations_show_their_expiry_and_can_be_given_more_time()
+    {
+        using var rig = Open("galaxy");
+        var vm = Assert.IsType<GalaxyViewModel>(rig.Main.Screen);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "operations").Command.Execute(null));
+        Assert.True(vm.ShowOperations);
+        var row = vm.Operations.FirstOrDefault(o => o.CanEdit && o.Age > 0);
+        Skip.If(row == null, "no operation in the sample save has used up a cycle");
+        Assert.Contains("Expires in", row!.Expires);
+        int was = row.Age;
+        Headless.Run(() => row.Longer.Execute(null));
+        Assert.Equal(was - 1, row.Age);
+        Assert.True(row.IsChanged);
+        Assert.Single(rig.Main.Session.Pending.OperationAgeChanges);
+        Headless.Run(() => row.Reset.Execute(null));
+        Assert.Equal(0, row.Age);
+        rig.Shot("24-galaxy-operations");
+        Headless.Run(() => row.Shorter.Execute(null));
+        Assert.Equal(1, row.Age);
+        Assert.DoesNotContain("unknown", row.Expires);
+    }
+
+    [SkippableFact]
     public void Galaxy_lists_the_dens_missions_and_a_new_enemy_set_is_queued_and_described()
     {
         using var rig = Open("galaxy");

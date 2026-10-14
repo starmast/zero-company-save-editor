@@ -22,6 +22,8 @@ public sealed class CutInfo
     public Dictionary<string, string> SceneryStates { get; } = new();
     /// <summary>Missions: expected enemy spawn set per available mission id (hex) after a change.</summary>
     public Dictionary<string, string> MissionSets { get; } = new();
+    /// <summary>Operations: expected cycles on offer per operation id (hex) after a change.</summary>
+    public Dictionary<string, int> OperationAges { get; } = new();
     public Dictionary<int, bool> UnitDead { get; } = new();
     /// <summary>Combat: expected active-effect count per unit index after the edit.</summary>
     public Dictionary<int, int> EffectCounts { get; } = new();

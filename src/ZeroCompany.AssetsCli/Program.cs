@@ -14,6 +14,7 @@ const string Usage = """
                                                   an asset's objects as JSON (--grep: only the properties mentioning TEXT)
       zcassets scan <path-part> <text> [--limit N] search inside every asset whose path contains <path-part> for TEXT
       zcassets missions [path-part] [--json]      every mission's in-game name, place, difficulty and faction (--json: raw, for the editor's dev dumps)
+      zcassets operations [path-part] [--json]    the Holotable operations: name, cycles on offer, options (--json: raw, for the editor's dev dumps)
       zcassets rewards [path-part] [--json]       inventory-item rewards of missions, grouped by the player choice that unlocks them (--json: raw, for the editor's dev dumps)
 
     <asset> is a package path (/Game/Game/Core/...), a file name, or a part of the path that matches exactly one asset.
@@ -23,6 +24,7 @@ const string Usage = """
       zcassets scan /Blueprints/Objects/TurnStructures Enemy2
     """;
 
+Console.OutputEncoding = new System.Text.UTF8Encoding(false);          // the --json dumps carry the game's curly quotes and accents
 try
 {
     var a = args.ToList();
@@ -40,8 +42,8 @@ try
     bool merged = Flag("--merged");
     bool asJson = Flag("--json");
     var cmd = a[0]; a.RemoveAt(0);
-    if (cmd is not ("find" or "dump" or "scan" or "rewards" or "missions")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
-    if ((a.Count == 0 && cmd is not ("rewards" or "missions")) || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
+    if (cmd is not ("find" or "dump" or "scan" or "rewards" or "missions" or "operations")) throw new ArgumentException($"unknown command '{cmd}' (zcassets --help)");
+    if ((a.Count == 0 && cmd is not ("rewards" or "missions" or "operations")) || (cmd == "scan" && a.Count < 2)) throw new ArgumentException($"usage: zcassets {(cmd == "scan" ? "scan <path-part> <text>" : cmd + " <text>")}");
 
     var env = new AppEnvironment();
     var s = AppSettings.Load(env);
@@ -73,6 +75,15 @@ try
 
     switch (cmd)
     {
+        case "operations":
+        {
+            var part = a.Count > 0 ? a[0] : "";
+            var all = OperationReader.Read(reader, log, default);
+            if (asJson) { Console.WriteLine(all.ToString(Formatting.Indented)); return 0; }
+            foreach (var o in all.Where(o => ((string)o["recipe"]!).Contains(part, StringComparison.OrdinalIgnoreCase)))
+                Console.WriteLine($"{o["recipe"],-34} \"{o["name"]}\"  {o["kind"]}  on offer {o["expiration"]}  options: {string.Join(" / ", o["choices"]!.Select(c => (string?)c))}");
+            return 0;
+        }
         case "missions":
         {
             var part = a.Count > 0 ? a[0] : "";

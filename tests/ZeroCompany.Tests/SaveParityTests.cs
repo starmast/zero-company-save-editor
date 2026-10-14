@@ -38,7 +38,7 @@ public class SaveParityTests : IDisposable
     }
 
     /// <summary>Fields the Python editor never had: portraits are checked elsewhere, and "addable" is the C# Armory's add-items list and "missions" the Galaxy screen's Den missions.</summary>
-    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions" };
+    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions", "operations" };
 
     [SkippableFact]
     public void Fields_match_the_python_model()
