@@ -93,6 +93,17 @@ public sealed partial class MainViewModel : ViewModelBase
 
     public void SetBanner(string? text, string kind = "info") { BannerKind = kind; BannerText = text; }
 
+    /// <summary>
+    /// An error nothing expected: log it with its stack trace and say so in the banner. The save is safe either way, because it is only
+    /// replaced by an atomic move of an already verified file.
+    /// </summary>
+    public void ReportUnexpected(string what, Exception e)
+    {
+        var log = CrashLog.Write(Session.Env.DataDir, e);
+        SetBanner($"{what}: {e.Message} (an unexpected error; the save on disk is unchanged unless a success message said otherwise." +
+                  (log != null ? $" Details: {log})" : ")"), "err");
+    }
+
     [RelayCommand] void DismissBanner() => SetBanner(null);
 
     [RelayCommand]
@@ -159,6 +170,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 SetBanner($"The game appears to be running ({running}). Close it before applying, or the game may overwrite your edit.", "err");
         }
         catch (EditException e) { SetBanner(e.Message, "err"); }
+        catch (Exception e) { ReportUnexpected("Could not open the save", e); }
     }
 
     public async Task ApplyAsync(bool copy, bool force)
@@ -181,6 +193,7 @@ public sealed partial class MainViewModel : ViewModelBase
             ReloadScreenAfterApply(copy);
         }
         catch (EditException e) { SetBanner(e.Message, "err"); }
+        catch (Exception e) { ReportUnexpected("Applying failed", e); }
         finally { PendingBar.Busy = false; PendingBar.Refresh(); }
     }
 
@@ -208,6 +221,7 @@ public sealed partial class MainViewModel : ViewModelBase
             SetBanner($"Restored {restored}. Previous version kept as {previous}", "ok");
         }
         catch (EditException e) { SetBanner(e.Message, "err"); }
+        catch (Exception e) { ReportUnexpected("Restoring failed", e); }
     }
 
     /// <summary>The game database changed: re-read the open save so names and costs pick it up.</summary>
@@ -216,7 +230,9 @@ public sealed partial class MainViewModel : ViewModelBase
         var open = Session.Current;
         if (open != null)
         {
-            try { Session.Open(open.DirId, open.Name); } catch (EditException) { }
+            try { Session.Open(open.DirId, open.Name); }
+            catch (EditException) { }
+            catch (Exception e) { ReportUnexpected("Could not re-read the save", e); }
         }
         ReloadScreen();
     }

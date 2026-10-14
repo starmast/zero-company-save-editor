@@ -165,11 +165,14 @@ public sealed class SaveModel
         // Fallback names from class names, then overridden by the indexed names.
         if (meta?["GameInstanceMetaData"]?["characterMetaData"] is JsonArray cm)
             foreach (var e in cm.OfType<JsonObject>())
-                Names[e["guid"]!.GetValue<string>().ToUpperInvariant()] = Naming.DisplayName(e["className"]?.GetValue<string>() ?? "");
+                if (Str(e, "guid") is { } g) Names[g.ToUpperInvariant()] = Naming.DisplayName(Str(e, "className") ?? "");
         if (meta?["StrategyMetaData"]?["characterInfoMetaDatas"] is JsonArray ci)
             foreach (var e in ci.OfType<JsonObject>())
-                Names[e["guid"]!.GetValue<string>().ToUpperInvariant()] = Naming.DisplayName(e["characterName"]?.GetValue<string>() ?? "");
+                if (Str(e, "guid") is { } g) Names[g.ToUpperInvariant()] = Naming.DisplayName(Str(e, "characterName") ?? "");
     }
+
+    /// <summary>A string member of a metadata entry, or null when it is missing or not a string.</summary>
+    static string? Str(JsonObject o, string key) => o[key] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
 
     public string NameOf(string h) => Names.TryGetValue(h, out var n) ? n : $"Unknown ({h[..8]})";
 

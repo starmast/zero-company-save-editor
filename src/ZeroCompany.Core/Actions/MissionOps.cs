@@ -103,6 +103,7 @@ public static class MissionOps
     static GvasFile SetObjectAndSoft(GvasFile g, string id, string objectName, string softName, string path)
     {
         GvasNode V() => ValueOf(g, id, needAvailable: false);
+        if (g.Child(V(), softName) == null || path.IndexOf('.') < 0) throw new GvasException($"that mission has no {softName}");
         g = g.SetString(g.Child(V(), objectName)!, path);
         return ArmoryOps.SetSoftPath(g, g.Child(V(), softName)!, path[..path.IndexOf('.')], Naming.AssetName(path));
     }

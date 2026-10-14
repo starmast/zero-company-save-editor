@@ -37,6 +37,7 @@ public sealed class ByteReader
         if (n == 0) return "";
         if (n < 0)
         {
+            if (n == int.MinValue) throw new GvasException("bad utf16 string");
             n = -n;
             if ((long)P + 2L * n > D.Length) throw new GvasException("bad utf16 string");
             var s = Encoding.Unicode.GetString(D, P, 2 * n - 2);

@@ -106,7 +106,7 @@ public sealed class SaveService
     public OpenSave Open(string dirId, string name)
     {
         var path = Resolve(dirId, name);
-        var raw = File.ReadAllBytes(path);
+        var raw = Io("read the save", () => File.ReadAllBytes(path));
         OpenSave open;
         try
         {
@@ -130,7 +130,13 @@ public sealed class SaveService
         {
             throw new EditException($"Could not read save: {e.Message}", e);
         }
-        EnsureOriginal(dirId, name, raw);
+        // an unexpected layout surfaces as one of these from the model and view builders
+        catch (Exception e) when (e is NullReferenceException or InvalidOperationException or InvalidCastException
+                                     or KeyNotFoundException or ArgumentException or FormatException or OverflowException)
+        {
+            throw new EditException($"Could not read save (unexpected layout): {e.Message}", e);
+        }
+        Io("back up the original save", () => { EnsureOriginal(dirId, name, raw); return 0; });
         lock (_lock) Current = open;
         return open;
     }
@@ -184,6 +190,16 @@ public sealed class SaveService
 
     static string Sha(byte[] b) => Convert.ToHexString(SHA256.HashData(b)).ToLowerInvariant();
 
+    /// <summary>Run a file operation, turning a disk failure (file locked by the game, read-only folder ...) into an <see cref="EditException"/>.</summary>
+    static T Io<T>(string what, Func<T> f)
+    {
+        try { return f(); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new EditException($"Could not {what}: {e.Message}", e);
+        }
+    }
+
     // -- validation --------------------------------------------------------
     static readonly Dictionary<string, (double Lo, double Hi)> TypeRanges = new()
     {
@@ -216,7 +232,7 @@ public sealed class SaveService
             var proc = _gameRunning();
             if (proc != null) throw new EditException($"The game appears to be running ({proc}). Close it first (or tick the override).");
         }
-        if (!asCopy && Sha(File.ReadAllBytes(c.Path)) != c.DiskHash)
+        if (!asCopy && Sha(Io("read the save", () => File.ReadAllBytes(c.Path))) != c.DiskHash)
             throw new EditException("The save changed on disk since you opened it (the game may have autosaved). Re-open it before editing.");
 
         // 1) validate and compute every scalar write up front
@@ -279,11 +295,11 @@ public sealed class SaveService
         {
             var ext = Path.GetExtension(c.Name);
             var destName = $"{Path.GetFileNameWithoutExtension(c.Name)}.edited-{DateTime.Now:HHmmss}{ext}";
-            AtomicReplace(Path.Combine(Path.GetDirectoryName(c.Path)!, destName), newFile);
+            Io("write the copy", () => { AtomicReplace(Path.Combine(Path.GetDirectoryName(c.Path)!, destName), newFile); return 0; });
             return new ApplyResult(destName, true, count, null);
         }
-        var snap = Snapshot(c.Name, c.Path);
-        AtomicReplace(c.Path, newFile);
+        var snap = Io("back up the save (nothing was written)", () => Snapshot(c.Name, c.Path));
+        Io("write the save (the original is untouched)", () => { AtomicReplace(c.Path, newFile); return 0; });
         Open(c.DirId, c.Name);                    // re-open so the UI shows what is really on disk now
         return new ApplyResult(c.Name, false, count, Path.GetFileName(snap));
     }
@@ -578,7 +594,7 @@ public sealed class SaveService
                     && !(k == "SaveGameSpawnedActors" && cut.SpawnedActorTeams.Count > 0)
                     && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
-            var txt = Encoding.Unicode.GetString(re.Blobs["SaveGameMetaData.json"]);
+            var txt = re.Blobs.TryGetValue("SaveGameMetaData.json", out var metaBytes) ? Encoding.Unicode.GetString(metaBytes) : "";
             foreach (var (key, size) in BlobSizes(g2))
             {
                 var m = Regex.Match(txt, "\"" + Regex.Escape(key) + "\"\\s*:\\s*(\\d+)");
@@ -774,11 +790,11 @@ public sealed class SaveService
         var src = Path.Combine(BackupDir(c.Name), backupFile);
         if (!File.Exists(src)) throw new EditException("backup not found");
         if (!force && _gameRunning() != null) throw new EditException("The game appears to be running. Close it first (or tick the override).");
-        var data = File.ReadAllBytes(src);
+        var data = Io("read the backup", () => File.ReadAllBytes(src));
         try { _ = new GvasFile(SaveContainer.Load(data).Gvas); }
         catch (Exception e) { throw new EditException($"backup is not a valid save: {e.Message}", e); }
-        var snap = Snapshot(c.Name, c.Path);               // keep what we are replacing
-        AtomicReplace(c.Path, data);
+        var snap = Io("back up the save (nothing was restored)", () => Snapshot(c.Name, c.Path));   // keep what we are replacing
+        Io("restore the backup (the save is untouched)", () => { AtomicReplace(c.Path, data); return 0; });
         Open(c.DirId, c.Name);
         return (backupFile, Path.GetFileName(snap));
     }

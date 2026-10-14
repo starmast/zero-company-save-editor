@@ -87,6 +87,20 @@ public class ServiceGuardTests : IDisposable
     }
 
     [SkippableFact]
+    public void A_locked_save_is_a_user_facing_error_not_a_crash()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "only Windows enforces exclusive file locks");
+        var r = NewRig();
+        var credits = r.Svc.Current!.View.Header.Resources.First(x => x.Key == "Credits");
+        using (new FileStream(r.Path, FileMode.Open, FileAccess.Read, FileShare.None))           // the game holds it mid-autosave
+        {
+            var ex = Assert.Throws<EditException>(() => r.Svc.Apply(new[] { new FieldChange(credits.Id, 5) }, force: true));
+            Assert.Contains("Could not", ex.Message);
+            Assert.Throws<EditException>(() => r.Svc.Open("t", r.Name));
+        }
+    }
+
+    [SkippableFact]
     public void A_running_game_blocks_writes_unless_overridden_and_never_blocks_copies()
     {
         var r = NewRig(() => "swzerocompany");

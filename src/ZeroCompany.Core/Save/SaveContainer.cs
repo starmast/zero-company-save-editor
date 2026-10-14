@@ -101,8 +101,10 @@ public sealed class SaveContainer
             if (raw[i] == 0x50 && raw[i + 1] == 0x4B && raw[i + 2] == 5 && raw[i + 3] == 6) { eocd = i; break; }
         if (eocd < 0) return methods;
         int total = BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(eocd + 10));
-        int p = (int)BinaryPrimitives.ReadUInt32LittleEndian(raw.AsSpan(eocd + 16));
-        for (int i = 0; i < total && p + 46 <= raw.Length; i++)
+        long start = BinaryPrimitives.ReadUInt32LittleEndian(raw.AsSpan(eocd + 16));
+        if (start > raw.Length) return methods;                 // malformed: ZipArchive will report it
+        int p = (int)start;
+        for (int i = 0; i < total && p >= 0 && p + 46 <= raw.Length; i++)
         {
             if (BinaryPrimitives.ReadUInt32LittleEndian(raw.AsSpan(p)) != 0x02014B50) break;
             methods.Add(BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(p + 10)));

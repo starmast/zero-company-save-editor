@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
+using ZeroCompany.App.Services;
 using ZeroCompany.App.ViewModels;
 using ZeroCompany.App.Views;
 using ZeroCompany.Core;
@@ -20,7 +22,11 @@ public sealed class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var session = SessionFactory?.Invoke() ?? new EditorSession(new AppEnvironment());
-            desktop.MainWindow = new MainWindow { DataContext = new MainViewModel(session) };
+            var main = new MainViewModel(session);
+            desktop.MainWindow = new MainWindow { DataContext = main };
+            // Last line of defence: an exception no screen caught is logged and shown instead of closing the editor.
+            Dispatcher.UIThread.UnhandledException += (_, e) => { main.ReportUnexpected("Something went wrong", e.Exception); e.Handled = true; };
+            TaskScheduler.UnobservedTaskException += (_, e) => { CrashLog.Write(session.Env.DataDir, e.Exception); e.SetObserved(); };
         }
         base.OnFrameworkInitializationCompleted();
     }
