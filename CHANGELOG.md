@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-13
+
 ### Added
 - Galaxy, Missions tab: each available mission also has Shorter / Longer / Full time for how long it stays on offer (it is counted from
   the cycle it was added on), and a crisis mission has a drop-down for which Coil upgrade it is about. Neither is tried in the game yet.
