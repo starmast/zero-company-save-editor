@@ -58,7 +58,7 @@ upgrade or all at once.
 
 Saves taken at the Den also list the **missions in the Den**. Each available mission has an **Enemies** drop-down (for example
 *Coil threat 10*, or a tier of another faction, marked "other faction"). The game decides who a mission spawns when it starts, so
-change it here, apply, then launch the mission. Missions already launched or finished are shown but not editable. Not yet tried in the game.
+change it here, apply, then launch the mission. Missions already launched or finished are shown but not editable. Confirmed working in the game.
 
 ## Medbay
 Beds, the bacta tank, their costs, who is injured and who is in treatment. **Heal** removes an operator's injuries the way the

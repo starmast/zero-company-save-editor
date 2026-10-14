@@ -67,7 +67,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission. Not yet tried in the game." />
+                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission." />
       </StackPanel>
     </Border>
 
