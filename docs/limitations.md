@@ -65,6 +65,9 @@ against saves the game wrote and re-read after editing, but not played through (
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.
 - **Reinforcements:** the game does not save which round the fight is on, so a wave's round can't be compared with "now". Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be
-  switched off only once it has fired.
+  switched off only once it has fired. An automatic wave may also be held back by a condition that is not in the save: in Brentaal 035 the
+  wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in
+  the running game queued the wave at once). The save keeps only a reference to that condition, so its value cannot be edited here, and
+  a short delay alone will not bring reinforcements while the enemy is at full strength. Other missions may use other conditions.
 - **Restarting a fight:** the save's `SaveGameRestartDataCache` entry (used when a fight restarts) is left as it is. It holds no
   unit health, so a restart reloads the original encounter.

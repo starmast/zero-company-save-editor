@@ -17,7 +17,8 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 - Combat, Reinforcements: changing a wave definition's spawn group did nothing in the game. A test loaded the old group back, because the
   game restores each definition's group from a second list kept on the encounter (SaveLoadReinforcementWaveSelectedSpawnGroups) when it loads.
-  The editor now changes that entry together with the definition and checks both before writing. The fix has not been tried in the game yet.
+  The editor now changes that entry together with the definition and checks both before writing. Confirmed in the game: after the change the
+  definition kept the new group, and the wave that arrived was the new one (3 Enforcers and 2 Strikers instead of the original Fodder Strikers).
 
 ## [0.6.0] - 2026-10-13
 
