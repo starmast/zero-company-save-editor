@@ -767,6 +767,9 @@ public sealed class SaveService
             var p = key.Split('/');
             var nodes = CombatOps.SpawnGroupOf(g2, p[0], int.Parse(p[1]), int.Parse(p[2]));
             if (nodes != group) throw new EditException("verification failed: a spawn group is not what was intended");
+            // a definition's group is also kept in a saved list the game restores it from; it must agree
+            if (p[0] == "config" && CombatOps.HasSavedSpawnGroups(g2, int.Parse(p[1])) && CombatOps.SavedSpawnGroupOf(g2, int.Parse(p[1]), int.Parse(p[2])) != group)
+                throw new EditException("verification failed: the saved copy of a wave definition's spawn group is not what was intended");
         }
         if (cut.EnemySpawnSet != null && CombatOps.EnemySpawnSetOf(g2) != cut.EnemySpawnSet)
             throw new EditException("verification failed: the enemy spawn set is not what was intended");
