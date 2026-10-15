@@ -1,3 +1,5 @@
+using ZeroCompany.Core.Actions;
+
 namespace ZeroCompany.Core.Views;
 
 /// <summary>The in-combat state of a combat autosave (see <c>CombatOps</c>).</summary>
@@ -129,6 +131,8 @@ public sealed class AttributeView
     public string Set { get; init; } = "";
     public string Name { get; init; } = "";
     public FieldRef Ref { get; init; } = new();
+    /// <summary>How to show it: group, friendly label and any note (see CombatStatCatalog).</summary>
+    public StatInfo Info { get; init; } = new("Other", "");
 }
 
 public sealed class UnitEffectView

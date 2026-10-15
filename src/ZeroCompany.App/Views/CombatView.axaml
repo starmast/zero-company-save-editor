@@ -87,7 +87,8 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:FieldRowViewModel">
                           <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                            <TextBlock Classes="mute small" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="mute small" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding Tip}" />
                             <c:NumField Grid.Column="1" DataContext="{Binding Field}" Width="110" />
                           </Grid>
                         </DataTemplate>
