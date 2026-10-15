@@ -47,7 +47,7 @@ All notable changes to this project are documented here. The format follows
   units back on Enemy when it loads the save, so the option is hidden there and the editor refuses to set it.
 - Combat: a Scenery tab with the fire zones' turns left and every destructible prop the save tracks (not just the ones already hit). It has
   a search, a condition filter, and Destroy / Restore buttons per prop or for everything the filters show. The save marks a prop Destroyed
-  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Restore is confirmed working in the game; Destroy is not yet tried.
+  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Restore and Destroy are both confirmed working in the game (destroyed barricades vanish: hidden, with collision off).
 - Combat: the mission's enemy threat tier (for example Coil threat 10) can be swapped for another known tier on the Reinforcements
   tab (other factions' tiers are offered too, marked experimental). It does nothing for the encounter already started, because the
   enemies and waves in the save are fixed by then (tried on a hero mission); the editor counts the later encounters and says so beside

@@ -339,7 +339,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Every cover, crate, railing and other prop the save tracks (hundreds in a real level), not only the ones already hit. Destroy wrecks a prop when the save loads; Restore brings a destroyed or damaged one back. The save marks a prop destroyed separately from its health, so changing health alone does not wreck or rebuild it. The buttons act on every prop the search and filters match. Not yet tried in the game." />
+                     Text="Every cover, crate, railing and other prop the save tracks (hundreds in a real level), not only the ones already hit. Destroy wrecks a prop when the save loads; Restore brings a destroyed or damaged one back. The save marks a prop destroyed separately from its health, so changing health alone does not wreck or rebuild it. The buttons act on every prop the search and filters match. Tried in the game: destroyed barricades vanished (they are hidden and no longer collide, so units can walk through the gap)." />
         </StackPanel>
       </Border>
 
