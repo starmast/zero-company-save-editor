@@ -18,6 +18,8 @@ public sealed class SaveService
 {
     /// <summary>Most copies of one item a single action may add.</summary>
     public const int MaxItemCopies = 99;
+    /// <summary>Longest name accepted for a copy.</summary>
+    public const int MaxCopyName = 100;
 
     public const int KeepBackups = 20;
     static readonly Regex SafeName = new(@"^[A-Za-z0-9._ \-+()]+\.sav$", RegexOptions.Compiled);
@@ -250,11 +252,19 @@ public sealed class SaveService
 
     // -- apply -------------------------------------------------------------
     public ApplyResult Apply(IReadOnlyList<FieldChange> changes, bool force = false, bool asCopy = false,
-                             IReadOnlyList<SaveAction>? actions = null)
+                             IReadOnlyList<SaveAction>? actions = null, string? copyName = null)
     {
         var c = Current ?? throw new EditException("no save open");
         actions ??= Array.Empty<SaveAction>();
         if (changes.Count == 0 && actions.Count == 0) throw new EditException("no changes");
+        copyName = copyName?.Trim();
+        Dictionary<string, byte[]>? renamed = null;
+        if (!string.IsNullOrEmpty(copyName))
+        {
+            if (!asCopy) throw new EditException("a new name only applies when saving a copy");
+            if (copyName.Length > MaxCopyName) throw new EditException($"the name is too long (at most {MaxCopyName} characters)");
+            if (copyName.Any(char.IsControl)) throw new EditException("the name cannot contain control characters");
+        }
         if (!asCopy && !force)
         {
             var proc = _gameRunning();
@@ -315,11 +325,17 @@ public sealed class SaveService
             if (meta != null) replace["SaveGameMetaData.json"] = meta;
         }
         if (cut.SpawnedActorTeams.Count > 0) replace["SaveGameSpawnedActors"] = cut.SpawnedActors!.ToBytes();
+        Dictionary<string, byte[]>? headerRename = null;
+        if (!string.IsNullOrEmpty(copyName))
+        {
+            try { headerRename = new(c.Container.WithComment(copyName)); foreach (var (entry, bytes) in headerRename) replace[entry] = bytes; }
+            catch (SaveFormatException e) { throw new EditException("Cannot rename this save: " + e.Message, e); }
+        }
         var newFile = c.Container.Rebuild(newGvas, replace);
 
         // 4) verify before touching the disk
-        if (structural || actions.Count > 0) VerifySemantic(c, newFile, expected, cut);
-        else Verify(c, newFile, newGvas, edited);
+        if (structural || actions.Count > 0) VerifySemantic(c, newFile, expected, cut, headerRename);
+        else Verify(c, newFile, newGvas, edited, headerRename);
 
         int count = writes.Count + actions.Count;
         if (asCopy)
@@ -612,7 +628,17 @@ public sealed class SaveService
     };
 
     /// <summary>For structural edits: reparse, then prove the ONLY differences are the intended ones.</summary>
-    static void VerifySemantic(OpenSave c, byte[] newFile, HashSet<string> allowed, CutInfo cut)
+    /// <summary>A renamed copy's two header entries must be exactly the bytes that were prepared, and still parse with a name.</summary>
+    static void CheckRenamed(SaveContainer re, IReadOnlyDictionary<string, byte[]>? renamed)
+    {
+        if (renamed == null) return;
+        foreach (var (entry, bytes) in renamed)
+            if (!(re.Blobs.TryGetValue(entry, out var got) && got.AsSpan().SequenceEqual(bytes)))
+                throw new EditException($"verification failed: entry {entry} is not what was prepared for the new name");
+        if (string.IsNullOrEmpty(re.Comment)) throw new EditException("verification failed: the renamed save has no readable name");
+    }
+
+    static void VerifySemantic(OpenSave c, byte[] newFile, HashSet<string> allowed, CutInfo cut, IReadOnlyDictionary<string, byte[]>? renamed = null)
     {
         SaveContainer re; GvasFile g2;
         try { re = SaveContainer.Load(newFile); g2 = new GvasFile(re.Gvas); }
@@ -626,8 +652,10 @@ public sealed class SaveService
             foreach (var (k, v) in c.Container.Blobs)
                 if (k != SaveContainer.MainEntry && k != "SaveGameMetaData.json"
                     && !(k == "SaveGameSpawnedActors" && cut.SpawnedActorTeams.Count > 0)
+                    && !(renamed != null && renamed.ContainsKey(k))
                     && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
+            CheckRenamed(re, renamed);
             var txt = re.Blobs.TryGetValue("SaveGameMetaData.json", out var metaBytes) ? Encoding.Unicode.GetString(metaBytes) : "";
             foreach (var (key, size) in BlobSizes(g2))
             {
@@ -787,7 +815,7 @@ public sealed class SaveService
     }
 
     /// <summary>For scalar-only edits: same size, only the edited bytes differ, every edited value reads back.</summary>
-    static void Verify(OpenSave c, byte[] newFile, byte[] newGvas, List<(int Off, int Size, string Type, double Value)> edited)
+    static void Verify(OpenSave c, byte[] newFile, byte[] newGvas, List<(int Off, int Size, string Type, double Value)> edited, IReadOnlyDictionary<string, byte[]>? renamed = null)
     {
         SaveContainer re; GvasFile g2;
         try { re = SaveContainer.Load(newFile); g2 = new GvasFile(re.Gvas); }
@@ -797,8 +825,9 @@ public sealed class SaveService
         if (c.Container.IsZip)
         {
             foreach (var (k, v) in c.Container.Blobs)
-                if (k != SaveContainer.MainEntry && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
+                if (k != SaveContainer.MainEntry && !(renamed != null && renamed.ContainsKey(k)) && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
+            CheckRenamed(re, renamed);
             if (!re.Infos.Select(i => i.Name).SequenceEqual(c.Container.Infos.Select(i => i.Name)))
                 throw new EditException("verification failed: entry list changed");
         }

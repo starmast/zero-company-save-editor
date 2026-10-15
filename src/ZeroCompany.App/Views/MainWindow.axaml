@@ -120,6 +120,8 @@
                     Content="Game seems to be running - override" Foreground="{StaticResource BadBrush}" />
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
             <Button Content="Discard" Command="{Binding PendingBar.DiscardCommand}" IsEnabled="{Binding !PendingBar.Busy}" />
+            <TextBox Width="200" MaxLength="100" Watermark="Name for the copy (optional)" Text="{Binding PendingBar.CopyName, Mode=TwoWay}"
+                     ToolTip.Tip="The name the game lists the copy under. Leave empty to keep the original save's name." />
             <Button Content="Save as copy" Command="{Binding PendingBar.ApplyCopyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
             <Button Classes="primary" Content="{Binding PendingBar.ApplyLabel}" Command="{Binding PendingBar.ApplyCommand}" IsEnabled="{Binding PendingBar.CanApply}" />
           </StackPanel>

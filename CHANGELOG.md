@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
+  keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
+
+### Changed
+- Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes
+  taken from testing in the game. For example, weapon damage, crit and range are rebuilt from the equipped weapon when the unit fires, so editing
+  them does not change attacks; the damage multiplier and attack did not change a standard shot either.
+
 ## [0.6.0] - 2026-10-13
 
 ### Added

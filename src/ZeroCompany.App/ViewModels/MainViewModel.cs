@@ -173,7 +173,7 @@ public sealed partial class MainViewModel : ViewModelBase
         catch (Exception e) { ReportUnexpected("Could not open the save", e); }
     }
 
-    public async Task ApplyAsync(bool copy, bool force)
+    public async Task ApplyAsync(bool copy, bool force, string? copyName = null)
     {
         var open = Session.Current;
         if (open == null) return;
@@ -189,7 +189,7 @@ public sealed partial class MainViewModel : ViewModelBase
         try
         {
             var batch = Session.PrepareApply();                          // on the UI thread, which owns the pending set
-            var res = await Task.Run(() => Session.Write(batch, copy, force));
+            var res = await Task.Run(() => Session.Write(batch, copy, force, copyName));
             Session.FinishApply(copy);
             SetBanner(copy ? $"Saved a copy: {res.Written}. The open save is unchanged and your edits are still pending." : $"Applied {res.Count} change(s). Backup: {res.Backup}", "ok");
             ReloadScreenAfterApply(copy);

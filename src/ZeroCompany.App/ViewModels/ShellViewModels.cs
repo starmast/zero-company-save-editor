@@ -74,6 +74,8 @@ public sealed partial class PendingBarViewModel : ViewModelBase
     [ObservableProperty] bool _busy;
     [ObservableProperty] bool _force;
     [ObservableProperty] string? _gameRunning;
+    /// <summary>Optional name for "Save as copy"; empty keeps the original save's name.</summary>
+    [ObservableProperty] string _copyName = "";
 
     public ObservableCollection<PendingLineViewModel> Lines { get; } = new();
     public bool HasChanges => Count > 0;
@@ -99,7 +101,7 @@ public sealed partial class PendingBarViewModel : ViewModelBase
 
     [RelayCommand] void Toggle() => IsOpen = !IsOpen;
     [RelayCommand] void Discard() { _main.Session.Pending.Discard(); _main.ReloadScreen(); }
-    [RelayCommand] Task ApplyCopy() => _main.ApplyAsync(copy: true, force: Force);
+    [RelayCommand] Task ApplyCopy() => _main.ApplyAsync(copy: true, force: Force, copyName: CopyName);
     [RelayCommand] Task Apply() => _main.ApplyAsync(copy: false, force: Force);
 }
 
