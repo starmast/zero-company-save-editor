@@ -1,3 +1,5 @@
+using ZeroCompany.Core.Platform;
+
 namespace ZeroCompany.DebugCli;
 
 /// <summary>Running commands against the mod: the write guard, status output and the interactive loop.</summary>
@@ -9,7 +11,7 @@ public static class Session
 
     public static int Status(Bridge b)
     {
-        var game = Install.RunningGame();
+        var game = GameProcess.Running();
         Console.WriteLine(game.Count == 0 ? "game      not running" : $"game      running ({string.Join(", ", game.Select(g => $"{g.Name} pid {g.Id}"))})");
         var beat = b.LastHeartbeat();
         if (beat == null) Console.WriteLine("mod       no heartbeat yet (is UE4SS installed and the ZcDebug mod enabled? try `zcdebug install`)");

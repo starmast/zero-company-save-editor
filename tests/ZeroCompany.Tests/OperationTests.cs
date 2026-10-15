@@ -54,7 +54,7 @@ public class OperationTests : IDisposable
     public void The_real_operation_dump_distills_into_the_database()
     {
         var raw = RawGameData.LoadLegacyDirectory(Path.Combine(Repo.Root, "gamedata"));
-        Skip.If(raw == null || raw.Operations.Count == 0, "no dev dump of operations (zcassets operations --json)");
+        Skip.If(raw == null || raw.Operations.Count == 0, "no dev dump of operations (zc assets operations --json)");
         var db = Distiller.Distill(raw!);
         Assert.Equal("Listening In", db.Operations["MT_06_006_ListeningIn"].Name);
         Assert.Equal(1, db.Operations["MT_06_006_ListeningIn"].Expiration);

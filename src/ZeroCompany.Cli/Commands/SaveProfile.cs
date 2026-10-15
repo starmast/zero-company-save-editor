@@ -1,13 +1,14 @@
 using System.Text;
 using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Views;
+using ZeroCompany.Sdk;
 
 namespace ZeroCompany.Cli;
 
-/// <summary>`zcsave profile`: one screen that says what a save is and what is in it.</summary>
-static class Profile
+/// <summary>`zc save profile`: one screen that says what a save is and what is in it.</summary>
+static class SaveProfile
 {
-    public static void Run(SaveFile s, bool verbose)
+    public static void Run(SaveDocument s, bool verbose)
     {
         var info = s.Container.SaveInfo();
         string I(string k) => info?[k]?.ToString() ?? "";
@@ -24,6 +25,7 @@ static class Profile
 
         Console.WriteLine();
         Console.WriteLine("COMBAT");
+        Console.WriteLine($"  round           {(cb.Round?.ToString() ?? "?")}");
         Console.WriteLine($"  turn structure  {cb.TurnStructure?.Current ?? "?"}");
         Console.WriteLine($"  enemy spawn set {(cb.SpawnSet == null ? "-" : CombatOps.SpawnSetLabel(cb.SpawnSet.Current))}");
 

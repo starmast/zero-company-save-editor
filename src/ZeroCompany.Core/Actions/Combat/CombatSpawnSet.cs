@@ -11,7 +11,7 @@ public static partial class CombatOps
     static readonly Regex SpawnSetPath = new(@"^(?<dir>.*/Faction/(?<f>[A-Za-z]+)/)SS_(?<f2>[A-Za-z]+)_Threat_(?<n>\d+)\.SS_[A-Za-z]+_Threat_\d+$", RegexOptions.Compiled);
 
     /// <summary>
-    /// Every enemy spawn set the game ships (read from its own assets with zcassets): folder name -> (file prefix, threat tiers).
+    /// Every enemy spawn set the game ships (read from its own assets with zc assets): folder name -> (file prefix, threat tiers).
     /// The separate Coil "crisis elite" set is not a tier and is left out.
     /// </summary>
     static readonly IReadOnlyDictionary<string, (string Prefix, int[] Tiers)> KnownTiers = new Dictionary<string, (string, int[])>
@@ -22,6 +22,10 @@ public static partial class CombatOps
         ["Imperial"] = ("Imperial", new[] { 1, 9 }),
         ["SlugRats"] = ("SlugRat", new[] { 1 }),
     };
+
+    /// <summary>Every faction and threat tier the game ships a spawn set for, with the label the editor shows ("Coil threat 3").</summary>
+    public static IEnumerable<(string Faction, int Tier, string Label)> KnownSpawnTiers() =>
+        KnownTiers.SelectMany(kv => kv.Value.Tiers.Select(t => (kv.Key, t, $"{kv.Key} threat {t}")));
 
     static GvasNode? SpawnSetNode(GvasFile g) =>
         LogicActors(g).Select(w => g.Child(LogicArchive(g, w), "EnemySelectedSpawnSet")).FirstOrDefault(n => n != null);

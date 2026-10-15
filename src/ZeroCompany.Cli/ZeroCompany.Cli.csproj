@@ -5,13 +5,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>zcsave</AssemblyName>
+    <AssemblyName>zc</AssemblyName>
     <RootNamespace>ZeroCompany.Cli</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ZeroCompany.Core\ZeroCompany.Core.csproj" />
+    <ProjectReference Include="..\ZeroCompany.Sdk\ZeroCompany.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

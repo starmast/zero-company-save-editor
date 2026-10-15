@@ -19,10 +19,13 @@ builds and uploads all four.
 
 ## Layout
 ```
-src/ZeroCompany.Core/      GVAS reader/patcher, save container, editable model, actions (Actions/Combat/ for combat saves), apply/verify/backup service, view models
+src/ZeroCompany.Core/      GVAS reader/patcher, save container, editable model, actions (Actions/Combat/ for combat saves), apply/verify/backup service, view models, ZcWorkspace
 src/ZeroCompany.GameData/  game-data extractor (CUE4Parse) and the typed game database
+src/ZeroCompany.Sdk/       the Zero Company Save SDK: what the editor and the command-line tools share (see below)
 src/ZeroCompany.App/       Avalonia desktop UI (MVVM): screens, theme, portraits
-tests/ZeroCompany.Tests/       core, game-data and service tests
+src/ZeroCompany.Cli/       zc: the command-line tool (save, edit, assets, data, doctor)
+src/ZeroCompany.DebugCli/  zcdebug: the live-game debugger (dev only)
+tests/ZeroCompany.Tests/       core, SDK, game-data and service tests
 tests/ZeroCompany.App.Tests/   headless UI tests that also render screenshots
 tools/golden/              scripts that produce the comparison files described below
 ```
@@ -76,22 +79,107 @@ The earlier [Zero_Company_Save_Editor](https://github.com/jpatrickp512/Zero_Comp
 reference for which save properties matter; no code was copied from it. The earlier Python/web implementation (v0.1.0 to
 v0.3.0) is kept in git history under those tags.
 
-## zcsave: a read-only save profiler
-`src/ZeroCompany.Cli` builds `zcsave`, a command-line tool for looking inside saves while developing. It never writes to a save.
+## The SDK and `zc`
+`src/ZeroCompany.Sdk` is the one place that knows where things are and how to read and change a save, so the editor, `zc` and `zcdebug`
+always agree. The layering is `GameData <- Core <- Sdk <- App, zc, zcdebug`; anything the editor itself needs lives in Core and the SDK adds the rest.
+
+| Piece | What it does |
+|---|---|
+| `ZcWorkspace` (Core) | This user's setup: the data folder (`--data-dir`, `ZC_DATA_DIR`), saved settings, save folders, the game install, the `.usmap`, the Oodle folder |
+| `SaveCatalog` | Lists saves from their small info entry and finds one by path, name, fragment, save name or `latest` |
+| `SaveDocument` | A save opened read-only: the property tree, search, diff, dump |
+| `SaveEditor`, `FieldCatalog`, `EditScript` | Edits a save headlessly with stable names like `resource.Intelligence`, through the same pending-changes and checked write the editor uses |
+| `FieldDiff`, `SaveCheck` | What changed between two saves; round-trip and consistency checks that write nothing |
+| `GameAssets`, `GameDataBuilder`, `GameDataLookup` | The game's packages read-only; building the game database; the names edits accept |
+| `ZcDoctor` | What is set up and what is missing |
+| `Sdk.Cli` | Shared argument parsing, error handling and exit codes for the tools |
+
+`src/ZeroCompany.Cli` builds `zc`. Every group has `--help`; `--json` prints machine-readable output; `--data-dir DIR` (or `ZC_DATA_DIR`) points it
+at another settings/backups/game-data folder, which is how to try things without touching your real one.
 
 ```
-dotnet run --project src/ZeroCompany.Cli -- list
-dotnet run --project src/ZeroCompany.Cli -- profile "COMBAT BASE 4.0"
-dotnet run --project src/ZeroCompany.Cli -- diff "COMBAT BASE 4.0" latest
-dotnet run --project src/ZeroCompany.Cli -- find latest Enemy2
-dotnet run --project src/ZeroCompany.Cli -- dump latest TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6] --depth 3
+zc doctor                                   what is set up and what is missing, with the fix for each (exit 1 on a failure)
+zc save list | profile <save> | diff <a> <b> | find <save> <text> | dump <save> [path] | check <save>...
+zc edit fields|get|set|do|actions|apply|diff|backups|restore ...
+zc assets find|dump|scan|missions|operations|rewards ...
+zc data extract | items|upgrades|effects|coil|spawn-sets [filter]
 ```
 
-A save is a path, a file-name fragment, a save comment, or `latest`. `profile` shows the teams, units, objectives, waves and scenery,
-`diff` shows what changed between two saves (units first), `find` locates a name or value, and `dump` prints a property tree.
+A save is a path, a file-name fragment, a save name (the comment the game lists it by), or `latest`. `zc save` and `zc assets` never write.
 
-The published tool is a self-contained single file (`dotnet publish src/ZeroCompany.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcsave-win-x64`);
-on machines with Application Control a loose `zcsave.dll` may be refused where the single-file exe is not.
+### zc save
+```
+dotnet run --project src/ZeroCompany.Cli -- save list
+dotnet run --project src/ZeroCompany.Cli -- save profile "COMBAT BASE 4.0"
+dotnet run --project src/ZeroCompany.Cli -- save diff "COMBAT BASE 4.0" latest
+dotnet run --project src/ZeroCompany.Cli -- save find latest Enemy2
+dotnet run --project src/ZeroCompany.Cli -- save dump latest TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6] --depth 3
+```
+`profile` shows the teams, units, objectives, waves and scenery, `diff` shows what changed between two saves (units first), `find` locates a
+name or value, `dump` prints a property tree, and `check` runs round-trip and consistency checks (the container rebuilds unchanged, the
+sizes in the metadata match the data, the name is stored consistently, the editor can read it).
+
+### zc edit: editing a save without the editor
+It goes through the editor's own pipeline (pending changes, then the checked write: backup, refusal while the game runs, refusal if the file
+changed since it was read, verified rebuild), so a script or an agent gets the same safety as the UI. **Nothing is written without `--write`**:
+without it you get the list of changes and exit code 0.
+
+```
+zc edit fields latest resource                     editable values: path, current value, range
+zc edit set latest resource.Intelligence=300 operator.hawks.focus=9          preview
+zc edit set latest resource.Intelligence=300 --write                         write (a backup is kept)
+zc edit set latest resource.Credits=50000 --copy --as "RICH COPY" --write    write a copy with its own in-game name instead
+zc edit do latest heal Neiya --write                                         a structural edit; `zc edit actions <save>` lists them
+zc edit do latest add-item Medpac 3 --write                                  names as `zc data items` lists them
+zc edit apply script.json --write                                            a batch in one write
+zc edit diff original.sav edited.sav                                         what changed, as field paths
+zc edit backups latest / zc edit restore latest 20261015-181624.sav --write
+```
+Paths are dotted names: `resource.<key>`, `level`, `xp`, `turn`, `operator.<name>.focus|total_focus|ability.<tag>.level|spent|effect.<asset>.stacks|bond.<partner>.level`,
+`item.<asset>`, `region.<tag>.influence`, and for combat saves `unit.<n>.attr.<Stat>`, `unit.<n>.x`, `wave.<logic>.<n>.round`, `objective.<n>.counter.<label>`,
+`timer.<n>.remaining`, `hazard.<n>.turns`, `prop.<n>.health`. They ignore case and punctuation; a raw field id such as `o2897` always works.
+A script is `{ "save": "latest", "set": { "resource.Intelligence": 300 }, "actions": [ { "do": "heal", "args": ["Neiya"] } ] }`.
+Exit codes: 0 done or previewed, 1 error (nothing written), 2 refused (the game is running, or the file changed on disk). With `--json` an error is
+`{ "error": ..., "exitCode": ... }` on stdout. Whether the game loads a file written this way is the same open question as for the UI's edits.
+
+### zc assets: browsing the game's own assets
+`zc assets` is a read-only browser for the game's packages. It uses the same install folder,
+`.usmap` and Oodle library the editor already knows about (extract game data once, in the editor or with `zc data extract`, first), never downloads anything
+and never writes to the game. Mounting about 180,000 files takes a few seconds.
+
+```
+zc assets find TurnStructure                      asset package paths containing a word
+zc assets dump BP_TurnStructure_ThreeWayBattle     one asset's objects as JSON (--merged adds inherited properties)
+zc assets dump Enemy2Team --grep FriendlyTeamTags  only the properties that mention a word
+zc assets scan Blueprints/Objects Enemy2          search inside every asset whose path contains a word
+```
+
+It is how the combat rules were checked against the game's own data rather than guessed from saves. For example, each team asset
+(`GameData/Teams/*Team`) lists the teams it counts as friends in `FriendlyTeamTags`: Player and Civilian list each other, Enemy
+lists only Enemy, and Enemy2 lists only Enemy2, so Enemy and Enemy2 are hostile to each other and to the squad. A team only acts
+if the mission's turn structure has a turn group for it, and `BP_Enemy2TurnGroup` exists only in `BP_TurnStructure_ThreeWayBattle`.
+
+The output is the game's own content: use it to read, and never publish or commit dumps (see the [disclaimer](../DISCLAIMER.md)).
+On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`, or the shell rewrites it.
+
+**What it found about combat** (read from the game's data, not guessed from saves):
+- *Threat tiers.* The game ships these enemy spawn sets: Coil 1-10 (plus a separate crisis-elite set), Separatist 1-10, Outlaw 1-5,
+  Imperial 1 and 9, and SlugRats 1. A set is a pool of spawn groups, and the pool grows with the tier: Coil 2 holds eight basic
+  non-infected Enforcer/Striker groups (T1), while Coil 10 holds about 89 groups from T4 up through Droidekas, Guardians, Captains,
+  Marauders and Scourge types. A lower tier means a weaker pool, not fewer units.
+- *Three-way battles.* Of all the levels (179 `_Gameplay` maps), only Belly of the Beast sets `TurnStructure` to the three-way
+  structure, and only it has spawners with `OwningTeam = Enemy2Team`. `BP_MissionActor`'s default is the standard structure. Other
+  levels never load the three-way class, which is why a reference to it saved into another mission came back empty.
+- *Where the rules live.* The turn system itself is native code, so why the game puts Enemy2 units back on Enemy in a standard
+  mission is not in any asset; only the data around it is (teams, turn groups, structures).
+
+### zc doctor and zc data
+`zc doctor` lists the save folders, game folder, mappings file, Oodle library, game database (and whether the game files are newer than it), backups
+and whether the game is running, with a fix for each problem. `zc data extract` builds the game database the way the editor's Game data screen does
+(same defaults, same file); `zc data items|upgrades|effects|coil|spawn-sets` list the names `zc edit do` accepts.
+
+The published tool is a self-contained single file (`dotnet publish src/ZeroCompany.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zc-win-x64`);
+on machines with Application Control a loose `zc.dll` may be refused where the single-file exe is not.
 
 ## zcdebug: talking to the running game
 `src/ZeroCompany.DebugCli` builds `zcdebug`, a command-line debugger for the live game. It does not touch the game process
@@ -164,35 +252,4 @@ repairing the game (the EA app may repair modified files) can undo the install.
 renaming `dwmapi.dll` back out of the way fixed it. A later install loaded and ran mods fine on the same build, so it is not a
 permanent problem, but which UE4SS build works is not recorded here. The game folder is under `Program Files`, so `zcdebug install`
 needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
-Like `zcsave`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
-
-## zcassets: browsing the game's own assets
-`src/ZeroCompany.AssetsCli` builds `zcassets`, a read-only browser for the game's packages. It uses the same install folder,
-`.usmap` and Oodle library the editor already knows about (extract game data once in the editor first), never downloads anything
-and never writes to the game. Mounting about 180,000 files takes a few seconds.
-
-```
-zcassets find TurnStructure                      asset package paths containing a word
-zcassets dump BP_TurnStructure_ThreeWayBattle     one asset's objects as JSON (--merged adds inherited properties)
-zcassets dump Enemy2Team --grep FriendlyTeamTags  only the properties that mention a word
-zcassets scan Blueprints/Objects Enemy2          search inside every asset whose path contains a word
-```
-
-It is how the combat rules were checked against the game's own data rather than guessed from saves. For example, each team asset
-(`GameData/Teams/*Team`) lists the teams it counts as friends in `FriendlyTeamTags`: Player and Civilian list each other, Enemy
-lists only Enemy, and Enemy2 lists only Enemy2, so Enemy and Enemy2 are hostile to each other and to the squad. A team only acts
-if the mission's turn structure has a turn group for it, and `BP_Enemy2TurnGroup` exists only in `BP_TurnStructure_ThreeWayBattle`.
-
-The output is the game's own content: use it to read, and never publish or commit dumps (see the [disclaimer](../DISCLAIMER.md)).
-On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`, or the shell rewrites it.
-
-**What it found about combat** (read from the game's data, not guessed from saves):
-- *Threat tiers.* The game ships these enemy spawn sets: Coil 1-10 (plus a separate crisis-elite set), Separatist 1-10, Outlaw 1-5,
-  Imperial 1 and 9, and SlugRats 1. A set is a pool of spawn groups, and the pool grows with the tier: Coil 2 holds eight basic
-  non-infected Enforcer/Striker groups (T1), while Coil 10 holds about 89 groups from T4 up through Droidekas, Guardians, Captains,
-  Marauders and Scourge types. A lower tier means a weaker pool, not fewer units.
-- *Three-way battles.* Of all the levels (179 `_Gameplay` maps), only Belly of the Beast sets `TurnStructure` to the three-way
-  structure, and only it has spawners with `OwningTeam = Enemy2Team`. `BP_MissionActor`'s default is the standard structure. Other
-  levels never load the three-way class, which is why a reference to it saved into another mission came back empty.
-- *Where the rules live.* The turn system itself is native code, so why the game puts Enemy2 units back on Enemy in a standard
-  mission is not in any asset; only the data around it is (teams, turn groups, structures).
+Like `zc`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).

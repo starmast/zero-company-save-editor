@@ -109,7 +109,7 @@ public class ScreenTests
         var vm = Assert.IsType<ArmoryViewModel>(rig.Main.Screen);
         Headless.Run(() => Assert.Single(vm.Tabs, t => t.Key == "Add").Command.Execute(null));
         var choices = vm.GroupChoices.FirstOrDefault(g => g.Value == "Choices");
-        Skip.If(choices == null, "no mission rewards in this test's game data (make gamedata/raw_rewards.json with `zcassets rewards --json`)");
+        Skip.If(choices == null, "no mission rewards in this test's game data (make gamedata/raw_rewards.json with `zc assets rewards --json`)");
 
         Headless.Run(() => vm.SelGroup = choices!);
         Assert.NotEmpty(vm.VisibleAdd);

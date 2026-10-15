@@ -10,6 +10,10 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ZeroCompany.Sdk\ZeroCompany.Sdk.csproj" />
+  </ItemGroup>
+
   <!-- The Lua mod is embedded so a single-file zcdebug can install it. -->
   <ItemGroup>
     <EmbeddedResource Include="mod\ZcDebug\Scripts\main.lua" LogicalName="mod/ZcDebug/Scripts/main.lua" />

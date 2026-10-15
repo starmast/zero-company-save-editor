@@ -213,8 +213,8 @@ public sealed class SpawnSetPicker : ViewModelBase, IDisposable
 
     /// <summary>What the setting can and cannot do in this save, in plain words.</summary>
     public string Note => EncountersLeft == 0
-        ? "This mission has no later encounter, and the enemies on the map and the reinforcement waves were chosen when this encounter started, so changing the tier now does nothing. (Tried on a hero mission: the enemies and both waves stayed Coil after switching to Separatists.) To change who shows up, edit the units, or the groups on the Reinforcements tab."
-        : $"{EncountersLeft} later encounter{(EncountersLeft == 1 ? "" : "s")} in this mission {(EncountersLeft == 1 ? "has" : "have")} not started: the tier applies to {(EncountersLeft == 1 ? "that one" : "those")} only, not to the enemies already on the map. Not tried in the game.";
+        ? "This mission has no later encounter, and the enemies on the map and the reinforcement waves were chosen when this encounter started, so changing the tier now does nothing. To change who shows up, edit the units, or the groups on the Reinforcements tab."
+        : $"{EncountersLeft} later encounter{(EncountersLeft == 1 ? "" : "s")} in this mission {(EncountersLeft == 1 ? "has" : "have")} not started: the tier applies to {(EncountersLeft == 1 ? "that one" : "those")} only, not to the enemies already on the map.";
 
     public GroupChoice? Selected
     {

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Model;
+using ZeroCompany.Core.Platform;
 using ZeroCompany.Core.Views;
 using ZeroCompany.GameData.Models;
 
@@ -25,7 +26,6 @@ public sealed class SaveService
     static readonly Regex SafeName = new(@"^[A-Za-z0-9._ \-+()]+\.sav$", RegexOptions.Compiled);
     static readonly Regex GuidRx = new("^[0-9A-F]{32}$", RegexOptions.Compiled);
     static readonly Regex RecipeIdRx = new(@"^r\d+$", RegexOptions.Compiled);
-    static readonly string[] GameProcessHints = { "swzerocompany", "bruno" };
 
     readonly string _backupRoot;
     readonly Func<string?> _gameRunning;
@@ -51,20 +51,7 @@ public sealed class SaveService
     }
 
     /// <summary>Name of a running game process, or null (also null when processes cannot be listed).</summary>
-    public static string? DefaultGameRunning()
-    {
-        try
-        {
-            foreach (var p in Process.GetProcesses())
-            {
-                string name;
-                try { name = p.ProcessName.ToLowerInvariant(); } catch { continue; } finally { p.Dispose(); }
-                if (GameProcessHints.Any(name.Contains)) return name;
-            }
-        }
-        catch (Exception) { }
-        return null;
-    }
+    public static string? DefaultGameRunning() => GameProcess.Name;
 
     public string? GameRunning() => _gameRunning();
 
@@ -109,17 +96,7 @@ public sealed class SaveService
     public byte[]? Thumbnail(string dirId, string name) => SaveContainer.ReadThumbnail(Resolve(dirId, name));
 
     // -- listing -----------------------------------------------------------
-    public List<SaveEntry> ListSaves()
-    {
-        var @out = new List<SaveEntry>();
-        foreach (var (id, dir) in Dirs)
-        {
-            if (!Directory.Exists(dir)) continue;
-            foreach (var fi in new DirectoryInfo(dir).GetFiles().OrderByDescending(f => f.LastWriteTimeUtc))
-                if (SafeName.IsMatch(fi.Name)) @out.Add(new SaveEntry(id, fi.Name, SaveContainer.Summarize(fi.FullName)));
-        }
-        return @out;
-    }
+    public List<SaveEntry> ListSaves() => SaveListing.List(Dirs);
 
     // -- open --------------------------------------------------------------
     public OpenSave Open(string dirId, string name)
@@ -356,7 +333,7 @@ public sealed class SaveService
     static bool IsIntegral(string tname) => tname is not ("FloatProperty" or "DoubleProperty");
 
     /// <summary>Byte counts of the two top-level archives, as mirrored in SaveGameMetaData.json.</summary>
-    static Dictionary<string, int> BlobSizes(GvasFile g)
+    public static Dictionary<string, int> BlobSizes(GvasFile g)
     {
         var @out = new Dictionary<string, int>();
         foreach (var w in g.Root)

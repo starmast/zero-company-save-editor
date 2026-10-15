@@ -58,7 +58,7 @@ public class MissionReaderTests
     public void The_real_mission_dump_distills_into_the_database()
     {
         var raw = RawGameData.LoadLegacyDirectory(Path.Combine(Repo.Root, "gamedata"));
-        Skip.If(raw == null || raw.Missions.Count == 0, "no dev dump of missions (zcassets missions --json)");
+        Skip.If(raw == null || raw.Missions.Count == 0, "no dev dump of missions (zc assets missions --json)");
         var db = Distiller.Distill(raw!);
         var m = db.Missions["SK_Brentaal_035"];
         Assert.Equal("Imperial Riches", m.Name);

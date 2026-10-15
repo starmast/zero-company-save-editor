@@ -22,7 +22,7 @@ public sealed class PackageReader
 
     /// <summary>"SWZeroCompany/Content/Game/X/Y.uasset" -> "/Game/Game/X/Y".</summary>
     public static string PackagePath(string fileKey) =>
-        "/Game" + fileKey["SWZeroCompany/Content".Length..].Replace(".uasset", "");
+        "/Game" + fileKey["SWZeroCompany/Content".Length..].Replace(".uasset", "", StringComparison.OrdinalIgnoreCase).Replace(".umap", "", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Objects of a package by name ("/Game/Game/GameData/X/Y"); empty when it does not exist.</summary>
     public Dictionary<string, JObject> Objects(string packagePath)

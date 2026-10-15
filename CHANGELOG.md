@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **`zc`, a command-line tool**, and a shared **Zero Company Save SDK** (`src/ZeroCompany.Sdk`) that the editor, `zc` and `zcdebug` now all use for finding the
+  game and the saves, so they agree. `zc edit` changes a save without the editor, with no UI needed (so scripts and agents can do it): `fields`, `get`, `set`,
+  `do` (heal, add-item, unit-dead ...), `apply` (a JSON batch), `diff`, `backups`, `restore`. It uses the editor's own checked write (backup, refused while the
+  game runs, refused if the file changed, verified rebuild) and writes nothing without `--write`. Also `zc doctor` (what is set up and what is missing),
+  `zc save check` (consistency checks), and `zc data extract` / `zc data items|upgrades|...` (the game database, and the names edits accept). `--json` and
+  `--data-dir` work everywhere. See [docs/development.md](docs/development.md).
 - Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
@@ -14,6 +20,8 @@ All notable changes to this project are documented here. The format follows
   waves is not tried in the game yet.
 
 ### Changed
+- `zcsave` and `zcassets` are now one tool, `zc` (`zc save ...`, `zc assets ...`); the commands and their output are the same. `zcdebug saves` now also
+  lists the Wine-prefix and added save folders, and `zcdebug install` finds the game folder the same way the editor does.
 - Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes
   taken from testing in the game. For example, weapon damage, crit and range are rebuilt from the equipped weapon when the unit fires, so editing
   them does not change attacks; the damage multiplier and attack did not change a standard shot either.

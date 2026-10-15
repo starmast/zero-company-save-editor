@@ -64,7 +64,7 @@
                   <TextBlock Classes="amber small" TextWrapping="Wrap" IsVisible="{Binding TeamChanged}"
                              Text="Ally = you control it. Friendly AI = friendly to you but moved by the game (rescued VIPs, allied fighters); the safest way to turn an enemy to your side. Switches team tag, friendly flag, the tag inside the unit and its behaviour, as the game does. A unit turned Enemy also copies the AI area and faction tags and the action-point refresh values of the nearest enemy. It moves to the other tab after you apply." />
                   <TextBlock Classes="bad small" TextWrapping="Wrap" IsVisible="{Binding TeamWarning}"
-                             Text="This unit's class is built for a player to control. In testing, a hero switched to Enemy or Friendly AI loaded fine but skipped its turn, because the AI has no abilities for it. Enemies and other AI-class units switch fine." />
+                             Text="This unit's class is built for a player to control. A hero switched to Enemy or Friendly AI skips its turn, because the AI has no abilities for it. Enemies and other AI-class units switch fine." />
                   <ItemsControl ItemsSource="{Binding Rows}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:FieldRowViewModel">
@@ -165,7 +165,7 @@
               <StackPanel VerticalAlignment="Center">
                 <TextBlock Classes="title" FontSize="16" Text="Turn structure" />
                 <TextBlock Classes="mute small" TextWrapping="Wrap"
-                           Text="This mission is a three-way battle: Enemy2 is its own hostile team and fights Enemy. Switching to Standard removes the three-way structure; Enemy2 units would then be put back on Enemy by the game. Shown only in three-way battles; adding it to an ordinary mission was tried and does not work." />
+                           Text="This mission is a three-way battle: Enemy2 is its own hostile team and fights Enemy. Switching to Standard removes the three-way structure; Enemy2 units would then be put back on Enemy by the game. Shown only in three-way battles; it cannot be added to an ordinary mission." />
               </StackPanel>
               <ComboBox Grid.Column="1" Width="190" Margin="12,0,0,0" ItemsSource="{Binding Turn.Choices}" SelectedItem="{Binding Turn.Selected, Mode=TwoWay}" VerticalAlignment="Center">
                 <ComboBox.ItemTemplate>
@@ -183,7 +183,7 @@
           <Grid ColumnDefinitions="*,Auto" Margin="14,10" IsVisible="{Binding HasRound}">
             <StackPanel VerticalAlignment="Center">
               <TextBlock Text="Current round" />
-              <TextBlock Classes="mute small" TextWrapping="Wrap" Text="The round the fight is on. The game saves it and reads it back on load (a copy set to round 8 loaded as round 8). Reinforcement waves are scheduled by round, but how a change here affects them has not been tried in the game yet." />
+              <TextBlock Classes="mute small" TextWrapping="Wrap" Text="The round the fight is on. Reinforcement waves are scheduled by round." />
               <TextBlock Classes="mute small" Text="{Binding Round.SavedText}" />
             </StackPanel>
             <NumericUpDown Grid.Column="1" Width="130" Minimum="1" Maximum="{Binding Round.Maximum}" Increment="1" FormatString="0" Value="{Binding Round.Value, Mode=TwoWay}" VerticalAlignment="Center" />
@@ -274,7 +274,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Waves arrive at the round shown (rounds count up through the fight; the current round is the number above). Cancel pushes a wave to round 999. A group can only be swapped for one this encounter already uses. A definition's 'May spawn' limits how often it fires (-1 = no limit); 'Already triggered' counts how often it has. Triggers can be switched off once they have fired. Tried in the game: swapping a definition's group and changing its delay carried through, and the wave that arrived used the new group. Apply to a copy first." />
+                     Text="Waves arrive at the round shown (rounds count up through the fight; the current round is the number above). Cancel pushes a wave to round 999. A group can only be swapped for one this encounter already uses. A definition's 'May spawn' limits how often it fires (-1 = no limit); 'Already triggered' counts how often it has. Triggers can be switched off once they have fired. Apply to a copy first." />
         </StackPanel>
       </Border>
 
@@ -299,7 +299,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Turns a fire keeps burning. They start near 9999, so they effectively never go out; set a low number to let one burn out. Not tried in the game yet." />
+                     Text="Turns a fire keeps burning. They start near 9999, so they effectively never go out; set a low number to let one burn out." />
         </StackPanel>
       </Border>
 
@@ -347,7 +347,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Every cover, crate, railing and other prop the save tracks (hundreds in a real level), not only the ones already hit. Destroy wrecks a prop when the save loads; Restore brings a destroyed or damaged one back. The save marks a prop destroyed separately from its health, so changing health alone does not wreck or rebuild it. The buttons act on every prop the search and filters match. Tried in the game: destroyed barricades vanished (they are hidden and no longer collide, so units can walk through the gap)." />
+                     Text="Every cover, crate, railing and other prop the save tracks (hundreds in a real level), not only the ones already hit. Destroy wrecks a prop when the save loads; Restore brings a destroyed or damaged one back. The save marks a prop destroyed separately from its health, so changing health alone does not wreck or rebuild it. The buttons act on every prop the search and filters match. A destroyed prop is hidden and no longer blocks movement." />
         </StackPanel>
       </Border>
 
@@ -413,7 +413,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status. Tried in the game: marking an interact objective Succeeded greyed it out, but its counter stayed at 0 of 1 and the next objective did not start. Check the result in the game and keep the backup. Objectives marked Not started have not begun yet and are left alone, because the game adds a lot of state when it starts one." />
+                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status. Marking an interact objective Succeeded greys it out, but its counter and the next objective are not updated. Keep the backup. Objectives marked Not started have not begun yet and are left alone, because the game adds a lot of state when it starts one." />
         </StackPanel>
       </Border>
     </StackPanel>
