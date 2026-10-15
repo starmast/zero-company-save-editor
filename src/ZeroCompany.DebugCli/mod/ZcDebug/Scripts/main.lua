@@ -316,12 +316,16 @@ end
 
 -- load <save name>: ask the game to load a save by file name (without .sav). The game only accepts names it listed when it
 -- started: a file added while it runs is refused, but a known file whose contents were overwritten on disk loads the new data.
+local lastLoad = 0
 function commands.load(args)
     local name = args:match("^%s*(.-)%s*$"):gsub("%.sav$", "")
     if name == "" then error("usage: load <save file name>") end
+    -- a second request while a load runs (even a refused one) left the level without its actors or input once
+    local wait = 30 - (os.time() - lastLoad)
+    if wait > 0 then error("a load was started " .. (30 - wait) .. "s ago; wait " .. wait .. "s so the game can finish it") end
     local subsystem = FindFirstOf("BrunoSaveGameSubsystem")
     if not (subsystem and subsystem:IsValid()) then error("the game's save subsystem was not found") end
-    if subsystem:LoadFile(name) then return "loading " .. name end
+    if subsystem:LoadFile(name) then lastLoad = os.time(); return "loading " .. name end
     return "refused: the game does not know a save called '" .. name .. "' (names are listed once, at start-up; overwrite a known file instead)"
 end
 

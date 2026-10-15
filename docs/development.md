@@ -150,7 +150,7 @@ invalid". The game does rescan the folder when asked (`GetAllSaves` returned the
 What works is a **slot file**: pick a save the game already lists (for example a throwaway copy you made earlier and restarted for),
 overwrite its contents on disk with the new save, then `zcdebug load <that file's name>`. Checked with two test copies: the game loaded
 the overwritten file's new data (an Enforcer at 60 instead of 61). The menu entry keeps the old name and thumbnail. Only overwrite
-files you made for testing, never a save you care about. `zcdebug saves` shows which files the game should accept: a file created after the game started is marked NEW (a heuristic from file creation times; an overwritten file keeps its creation time, so it stays "listed"). The editor does not depend on any of this: it only reads and writes saves.
+files you made for testing, never a save you care about. Send one `load` and wait for the level to finish loading: a second `load` during a load (even a refused one) left the level with no enemies and heroes that could not move, so the mod now refuses a second request for 30 seconds. `zcdebug saves` shows which files the game should accept: a file created after the game started is marked NEW (a heuristic from file creation times; an overwritten file keeps its creation time, so it stays "listed"). The editor does not depend on any of this: it only reads and writes saves.
 
 **Do not bulk-scan from Lua.** An `eval` that looped over every character walking each one's `ActiveGameplayEffects` crashed the game
 (`EXCEPTION_ACCESS_VIOLATION` reading address 0x18). Read one named unit at a time and stop after the first timeout. Unreal's
