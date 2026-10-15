@@ -253,3 +253,27 @@ public sealed class TurnStructurePicker : ViewModelBase, IDisposable
     public void Dispose() => _p.Changed -= OnChanged;
 }
 
+/// <summary>The round the fight is on: a number box bound to the pending store. The game saves it and reads it back when the save loads.</summary>
+public sealed class RoundEditor : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _p;
+    readonly int _saved;
+
+    public RoundEditor(PendingChanges p, int saved) { _p = p; _saved = saved; p.Changed += OnChanged; }
+
+    public decimal? Value
+    {
+        get => _p.RoundWanted(_saved);
+        set
+        {
+            if (value is { } v && v >= 1 && v <= CombatOps.MaxRound) _p.SetRound((int)Math.Round(v), _saved);
+            else OnPropertyChanged(nameof(Value));                              // empty or out of range: show the real value again
+        }
+    }
+
+    public int Maximum => CombatOps.MaxRound;
+    public bool IsChanged => _p.RoundChange != null;
+    public string SavedText => $"In the save: round {_saved}";
+    void OnChanged() { OnPropertyChanged(nameof(Value)); OnPropertyChanged(nameof(IsChanged)); }
+    public void Dispose() => _p.Changed -= OnChanged;
+}

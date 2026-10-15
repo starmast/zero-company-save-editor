@@ -23,6 +23,7 @@ public sealed class PendingChanges
     readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
     readonly Dictionary<int, string> _spawnSet = new();                                    // combat: wanted enemy spawn set (key 0)
     readonly Dictionary<int, string> _turn = new();                                        // combat: wanted turn structure (key 0)
+    readonly Dictionary<int, int> _round = new();                                          // combat: wanted round (key 0)
     readonly Dictionary<string, int> _operationAges = new();                              // Holotable: operation id -> cycles on offer
     readonly Dictionary<string, int> _missionTurns = new();                               // Den: mission id -> cycle it was added on
     readonly Dictionary<string, string> _missionCrisis = new();                           // Den: crisis mission id -> crisis effect path
@@ -64,6 +65,7 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<int, bool> TriggerChanges => _triggers;
     public string? SpawnSetChange => _spawnSet.GetValueOrDefault(0);
     public string? TurnChange => _turn.GetValueOrDefault(0);
+    public int? RoundChange => _round.TryGetValue(0, out var r) ? r : null;
     public IReadOnlyDictionary<string, int> ItemAdds => _itemAdds;
     public IReadOnlyDictionary<string, string> MissionSetChanges => _missionSets;
     public IReadOnlyDictionary<string, int> OperationAgeChanges => _operationAges;
@@ -78,7 +80,7 @@ public sealed class PendingChanges
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -176,7 +178,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -238,6 +240,8 @@ public sealed class PendingChanges
     public string SpawnSetWanted(string saved) => _spawnSet.GetValueOrDefault(0, saved);
     public void SetTurn(string wanted, string saved) { SetOrClear(_turn, 0, wanted, saved); Raise(); }
     public string TurnWanted(string saved) => _turn.GetValueOrDefault(0, saved);
+    public void SetRound(int wanted, int saved) { SetOrClear(_round, 0, wanted, saved); Raise(); }
+    public int RoundWanted(int saved) => _round.GetValueOrDefault(0, saved);
 
     public void SetMissionTurn(string mission, int wanted, int saved) { SetOrClear(_missionTurns, mission, wanted, saved); Raise(); }
     public int MissionTurnWanted(string mission, int saved) => _missionTurns.GetValueOrDefault(mission, saved);
@@ -380,6 +384,7 @@ public sealed class PendingChanges
         if (_sceneryDestroys.Count > 0) @out.Add(new SaveAction.DestroyScenery(_sceneryDestroys.ToList()));
         if (_spawnSet.TryGetValue(0, out var ss)) @out.Add(new SaveAction.SetEnemySpawnSet(ss));
         if (_turn.TryGetValue(0, out var tn)) @out.Add(new SaveAction.SetTurnStructure(tn));
+        if (_round.TryGetValue(0, out var rd)) @out.Add(new SaveAction.SetCurrentRound(rd));
         @out.AddRange(_triggers.OrderBy(kv => kv.Key).Select(kv =>
             new SaveAction.SetTriggerActive(kv.Key, combat.Reinforcements.Triggers.First(t => t.Logic == kv.Key).Name, kv.Value)));
         @out.AddRange(_objectives.OrderBy(kv => kv.Key).Select(kv =>
@@ -433,6 +438,7 @@ public sealed class PendingChanges
             if (_sceneryRestores.Count > 0) Add($"Restore {_sceneryRestores.Count} destroyed or damaged scenery prop{(_sceneryRestores.Count == 1 ? "" : "s")}");
             if (_sceneryDestroys.Count > 0) Add($"Destroy {_sceneryDestroys.Count} scenery prop{(_sceneryDestroys.Count == 1 ? "" : "s")}");
             if (_spawnSet.TryGetValue(0, out var sset)) Add($"Enemy spawn set: {CombatOps.SpawnSetLabel(sset)}");
+            if (_round.TryGetValue(0, out var rnd)) Add($"Current round: {rnd}");
             if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
             foreach (var (logic, on) in _triggers.OrderBy(kv => kv.Key))
                 Add($"Reinforcement trigger {cb.Reinforcements.Triggers.FirstOrDefault(t => t.Logic == logic)?.Title ?? "?"}: {(on ? "on" : "off")}");

@@ -65,7 +65,9 @@ against saves the game wrote and re-read after editing, but not played through (
   objectives that have not started cannot be edited.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved. Lowering
   one from 6 to 2 was confirmed in the game (the countdown showed 2 on loading).
-- **Reinforcements:** the game does not save which round the fight is on, so a wave's round can't be compared with "now". Cancel
+- **Reinforcements:** the game does save which round the fight is on (one number in the tactical game state, shown and editable as **Current
+  round**; a copy set to round 8 loaded as round 8), so a wave's round can be compared with it. How changing the round affects waves, delays or
+  anything else that counts rounds has not been tried in the game. Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be
   switched off only once it has fired. An automatic wave may also be held back by a condition that is not in the save: in Brentaal 035 the
   wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in

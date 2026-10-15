@@ -510,6 +510,9 @@ public sealed class SaveService
                 case SaveAction.SetTurnStructure ts:
                     if (!seen.Add("turn")) throw new EditException("duplicate turn structure change");
                     return CombatOps.SetTurnStructure(g, ts.Structure, cut);
+                case SaveAction.SetCurrentRound cr:
+                    if (!seen.Add("round")) throw new EditException("duplicate round change");
+                    return CombatOps.SetCurrentRound(g, cr.Round, cut);
                 case SaveAction.SetTriggerActive ta:
                     if (!seen.Add($"trg{ta.Logic}")) throw new EditException("duplicate trigger change");
                     return CombatOps.SetTriggerActive(g, ta.Logic, ta.Name, ta.Active, cut);
@@ -775,6 +778,8 @@ public sealed class SaveService
             throw new EditException("verification failed: the enemy spawn set is not what was intended");
         if (cut.TurnStructure != null && CombatOps.TurnStructureOf(g2) != cut.TurnStructure)
             throw new EditException("verification failed: the turn structure is not what was intended");
+        if (cut.CurrentRound != null && CombatOps.CurrentRound(g2) != cut.CurrentRound)
+            throw new EditException("verification failed: the round is not what was intended");
         foreach (var (logic, active) in cut.TriggerActive)
             if (CombatOps.TriggerActiveOf(g2, logic) != active)
                 throw new EditException("verification failed: a reinforcement trigger is not what was intended");

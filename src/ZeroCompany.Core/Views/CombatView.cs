@@ -10,6 +10,8 @@ public sealed class CombatView
     public List<ObjectiveView> Objectives { get; } = new();
     public List<TimerView> Timers { get; } = new();
     public ReinforcementsView Reinforcements { get; } = new();
+    /// <summary>The round the fight is on (saved by the game), or null when the save does not hold it in a form the editor knows.</summary>
+    public int? Round { get; set; }
     public SpawnSetView? SpawnSet { get; set; }
     public TurnStructureView? TurnStructure { get; set; }
     /// <summary>A three-way battle: Enemy2 can be used here.</summary>

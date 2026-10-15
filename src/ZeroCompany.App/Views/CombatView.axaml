@@ -180,6 +180,14 @@
       <Border Classes="panel" IsVisible="{Binding ShowReinforcements}">
         <StackPanel>
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="INCOMING WAVES" /></Border>
+          <Grid ColumnDefinitions="*,Auto" Margin="14,10" IsVisible="{Binding HasRound}">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="Current round" />
+              <TextBlock Classes="mute small" TextWrapping="Wrap" Text="The round the fight is on. The game saves it and reads it back on load (a copy set to round 8 loaded as round 8). Reinforcement waves are scheduled by round, but how a change here affects them has not been tried in the game yet." />
+              <TextBlock Classes="mute small" Text="{Binding Round.SavedText}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Width="130" Minimum="1" Maximum="{Binding Round.Maximum}" Increment="1" FormatString="0" Value="{Binding Round.Value, Mode=TwoWay}" VerticalAlignment="Center" />
+          </Grid>
           <TextBlock Classes="mute" Margin="14,10" Text="No reinforcement waves are queued right now." IsVisible="{Binding NoWaves}" />
           <ItemsControl ItemsSource="{Binding Waves}">
             <ItemsControl.ItemTemplate>
@@ -266,7 +274,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Waves arrive at the round shown (rounds count up through the fight; the game does not save which round it is now). Cancel pushes a wave to round 999. A group can only be swapped for one this encounter already uses. A definition's 'May spawn' limits how often it fires (-1 = no limit); 'Already triggered' counts how often it has. Triggers can be switched off once they have fired. None of this has been tried in the game yet: apply to a copy first." />
+                     Text="Waves arrive at the round shown (rounds count up through the fight; the current round is the number above). Cancel pushes a wave to round 999. A group can only be swapped for one this encounter already uses. A definition's 'May spawn' limits how often it fires (-1 = no limit); 'Already triggered' counts how often it has. Triggers can be switched off once they have fired. Tried in the game: swapping a definition's group and changing its delay carried through, and the wave that arrived used the new group. Apply to a copy first." />
         </StackPanel>
       </Border>
 

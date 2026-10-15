@@ -9,6 +9,10 @@ All notable changes to this project are documented here. The format follows
 - Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
+- Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
+  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. How a change affects
+  waves is not tried in the game yet.
+
 ### Changed
 - Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes
   taken from testing in the game. For example, weapon damage, crit and range are rebuilt from the equipped weapon when the unit fires, so editing

@@ -95,7 +95,7 @@ public static partial class CombatOps
     // ---- the view of the whole combat state --------------------------------------------
     public static CombatView Build(GvasFile g, string title)
     {
-        var view = new CombatView { Title = title };
+        var view = new CombatView { Title = title, Round = CurrentRound(g) };
         var units = Units(g);
         for (int i = 0; i < units.Count; i++)
         {
