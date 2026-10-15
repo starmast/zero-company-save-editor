@@ -244,6 +244,7 @@ function commands.attr(args)
                 if value > v.MaxValue then v.MaxValue = value end
                 v:K2_BroadcastFieldValueChanged({ FieldName = FName("MaxValue") })
                 v:K2_BroadcastFieldValueChanged({ FieldName = FName("CurrentValue") })
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("NormalizedValue") })    -- health bars bind to this one
                 views = views + 1
             end
         end)
