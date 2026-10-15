@@ -80,7 +80,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                   Text="The save counts how many cycles each operation has been on offer; the game removes it when that reaches its limit. Longer and Full time lower the count, so an operation that is about to expire stays. Not yet tried in the game." />
+                   Text="The save counts how many cycles each operation has been on offer; the game removes it when that reaches its limit. Longer and Full time lower the count, so an operation that is about to expire stays." />
       </StackPanel>
     </Border>
 
@@ -125,7 +125,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission. Shorter, Longer and Full time change how long a mission stays on offer; on a crisis mission you can also pick which Coil upgrade it is about (not yet tried in the game)." />
+                   Text="Who a mission spawns is chosen when it starts, so this is the place to change it: pick another faction or threat tier before you launch the mission. Shorter, Longer and Full time change how long a mission stays on offer; on a crisis mission you can also pick which Coil upgrade it is about." />
       </StackPanel>
     </Border>
 

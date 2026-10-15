@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json;
+using ZeroCompany.Core.Platform;
+using ZeroCompany.Sdk;
 
 namespace ZeroCompany.DebugCli;
 
@@ -10,34 +10,16 @@ public static class Install
     public const string ModName = "ZcDebug";
     static readonly string[] ResourceFiles = { "mod/ZcDebug/Scripts/main.lua", "mod/ZcDebug/enabled.txt" };
 
-    /// <summary>Whether the game process is running (its launcher and shipping exe both start with this name).</summary>
-    public static IReadOnlyList<(string Name, int Id)> RunningGame() =>
-        Process.GetProcesses().Where(p => SafeName(p).StartsWith("SWZeroCompany", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (SafeName(p), p.Id)).ToList();
-
-    static string SafeName(Process p) { try { return p.ProcessName; } catch (InvalidOperationException) { return ""; } }
-
-    /// <summary>The game folder: --game, else the one the editor remembers in its settings, else null.</summary>
+    /// <summary>The game folder: --game, else the one the editor remembers or can guess, else null.</summary>
     public static string? FindGameDir(string? given)
     {
         if (!string.IsNullOrEmpty(given)) return given;
-        try
-        {
-            var settings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZeroCompanyEditor", "settings.json");
-            using var doc = JsonDocument.Parse(File.ReadAllText(settings));
-            if (doc.RootElement.TryGetProperty("GameDir", out var g) && g.GetString() is { Length: > 0 } dir) return dir;
-        }
-        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { }
-        return null;
+        var dir = ZcWorkspace.Open().GameDir();
+        return Directory.Exists(dir) ? dir : null;
     }
 
     /// <summary>The Win64 binaries folder of the game (where UE4SS lives), or null.</summary>
-    public static string? BinariesDir(string gameDir)
-    {
-        foreach (var c in new[] { Path.Combine(gameDir, "SWZeroCompany", "Binaries", "Win64"), Path.Combine(gameDir, "Binaries", "Win64"), gameDir })
-            if (File.Exists(Path.Combine(c, "SWZeroCompany.exe")) || Directory.Exists(Path.Combine(c, "ue4ss"))) return c;
-        return null;
-    }
+    public static string? BinariesDir(string gameDir) => ZcWorkspace.BinariesDir(gameDir);
 
     /// <summary>UE4SS's Mods folder: newer releases keep it in a ue4ss subfolder, older ones beside the exe.</summary>
     public static string? ModsDir(string binaries)
@@ -109,7 +91,8 @@ public static class Install
     }
 }
 
-public sealed class CliException : Exception
+/// <summary>A failure the user can act on; <see cref="ZcException"/> so the shared command-line wrapper reports it.</summary>
+public sealed class CliException : ZcException
 {
     public CliException(string message) : base(message) { }
 }

@@ -21,8 +21,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     {
         _main = main;
         var s = main.Session.Settings;
-        _gameDir = s.GameDir.Length > 0 ? s.GameDir : AppEnvironment.GuessGameDirs().FirstOrDefault() ?? GameExtractor.DefaultGameDir;
-        _usmapPath = s.UsmapPath.Length > 0 ? s.UsmapPath : GuessUsmap();
+        _gameDir = main.Session.Workspace.GameDir();
+        _usmapPath = main.Session.Workspace.UsmapPath();
         RefreshStatus();
         _log.Append(main.Memory.GameDataLog);                     // the log survives the screen reload that follows an extraction
         _logText = main.Memory.GameDataLog;
@@ -57,18 +57,6 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     }
 
     partial void OnIsRunningChanged(bool value) { OnPropertyChanged(nameof(CanExtract)); OnPropertyChanged(nameof(NotRunning)); }
-
-    string GuessUsmap()
-    {
-        foreach (var dir in new[] { _main.Session.Env.DataDir, _main.Session.Env.GameDataDir, AppContext.BaseDirectory })
-            try
-            {
-                var f = Directory.Exists(dir) ? Directory.GetFiles(dir, "*.usmap").FirstOrDefault() : null;
-                if (f != null) return f;
-            }
-            catch (IOException) { }
-        return "";
-    }
 
     void RefreshStatus()
     {
@@ -119,7 +107,7 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         {
             var db = await GameExtractor.ExtractAsync(new ExtractOptions
             {
-                GameDir = GameDir, UsmapPath = UsmapPath, OodleDir = s.Settings.OodleDir.Length > 0 ? s.Settings.OodleDir : s.Env.DataDir,
+                GameDir = GameDir, UsmapPath = UsmapPath, OodleDir = s.Workspace.OodleDir,
             }, progress, _cts.Token);
             s.UseDatabase(db);
             RefreshStatus();

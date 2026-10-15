@@ -35,7 +35,7 @@ against saves the game wrote and re-read after editing, but not played through (
     that already are one, and the editor refuses it elsewhere. In an ordinary mission the game puts Enemy2 units back on Enemy
     when it loads the save, so they never fight the other enemies. Giving such a mission the three-way turn structure was
     tried and does not work: the game loaded it as empty. The turn structure can be switched to standard and back, but only in a
-    save that has it. This matches the game's own data (read with `zcassets`, see [development.md](development.md)): the team
+    save that has it. This matches the game's own data (read with `zc assets`, see [development.md](development.md)): the team
     assets list only themselves as friends for Enemy and Enemy2, so they are hostile to each other, and the Enemy2 turn group
     exists only in the three-way turn structure.
 - **Mission enemy set** (Galaxy screen, *Missions in the Den*): changes which faction and tier an available mission spawns when you

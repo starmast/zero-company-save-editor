@@ -34,9 +34,9 @@ public sealed class RawGameData
         raw.Effects = Read(Path.Combine(dir, "raw_effects.json")) as JObject ?? new();
         raw.Focus = Read(Path.Combine(dir, "raw_focus.json")) as JObject ?? new();
         raw.Crisis = Read(Path.Combine(dir, "raw_crisis.json")) as JObject ?? new();
-        raw.Rewards = Read(Path.Combine(dir, "raw_rewards.json")) as JArray ?? new();           // optional: made by `zcassets rewards --json`
-        raw.Missions = Read(Path.Combine(dir, "raw_missions.json")) as JArray ?? new();         // optional: made by `zcassets missions --json`
-        raw.Operations = Read(Path.Combine(dir, "raw_operations.json")) as JArray ?? new();     // optional: made by `zcassets operations --json`
+        raw.Rewards = Read(Path.Combine(dir, "raw_rewards.json")) as JArray ?? new();           // optional: made by `zc assets rewards --json`
+        raw.Missions = Read(Path.Combine(dir, "raw_missions.json")) as JArray ?? new();         // optional: made by `zc assets missions --json`
+        raw.Operations = Read(Path.Combine(dir, "raw_operations.json")) as JArray ?? new();     // optional: made by `zc assets operations --json`
         if (Read(Path.Combine(dir, "strings_en.json")) is JObject s)
             foreach (var ns in s.Properties())
                 raw.Strings[ns.Name] = ((JObject)ns.Value).Properties().ToDictionary(p => p.Name, p => (string?)p.Value ?? "");

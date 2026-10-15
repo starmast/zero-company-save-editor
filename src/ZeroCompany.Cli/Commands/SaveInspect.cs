@@ -1,38 +1,23 @@
 using System.Text.RegularExpressions;
 using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Actions;
+using ZeroCompany.Sdk;
 
 namespace ZeroCompany.Cli;
 
 /// <summary>`diff`, `find` and `dump`: look inside the property tree without a decompiler.</summary>
-static class Inspect
+static class SaveInspect
 {
     // ---- diff ----------------------------------------------------------------------------------
-    /// <summary>Every scalar leaf by path. Array elements are keyed by index, so inserted elements shift later ones (shown as changes).</summary>
-    static Dictionary<string, string> Leaves(SaveFile s)
-    {
-        var d = new Dictionary<string, string>();
-        void Walk(GvasNode x, string path)
-        {
-            foreach (var c in x.Children ?? new List<GvasNode>())
-            {
-                var p = path + "/" + c.Name;
-                if (c.Children == null) d[p] = s.Value(c, 60); else Walk(c, p);
-            }
-        }
-        foreach (var r in s.Gvas.Root) Walk(r, r.Name);
-        return d;
-    }
-
     static string Generic(string path) => Regex.Replace(path, @"/\[\d+\]", "/[]");
 
-    public static void Diff(SaveFile a, SaveFile b, bool all, int top)
+    public static void Diff(SaveDocument a, SaveDocument b, bool all, int top)
     {
         Console.WriteLine($"A  {Path.GetFileName(a.Path)}  [{a.Comment}]");
         Console.WriteLine($"B  {Path.GetFileName(b.Path)}  [{b.Comment}]");
         if (CombatOps.IsCombatSave(a.Gvas) && CombatOps.IsCombatSave(b.Gvas)) UnitDiff(a, b);
 
-        var la = Leaves(a); var lb = Leaves(b);
+        var la = a.Leaves(); var lb = b.Leaves();
         var diffs = la.Keys.Union(lb.Keys).Where(k => la.GetValueOrDefault(k) != lb.GetValueOrDefault(k)).ToList();
         Console.WriteLine();
         Console.WriteLine($"{diffs.Count} changed values ({la.Count} vs {lb.Count} leaves){(all ? "" : "; noise hidden, use --all")}");
@@ -45,9 +30,9 @@ static class Inspect
         }
     }
 
-    static void UnitDiff(SaveFile a, SaveFile b)
+    static void UnitDiff(SaveDocument a, SaveDocument b)
     {
-        string Key(SaveFile s, int i) => CombatOps.ActorName(s.Gvas, CombatOps.Units(s.Gvas)[i]);
+        string Key(SaveDocument s, int i) => CombatOps.ActorName(s.Gvas, CombatOps.Units(s.Gvas)[i]);
         var ua = Enumerable.Range(0, CombatOps.Units(a.Gvas).Count).ToDictionary(i => Key(a, i));
         var ub = Enumerable.Range(0, CombatOps.Units(b.Gvas).Count).ToDictionary(i => Key(b, i));
         var ca = CombatOps.Build(a.Gvas, a.Comment); var cb = CombatOps.Build(b.Gvas, b.Comment);
@@ -79,44 +64,29 @@ static class Inspect
 
     // ---- find ----------------------------------------------------------------------------------
     /// <summary>Every string value or property name containing <paramref name="text"/>, with the path of the property that holds it.</summary>
-    public static void Find(SaveFile s, string text, int limit)
+    public static void Find(SaveDocument s, string text, int limit)
     {
-        int n = 0;
-        var cmp = StringComparison.OrdinalIgnoreCase;
-        foreach (var node in s.Gvas.Walk())
-        {
-            if (n >= limit) { Console.WriteLine($"  ... stopped at {limit} (use --limit)"); break; }
-            var v = node.Children == null && node.Size <= 4096 ? s.Value(node, 4096) : "";
-            bool inName = node.Name.Contains(text, cmp);
-            bool inVal = v.Contains(text, cmp);
-            if (!inName && !inVal) continue;
-            Console.WriteLine($"  {string.Join("/", GvasFile.PathOf(node))}{(v.Length > 0 ? $" = {Clip(v)}" : "")}");
-            n++;
-        }
-        Console.WriteLine($"{n} match(es) in properties; entries other than SaveGame are not searched");
+        var (hits, truncated) = s.Find(text, limit);
+        foreach (var h in hits) Console.WriteLine($"  {h.Path}{(h.Value.Length > 0 ? $" = {Clip(h.Value)}" : "")}");
+        if (truncated) Console.WriteLine($"  ... stopped at {limit} (use --limit)");
+        Console.WriteLine($"{hits.Count} match(es) in properties; entries other than SaveGame are not searched");
     }
 
     static string Clip(string s) => s.Length > 200 ? s[..200] + "..." : s;
 
     // ---- dump ----------------------------------------------------------------------------------
     /// <summary>Print the property tree below a path such as <c>TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6]</c> (empty = roots).</summary>
-    public static void Dump(SaveFile s, string path, int depth, int take)
+    public static void Dump(SaveDocument s, string path, int depth, int take)
     {
-        IEnumerable<GvasNode> nodes = s.Gvas.Root;
-        GvasNode? at = null;
-        foreach (var part in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
-        {
-            at = nodes.FirstOrDefault(c => c.Name == part) ?? throw new CliException($"no property '{part}' under {(at == null ? "the root" : at.Name)} (children: {string.Join(", ", nodes.Take(12).Select(c => c.Name))}{(nodes.Count() > 12 ? ", ..." : "")})");
-            nodes = at.Children ?? new List<GvasNode>();
-        }
+        var at = s.NodeAt(path);
         void Print(GvasNode x, int d)
         {
-            Console.WriteLine($"{new string(' ', d * 2)}{x.Name} : {x.TName} {SaveFile.Short(s.Value(x))}{(x.Children != null && d >= depth ? $"  ({x.Children.Count} children)" : "")}");
+            Console.WriteLine($"{new string(' ', d * 2)}{x.Name} : {x.TName} {SaveDocument.Short(s.Value(x))}{(x.Children != null && d >= depth ? $"  ({x.Children.Count} children)" : "")}");
             if (d >= depth) return;
             var kids = x.Children ?? new List<GvasNode>();
             foreach (var c in kids.Take(take)) Print(c, d + 1);
             if (kids.Count > take) Console.WriteLine($"{new string(' ', (d + 1) * 2)}... {kids.Count - take} more (use --take)");
         }
-        if (at != null) Print(at, 0); else foreach (var r in nodes) Print(r, 0);
+        if (at != null) Print(at, 0); else foreach (var r in s.Gvas.Root) Print(r, 0);
     }
 }

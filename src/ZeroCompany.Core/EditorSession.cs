@@ -14,6 +14,7 @@ public sealed class EditorSession
 
     public AppEnvironment Env { get; }
     public AppSettings Settings { get; }
+    public ZcWorkspace Workspace { get; }
     public GameDatabase Db { get; private set; }
     public SaveService Service { get; }
     public PendingChanges Pending { get; } = new();
@@ -23,6 +24,7 @@ public sealed class EditorSession
         Env = env;
         _gameRunning = gameRunning;
         Settings = AppSettings.Load(env);
+        Workspace = new ZcWorkspace(env, Settings);
         Db = GameDatabase.TryLoad(env.GameDbPath) ?? GameDatabase.Empty;
         Service = BuildService();
     }

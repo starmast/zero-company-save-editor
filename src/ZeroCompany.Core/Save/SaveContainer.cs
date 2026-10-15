@@ -262,13 +262,14 @@ public sealed class SaveContainer
     // ---- cheap listing ------------------------------------------------------
     public sealed record Summary(long Size, DateTime MTimeUtc, string Kind, bool Editable,
         string? Title = null, string? World = null, string? Created = null, long? Turn = null,
-        string? Difficulty = null, string? AutoSave = null, string? Error = null);
+        string? Difficulty = null, string? AutoSave = null, string? Error = null,
+        string? GameMode = null, DateTime? FileCreated = null);
 
     /// <summary>Cheap listing info; only reads the small info entry, not the 7 MB payload.</summary>
     public static Summary Summarize(string path)
     {
         var fi = new FileInfo(path);
-        var s = new Summary(fi.Length, fi.LastWriteTimeUtc, "raw", false);
+        var s = new Summary(fi.Length, fi.LastWriteTimeUtc, "raw", false, FileCreated: fi.CreationTime);
         try
         {
             var head = new byte[4];
@@ -288,7 +289,7 @@ public sealed class SaveContainer
                         {
                             Title = Str(j, "comment"), World = Str(j, "worldName"), Created = Str(j, "creationTime"),
                             Turn = j["strategyTurn"] is JsonValue tv && tv.TryGetValue<long>(out var t) ? t : null,
-                            Difficulty = Str(j, "currentDifficultyLevel"), AutoSave = Str(j, "autoSaveType"),
+                            Difficulty = Str(j, "currentDifficultyLevel"), AutoSave = Str(j, "autoSaveType"), GameMode = Str(j, "gameMode"),
                         };
                 }
             }
