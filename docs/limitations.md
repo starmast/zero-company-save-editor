@@ -58,7 +58,10 @@ against saves the game wrote and re-read after editing, but not played through (
   **Destroy** is the mirror image (an intact prop's record becomes Destroyed, flags (0,0,1) as the game wrote them for props it saw wrecked,
   and no health entry is added since the game drops those on load); it has not been tried in the game yet.
 - **Objectives** only change the saved status (Active / Succeeded). A normal completion also fires follow-on steps (cutscenes,
-  the next objective, reinforcements); flipping the status does not, so check the result in the game.
+  the next objective, reinforcements); flipping the status does not. Tried in the game: marking an interact objective Succeeded greyed it
+  out in the objective list, but its counter stayed at 0 of 1 and the objective that normally follows did not start. A real completion
+  also records the interaction count, removes the objective's waypoint and starts the next one with about two dozen runtime fields, so
+  objectives that have not started cannot be edited.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.
 - **Reinforcements:** the game does not save which round the fight is on, so a wave's round can't be compared with "now". Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be

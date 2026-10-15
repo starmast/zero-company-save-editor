@@ -405,7 +405,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status, so check the result in the game and keep the backup. Objectives marked Not started have not begun yet and are left alone." />
+                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status. Tried in the game: marking an interact objective Succeeded greyed it out, but its counter stayed at 0 of 1 and the next objective did not start. Check the result in the game and keep the backup. Objectives marked Not started have not begun yet and are left alone, because the game adds a lot of state when it starts one." />
         </StackPanel>
       </Border>
     </StackPanel>
