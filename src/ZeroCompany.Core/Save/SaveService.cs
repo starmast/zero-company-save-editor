@@ -258,7 +258,6 @@ public sealed class SaveService
         actions ??= Array.Empty<SaveAction>();
         if (changes.Count == 0 && actions.Count == 0) throw new EditException("no changes");
         copyName = copyName?.Trim();
-        Dictionary<string, byte[]>? renamed = null;
         if (!string.IsNullOrEmpty(copyName))
         {
             if (!asCopy) throw new EditException("a new name only applies when saving a copy");
