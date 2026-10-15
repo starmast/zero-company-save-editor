@@ -263,7 +263,7 @@ end
 
 local function effectNames(asc)
     local ge, names = asc.ActiveGameplayEffects.GameplayEffects_Internal, {}
-    for i = 1, math.min(#ge, 60) do
+    for i = 1, math.min(#ge, 300) do
         local ok, n = pcall(function()
             local d = ge[i].Spec.Def
             if d and d:IsValid() then
