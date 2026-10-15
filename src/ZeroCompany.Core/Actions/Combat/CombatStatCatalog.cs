@@ -18,7 +18,7 @@ public static class CombatStatCatalog
 
     const string Chance = "A fraction: 0.05 is 5%.";
     const string BaseOnly = "The save holds the base; gear and effects add on top in the game.";
-    const string Rebuilt = "In testing the game rebuilt this from the equipped weapon when the unit first fired, so an edit may only last until then.";
+    const string Rebuilt = "In testing the game rebuilt this from the equipped weapon before the unit's first shot, and the shot did not use the edited value, so changing it has no effect on attacks.";
     const string Kept = "Kept after the unit fired in testing.";
     const string Scratch = "Scratch value the game fills in while it resolves a hit; normally 0, so editing it does nothing useful.";
 
