@@ -5,7 +5,7 @@ public static class Session
 {
     /// <summary>Commands that read only. Everything else changes the game and needs --write.</summary>
     public static readonly IReadOnlySet<string> ReadOnly = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects" };
-    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "set", "attr", "fx", "exec", "eval" };
+    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "set", "attr", "fx", "load", "exec", "eval" };
 
     public static int Status(Bridge b)
     {
@@ -53,7 +53,7 @@ public static class Session
             line = line.Trim();
             if (line.Length == 0) continue;
             if (line is "quit" or "exit" or "q") return 0;
-            if (line == "help") { Console.WriteLine("ping | find <Class> [n] | props <o> | dump <o> | get <o> <P> | set <o> <P> <v> | attr <unit> <Attr> <n> | effects <unit> | fx <unit> add|remove <Name> [n] | exec <cmd> | eval <lua> | status"); continue; }
+            if (line == "help") { Console.WriteLine("ping | find <Class> [n] | props <o> | dump <o> | get <o> <P> | set <o> <P> <v> | attr <unit> <Attr> <n> | load <save> | effects <unit> | fx <unit> add|remove <Name> [n] | exec <cmd> | eval <lua> | status"); continue; }
             if (line == "status") { Status(b); continue; }
             var sp = line.IndexOf(' ');
             var cmd = sp < 0 ? line : line[..sp]; var rest = sp < 0 ? "" : line[(sp + 1)..];

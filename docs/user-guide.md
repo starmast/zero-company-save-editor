@@ -2,7 +2,7 @@
 
 How each screen works. Everything you change stays **pending** (shown in the bar at the bottom, with a list of what will
 change) until you press **Apply to save**. **Discard** drops it all; **Save as copy** writes a separate file and leaves your
-save alone (type a name in the box beside it so the copy is easy to tell apart in the game's load menu).
+save alone (type a name in the box beside it so the copy is easy to tell apart in the game's load menu). The game lists its saves once, when it starts, so a copy written while the game is running only appears in the load menu after you restart the game.
 
 ![Command screen](screenshots/command.png)
 

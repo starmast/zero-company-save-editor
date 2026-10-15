@@ -15,6 +15,8 @@ const string Usage = """
       zcdebug attr <unit> <Attribute> <n> --write  set a stat (Health, ActionPoints ...) in the game and on the HUD
       zcdebug effects <unit>                  the unit's active gameplay effects (Burning, Spotted ...)
       zcdebug fx <unit> add|remove <Name> [n] --write  add (n stacks) or remove a status effect
+      zcdebug saves [filter] [--all] [--saves DIR]  the save folder: file names (as load wants them), in-game names, and which the game lists
+      zcdebug load <save name> --write      load a save by file name, no .sav (the game must already list it; see docs)
       zcdebug exec <console command> --write  run an Unreal console command
       zcdebug eval <lua> --write              run Lua inside the game (UE4SS API: FindAllOf, StaticFindObject ...)
       zcdebug repl [--write]                  the same commands interactively
@@ -39,6 +41,8 @@ try
     bool write = Flag("--write");
     var game = Opt("--game");
     var timeout = TimeSpan.FromSeconds(double.TryParse(Opt("--timeout"), out var t) ? t : 5);
+    bool all = Flag("--all");
+    var savesDir = Opt("--saves");
     var cmd = a[0]; a.RemoveAt(0);
     var rest = string.Join(' ', a);
 
@@ -47,6 +51,7 @@ try
         case "install": Console.WriteLine(Install.Setup(game, uninstall: false, Opt("--out"))); return 0;
         case "uninstall": Console.WriteLine(Install.Setup(game, uninstall: true)); return 0;
         case "status": return Session.Status(new Bridge());
+        case "saves": return Saves.List(savesDir ?? Saves.DefaultDir(), rest, all, Saves.GameStart(), Console.Out);
         case "repl": return Session.Repl(new Bridge(), write, timeout);
         default: return Session.Run(new Bridge(), cmd, rest, write, timeout);
     }

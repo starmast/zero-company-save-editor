@@ -314,6 +314,17 @@ function commands.fx(args)
         (#shown > 0 and table.concat(shown, ", ") or "none of it")
 end
 
+-- load <save name>: ask the game to load a save by file name (without .sav). The game only accepts names it listed when it
+-- started: a file added while it runs is refused, but a known file whose contents were overwritten on disk loads the new data.
+function commands.load(args)
+    local name = args:match("^%s*(.-)%s*$"):gsub("%.sav$", "")
+    if name == "" then error("usage: load <save file name>") end
+    local subsystem = FindFirstOf("BrunoSaveGameSubsystem")
+    if not (subsystem and subsystem:IsValid()) then error("the game's save subsystem was not found") end
+    if subsystem:LoadFile(name) then return "loading " .. name end
+    return "refused: the game does not know a save called '" .. name .. "' (names are listed once, at start-up; overwrite a known file instead)"
+end
+
 function commands.exec(args)
     local world = FindFirstOf("World")
     local pc = FindFirstOf("PlayerController")

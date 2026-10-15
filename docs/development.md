@@ -109,10 +109,12 @@ zcdebug effects <unit>     the unit's active gameplay effects (Burning, Spotted 
 zcdebug set ... --write    change a property in the running game   (also: exec <console command>, eval <lua>)
 zcdebug attr <unit> <Attribute> <n> --write   set a stat (Health, ActionPoints ...) in the game and on the HUD
 zcdebug fx <unit> add|remove <Name> [n] --write   add (n stacks) or remove a status effect (Burning, Spotted ...)
+zcdebug saves [filter] [--all]   the save folder: file names as load wants them, in-game names, and which the game lists (no game needed)
+zcdebug load <save name> --write   load a save by file name, without .sav (the game must already list it, see below)
 zcdebug repl [--write]     the same, interactively
 ```
 
-Reads need no flag; anything that changes the running game (`set`, `attr`, `fx`, `exec`, `eval`) is refused without `--write`.
+Reads need no flag; anything that changes the running game (`set`, `attr`, `fx`, `load`, `exec`, `eval`) is refused without `--write`.
 `<object>` is a full object path or a short class name (its first live instance). A path after the object is not walked for
 you: `get <object> A.B.C` walks `A.B.C` inside the object, but the object itself must be a real object path (for example
 `...PersistentLevel.Char_Hero_HAWKS_Control_C_0.BitReactorHealthSet_0`). After `zcdebug install`, reload the mods in the game
@@ -140,6 +142,15 @@ Unreal 5.6.1) in a Brentaal skirmish: `find`, `props`, `get`, `dump`, `set`, `at
 - The HUD does not follow a direct write: the UI reads `BrunoGameplayAttributeViewModel` objects. `attr` also sets those and
   broadcasts the change (`K2_BroadcastFieldValueChanged`), which made the AP pips and health bars update.
 - In the save a hero's `hp` shows as `151/28`: Health 151 against the *base* MaxHealth 28; the live current MaxHealth is 151.
+
+**Loading an edited save without restarting the game.** The load menu and `BrunoSaveGameSubsystem.LoadFile` use a list of saves
+(`SavePreviews`) that the game builds once, at start-up. A file written while the game runs is not in it: the menu does not show it
+(re-opening the menu rebuilds the list from the same cache), and `zcdebug load` is refused with "the requested save does not exist or is
+invalid". The game does rescan the folder when asked (`GetAllSaves` returned the new file), but nothing exposed refreshes the cache.
+What works is a **slot file**: pick a save the game already lists (for example a throwaway copy you made earlier and restarted for),
+overwrite its contents on disk with the new save, then `zcdebug load <that file's name>`. Checked with two test copies: the game loaded
+the overwritten file's new data (an Enforcer at 60 instead of 61). The menu entry keeps the old name and thumbnail. Only overwrite
+files you made for testing, never a save you care about. `zcdebug saves` shows which files the game should accept: a file created after the game started is marked NEW (a heuristic from file creation times; an overwritten file keeps its creation time, so it stays "listed"). The editor does not depend on any of this: it only reads and writes saves.
 
 **Do not bulk-scan from Lua.** An `eval` that looped over every character walking each one's `ActiveGameplayEffects` crashed the game
 (`EXCEPTION_ACCESS_VIOLATION` reading address 0x18). Read one named unit at a time and stop after the first timeout. Unreal's
