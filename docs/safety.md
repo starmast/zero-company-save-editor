@@ -11,7 +11,7 @@
 - **The game must be closed.** The editor refuses to write while the game appears to be running, because the game may
   overwrite your edit. A checkbox lets you override this if the check is wrong. It also refuses if the file changed since
   you opened it (for example after an autosave): reopen it first.
-- **Save as copy** writes `<name>.edited-HHMMSS.sav` and never touches the original.
+- **Save as copy** writes `<name>.edited-HHMMSS.sav` and never touches the original. An optional name for the copy is written into both header entries the game reads and verified before the file is written.
 - **No network use** except the Oodle download during the first game-data extraction. That library is loaded into the editor, so
   it is checked against a pinned SHA-256 first, and anything else is deleted and refused.
 - **Saves are treated as untrusted.** A save can be someone else's, so portraits are decoded only as OpenEXR (never by format

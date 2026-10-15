@@ -788,6 +788,93 @@ public class CombatTests : IDisposable
         Assert.Equal(before, File.ReadAllBytes(path));
     }
 
+    /// <summary>
+    /// A wave definition's group is also kept in SaveLoadReinforcementWaveSelectedSpawnGroups, a separate list the game restores it from on load
+    /// (in the game, changing only the definition was undone). Swapping a definition's group must change that entry too, and only that one.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("Combat_Rescue_after.sav")]
+    [InlineData("Combat_EncounterStart.sav")]
+    [InlineData("Combat_Imperial.sav")]
+    [InlineData("Combat_ThreeWay.sav")]
+    public void Swapping_a_wave_definitions_group_also_changes_its_saved_copy(string file)
+    {
+        var (svc, _, path) = NewRig(file);
+        var rv = svc.Current!.Combat!.Reinforcements;
+        Skip.If(rv.Configs.Count == 0 || rv.Groups.Count < 2, "no wave definitions with a second group to swap to");
+        var g0 = Gvas(path);
+        var cfg = rv.Configs.First(c => CombatOps.HasSavedSpawnGroups(g0, c.Logic));
+        var other = rv.Groups.First(x => x != cfg.Group);
+        string? Saved(GvasFile g, WaveConfigView c) => CombatOps.SavedSpawnGroupOf(g, c.Logic, c.Index);
+        Assert.Equal(cfg.Group, Saved(g0, cfg));                                        // the two copies agree in a game-written save
+
+        svc.Apply(Array.Empty<FieldChange>(), force: true, actions: new SaveAction[] { new SaveAction.SetSpawnGroup("config", cfg.Logic, cfg.Index, other) });
+        var g1 = Gvas(path);
+        Assert.Equal(other, Saved(g1, cfg));
+        Assert.Equal(other, svc.Current!.Combat!.Reinforcements.Configs.First(c => c.Logic == cfg.Logic && c.Index == cfg.Index).Group);
+        foreach (var c in rv.Configs.Where(c => !(c.Logic == cfg.Logic && c.Index == cfg.Index)))
+            Assert.Equal(Saved(g0, c), Saved(g1, c));                                    // every other definition's saved group is untouched
+
+    }
+
+    [SkippableTheory]
+    [InlineData("Combat_Rescue_after.sav")]
+    [InlineData("Combat_EncounterStart.sav")]
+    [InlineData("Combat_ThreeWay.sav")]
+    public void Setting_a_definition_to_the_group_it_already_has_leaves_the_file_byte_for_byte_the_same(string file)
+    {
+        // the saved list is parsed and rebuilt on every group change, so doing that with no change must give back the same bytes
+        var (svc, _, path) = NewRig(file);
+        var rv = svc.Current!.Combat!.Reinforcements;
+        var g0 = Gvas(path);
+        var cfg = rv.Configs.FirstOrDefault(c => CombatOps.HasSavedSpawnGroups(g0, c.Logic));
+        Skip.If(cfg == null, "no wave definition with a saved group list");
+        svc.Apply(Array.Empty<FieldChange>(), force: true, actions: new SaveAction[] { new SaveAction.SetSpawnGroup("config", cfg!.Logic, cfg.Index, cfg.Group) });
+        Assert.Equal(g0.Data, Gvas(path).Data);
+    }
+
+    /// <summary>
+    /// The round the fight is on is one int32 in the tactical game state's saved block. A live test loaded a copy with the round set to 8 as
+    /// round 8 (and a manual save made at round 3 as round 3), so editing it is a plain in-place write.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("Combat_Rescue_after.sav")]
+    [InlineData("Combat_EncounterStart.sav")]
+    [InlineData("Combat_Imperial.sav")]
+    [InlineData("Combat_ThreeWay.sav")]
+    public void The_round_can_be_read_and_set_and_only_that_number_changes(string file)
+    {
+        var (svc, _, path) = NewRig(file);
+        Skip.If(svc.Current!.Combat!.Round == null, "this save has no round block");
+        var g0 = Gvas(path);
+        var before = CombatOps.CurrentRound(g0)!.Value;
+        Assert.Equal(before, svc.Current.Combat.Round);
+
+        Act(svc, new SaveAction.SetCurrentRound(8));
+        var g1 = Gvas(path);
+        Assert.Equal(8, CombatOps.CurrentRound(g1));
+        Assert.Equal(8, svc.Current!.Combat!.Round);
+        Assert.Equal(g0.Data.Length, g1.Data.Length);
+        var changed = Enumerable.Range(0, g0.Data.Length).Count(i => g0.Data[i] != g1.Data[i]);
+        Assert.InRange(changed, 1, 4);                                              // at most the four bytes of one int32
+
+        Act(svc, new SaveAction.SetCurrentRound(before));                           // setting it back restores the original bytes
+        Assert.Equal(g0.Data, Gvas(path).Data);
+    }
+
+    [SkippableFact]
+    public void A_round_outside_the_allowed_range_is_refused_and_writes_nothing()
+    {
+        var (svc, _, path) = NewRig("Combat_Rescue_after.sav");
+        Skip.If(svc.Current!.Combat!.Round == null, "this save has no round block");
+        var before = File.ReadAllBytes(path);
+        foreach (var bad in new[] { 0, -1, CombatOps.MaxRound + 1, int.MaxValue })
+            Assert.Throws<EditException>(() => Act(svc, new SaveAction.SetCurrentRound(bad)));
+        Assert.Equal(before, File.ReadAllBytes(path));
+        Act(svc, new SaveAction.SetCurrentRound(CombatOps.MaxRound));               // the limit itself is allowed
+        Assert.Equal(CombatOps.MaxRound, CombatOps.CurrentRound(Gvas(path)));
+    }
+
     [SkippableFact]
     public void A_reinforcement_trigger_can_be_switched_off_and_on_again()
     {

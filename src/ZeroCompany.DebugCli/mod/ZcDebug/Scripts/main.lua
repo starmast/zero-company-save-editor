@@ -130,19 +130,114 @@ function commands.props(args)
     local o, err = resolve(args:match("^%s*(%S+)"))
     if not o then error(err) end
     local out = { o:GetFullName() }
-    o:GetClass():ForEachProperty(function(p)
-        local ty = "?"
-        pcall(function() ty = p:GetClass():GetFName():ToString() end)
-        out[#out + 1] = p:GetFName():ToString() .. " : " .. ty
-    end)
+    -- ForEachProperty lists only the class's own properties; walk up to include inherited ones
+    local c = o:GetClass()
+    while c and c:IsValid() do
+        local owner = c:GetFName():ToString()
+        c:ForEachProperty(function(p)
+            local ty = "?"
+            pcall(function() ty = p:GetClass():GetFName():ToString() end)
+            out[#out + 1] = p:GetFName():ToString() .. " : " .. ty .. "  (" .. owner .. ")"
+        end)
+        local ok, super = pcall(function() return c:GetSuperStruct() end)
+        if not ok then break end
+        c = super
+    end
     return table.concat(out, "\n")
+end
+
+-- The declared type of a property of an object (and the element type for arrays), found without reading its value.
+local function propType(obj, name)
+    local okc, c = pcall(function() return obj:GetClass() end)
+    local ty, inner
+    while okc and c and c:IsValid() and not ty do
+        c:ForEachProperty(function(p)
+            if not ty and p:GetFName():ToString() == name then
+                pcall(function() ty = p:GetClass():GetFName():ToString() end)
+                if ty == "ArrayProperty" then pcall(function() inner = p:GetInner():GetClass():GetFName():ToString() end) end
+            end
+        end)
+        local ok, super = pcall(function() return c:GetSuperStruct() end)
+        if not ok then break end
+        c = super
+    end
+    return ty, inner
+end
+
+local SAFE_INNER = { ObjectProperty = true, StructProperty = true, IntProperty = true, FloatProperty = true, DoubleProperty = true, BoolProperty = true }
+
+-- Why a property must not be read, or nil. Arrays of soft object paths crashed the game (twice); so do not read arrays of types we
+-- have not checked, maps, sets, or soft/lazy references. An unknown type (a struct's own field) is allowed.
+local function whyUnsafe(ty, inner)
+    if ty == nil then return nil end
+    if ty == "ArrayProperty" and not (inner and SAFE_INNER[inner]) then return "an array of " .. tostring(inner or "an unknown element type") end
+    if ty == "MapProperty" or ty == "SetProperty" or ty:find("Soft", 1, true) or ty:find("Lazy", 1, true) then return "a " .. ty end
+    return nil
 end
 
 function commands.get(args)
     local a = splitArgs(args, 2)
     local o, err = resolve(a[1])
     if not o then error(err) end
-    return fmt(o[a[2]])
+    -- a path like SpawnedAttributes.1.Health: numbers index arrays (1-based), names read properties. Each property's declared
+    -- type is checked BEFORE its value is read: reading arrays of soft object paths crashed the game twice.
+    local v = o
+    for part in a[2]:gmatch("[^%.]+") do
+        local n = tonumber(part)
+        if not n and type(v) == "userdata" then
+            local ty, inner = propType(v, part)
+            local bad = whyUnsafe(ty, inner)
+            if bad then error("refusing to read '" .. part .. "': it is " .. bad .. " (reading that kind of property has crashed the game)") end
+        end
+        local ok, nxt = pcall(function() if n then return v[n] end return v[part] end)
+        if not ok then error("cannot read '" .. part .. "': " .. tostring(nxt)) end
+        v = nxt
+        if v == nil then error("'" .. part .. "' is nil") end
+    end
+    -- an array with no index: list its elements (only arrays of safe element types get this far)
+    local ok, count = pcall(function() return #v end)
+    if type(v) == "userdata" and ok and type(count) == "number" and not pcall(function() return v:GetFullName() end) then
+        local out = { "[array of " .. count .. "]" }
+        for i = 1, math.min(count, 50) do out[#out + 1] = i .. ": " .. fmt(v[i]) end
+        return table.concat(out, "\n")
+    end
+    return fmt(v)
+end
+
+-- every simple-valued property of an object (own and inherited) with its current value
+function commands.dump(args)
+    local o, err = resolve(args:match("^%s*(%S+)"))
+    if not o then error(err) end
+    local out = { o:GetFullName() }
+    local c = o:GetClass()
+    -- Only plain values are read, decided from the declared type before any read. Attribute sets also expand their attribute structs.
+    local SIMPLE = { BoolProperty = true, IntProperty = true, Int64Property = true, UInt16Property = true, UInt32Property = true, UInt64Property = true,
+                     FloatProperty = true, DoubleProperty = true, ByteProperty = true, EnumProperty = true, NameProperty = true, StrProperty = true }
+    local isAttributeSet = c:GetFName():ToString():find("Set$") ~= nil
+    while c and c:IsValid() do
+        local owner = c:GetFName():ToString()
+        c:ForEachProperty(function(p)
+            local name = p:GetFName():ToString()
+            local ty = "?"
+            pcall(function() ty = p:GetClass():GetFName():ToString() end)
+            if not (SIMPLE[ty] or (ty == "StructProperty" and isAttributeSet)) then return end
+            local ok, v = pcall(function() return o[name] end)
+            if ok and v ~= nil and (type(v) ~= "userdata") then
+                out[#out + 1] = name .. " = " .. fmt(v) .. "  (" .. ty .. ", " .. owner .. ")"
+            elseif ok and ty == "StructProperty" and v ~= nil then
+                -- a GameplayAttributeData: show base and current value
+                local okb, base = pcall(function() return v.BaseValue end)
+                local okc, cur = pcall(function() return v.CurrentValue end)
+                if okb and okc and type(base) == "number" then
+                    out[#out + 1] = name .. " base=" .. fmt(base) .. " cur=" .. fmt(cur) .. "  (" .. owner .. ")"
+                end
+            end
+        end)
+        local ok, super = pcall(function() return c:GetSuperStruct() end)
+        if not ok then break end
+        c = super
+    end
+    return table.concat(out, "\n")
 end
 
 function commands.set(args)
@@ -151,6 +246,126 @@ function commands.set(args)
     if not o then error(err) end
     o[a[2]] = coerce(a[3])
     return "set " .. a[2] .. " = " .. fmt(o[a[2]])
+end
+
+-- attr <unit> <Attribute> <value>: write a gameplay attribute (base and current) on one unit, then
+-- update the UI view-models that show it and broadcast the change, so the HUD follows the logic.
+function commands.attr(args)
+    local a = splitArgs(args, 3)
+    local unit, err = resolve(a[1])
+    if not unit then error(err) end
+    local name, value = a[2], tonumber(a[3])
+    if not name or name == "" or not value then error("usage: attr <unit> <Attribute> <number>") end
+
+    local asc = unit.AbilitySystemComponent
+    if not (asc and asc:IsValid()) then error("no AbilitySystemComponent on " .. unit:GetFullName()) end
+    local sets, done = asc.SpawnedAttributes, nil
+    for i = 1, #sets do
+        local set = sets[i]
+        local ok, data = pcall(function() return set[name] end)
+        if ok and data ~= nil then
+            local okb, base = pcall(function() return data.BaseValue end)
+            if okb and type(base) == "number" then
+                data.BaseValue = value
+                data.CurrentValue = value
+                done = set:GetFName():ToString() .. "." .. name
+                break
+            end
+        end
+    end
+    if not done then error("no attribute '" .. name .. "' on " .. unit:GetFullName()) end
+
+    local fullName, views = unit:GetFullName(), 0
+    for _, v in ipairs(FindAllOf("BrunoGameplayAttributeViewModel") or {}) do
+        local ok = pcall(function()
+            if v.ContextObject:GetFullName() == fullName and v.CurrentValueAttribute.AttributeName:ToString() == name then
+                v.CurrentValue = value
+                if value > v.MaxValue then v.MaxValue = value end
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("MaxValue") })
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("CurrentValue") })
+                v:K2_BroadcastFieldValueChanged({ FieldName = FName("NormalizedValue") })    -- health bars bind to this one
+                views = views + 1
+            end
+        end)
+    end
+    return done .. " = " .. value .. " (" .. views .. " UI view-model(s) updated)"
+end
+
+-- One unit's ability system. Struct arrays are only ever walked for a single named unit and with
+-- guards: looping over every character crashed the game once.
+local function unitAsc(spec)
+    local unit, err = resolve(spec)
+    if not unit then error(err) end
+    local asc = unit.AbilitySystemComponent
+    if not (asc and asc:IsValid()) then error("no AbilitySystemComponent on " .. unit:GetFullName()) end
+    return asc
+end
+
+local function effectNames(asc)
+    local ge, names = asc.ActiveGameplayEffects.GameplayEffects_Internal, {}
+    for i = 1, math.min(#ge, 300) do
+        local ok, n = pcall(function()
+            local d = ge[i].Spec.Def
+            if d and d:IsValid() then
+                local n = d:GetFName():ToString():gsub("^Default__GE_", ""):gsub("_C$", "")
+                local stacks = ge[i].Spec.StackCount
+                if type(stacks) == "number" and stacks > 1 then n = n .. " x" .. stacks end   -- stackable effects (Burning ...)
+                return n
+            end
+            return "?"
+        end)
+        names[i] = ok and n or "?"
+    end
+    return names
+end
+
+function commands.effects(args)
+    local names = effectNames(unitAsc(args:match("^%s*(%S+)")))
+    return #names .. " effect(s)" .. (#names > 0 and ("\n" .. table.concat(names, "\n")) or "")
+end
+
+-- fx <unit> add|remove <Name | /full/class/path>: Name is a status effect such as Burning, Spotted
+function commands.fx(args)
+    local a = splitArgs(args, 3)
+    local asc = unitAsc(a[1])
+    local verb = a[2]
+    local name, count = (a[3] or ""):match("^(%S+)%s*(%d*)")
+    count = math.max(1, math.min(tonumber(count) or 1, 20))
+    if (verb ~= "add" and verb ~= "remove") or not name then error("usage: fx <unit> add|remove <Name> [count]") end
+    local cls
+    if name:find("/") then
+        cls = StaticFindObject(name)
+    else
+        local base = name:gsub("^GE_", ""):gsub("_C$", "")
+        cls = StaticFindObject("/Game/Game/GameData/Abilities/ResultEffects/StatusEffects/GE_" .. base .. ".GE_" .. base .. "_C")
+    end
+    if not (cls and cls:IsValid()) then error("effect class not found: " .. name .. " (give a full class path if it is not a status effect)") end
+    if verb == "add" then
+        -- each application is one stack; stackable effects (Burning) merge into one entry up to their limit
+        for _ = 1, count do asc:BP_ApplyGameplayEffectToSelf(cls, 1.0, asc:MakeEffectContext()) end
+    else
+        asc:RemoveActiveGameplayEffectBySourceEffect(cls, nil, -1)    -- removes every stack
+    end
+    local after = effectNames(asc)
+    local shown = {}
+    for _, n in ipairs(after) do if n:find(name, 1, true) then shown[#shown + 1] = n end end
+    return verb .. " " .. name .. (verb == "add" and (" x" .. count) or "") .. ": " .. #after .. " effect(s); now " ..
+        (#shown > 0 and table.concat(shown, ", ") or "none of it")
+end
+
+-- load <save name>: ask the game to load a save by file name (without .sav). The game only accepts names it listed when it
+-- started: a file added while it runs is refused, but a known file whose contents were overwritten on disk loads the new data.
+local lastLoad = 0
+function commands.load(args)
+    local name = args:match("^%s*(.-)%s*$"):gsub("%.sav$", "")
+    if name == "" then error("usage: load <save file name>") end
+    -- a second request while a load runs (even a refused one) left the level without its actors or input once
+    local wait = 30 - (os.time() - lastLoad)
+    if wait > 0 then error("a load was started " .. (30 - wait) .. "s ago; wait " .. wait .. "s so the game can finish it") end
+    local subsystem = FindFirstOf("BrunoSaveGameSubsystem")
+    if not (subsystem and subsystem:IsValid()) then error("the game's save subsystem was not found") end
+    if subsystem:LoadFile(name) then lastLoad = os.time(); return "loading " .. name end
+    return "refused: the game does not know a save called '" .. name .. "' (names are listed once, at start-up; overwrite a known file instead)"
 end
 
 function commands.exec(args)

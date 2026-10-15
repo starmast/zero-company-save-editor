@@ -1,3 +1,5 @@
+using ZeroCompany.Core.Actions;
+
 namespace ZeroCompany.Core.Views;
 
 /// <summary>The in-combat state of a combat autosave (see <c>CombatOps</c>).</summary>
@@ -8,6 +10,8 @@ public sealed class CombatView
     public List<ObjectiveView> Objectives { get; } = new();
     public List<TimerView> Timers { get; } = new();
     public ReinforcementsView Reinforcements { get; } = new();
+    /// <summary>The round the fight is on (saved by the game), or null when the save does not hold it in a form the editor knows.</summary>
+    public int? Round { get; set; }
     public SpawnSetView? SpawnSet { get; set; }
     public TurnStructureView? TurnStructure { get; set; }
     /// <summary>A three-way battle: Enemy2 can be used here.</summary>
@@ -129,6 +133,8 @@ public sealed class AttributeView
     public string Set { get; init; } = "";
     public string Name { get; init; } = "";
     public FieldRef Ref { get; init; } = new();
+    /// <summary>How to show it: group, friendly label and any note (see CombatStatCatalog).</summary>
+    public StatInfo Info { get; init; } = new("Other", "");
 }
 
 public sealed class UnitEffectView

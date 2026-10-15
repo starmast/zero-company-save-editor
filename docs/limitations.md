@@ -56,12 +56,22 @@ against saves the game wrote and re-read after editing, but not played through (
   tag in its actor record (Pristine, Damaged or Destroyed), so **Restore** rewrites that tag as well as the health. That was built
   from the game's own before/after saves and passes the verifier, and it works: the destroyed props came back in the game.
   **Destroy** is the mirror image (an intact prop's record becomes Destroyed, flags (0,0,1) as the game wrote them for props it saw wrecked,
-  and no health entry is added since the game drops those on load); it has not been tried in the game yet.
+  and no health entry is added since the game drops those on load); it works too: four barricades destroyed this way vanished in the game
+  (the game hides them and turns their collision off, so units can walk through the gap).
 - **Objectives** only change the saved status (Active / Succeeded). A normal completion also fires follow-on steps (cutscenes,
-  the next objective, reinforcements); flipping the status does not, so check the result in the game.
-- **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved.
-- **Reinforcements:** the game does not save which round the fight is on, so a wave's round can't be compared with "now". Cancel
+  the next objective, reinforcements); flipping the status does not. Tried in the game: marking an interact objective Succeeded greyed it
+  out in the objective list, but its counter stayed at 0 of 1 and the objective that normally follows did not start. A real completion
+  also records the interaction count, removes the objective's waypoint and starts the next one with about two dozen runtime fields, so
+  objectives that have not started cannot be edited.
+- **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved. Lowering
+  one from 6 to 2 was confirmed in the game (the countdown showed 2 on loading).
+- **Reinforcements:** the game does save which round the fight is on (one number in the tactical game state, shown and editable as **Current
+  round**; a copy set to round 8 loaded as round 8), so a wave's round can be compared with it. How changing the round affects waves, delays or
+  anything else that counts rounds has not been tried in the game. Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be
-  switched off only once it has fired.
+  switched off only once it has fired. An automatic wave may also be held back by a condition that is not in the save: in Brentaal 035 the
+  wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in
+  the running game queued the wave at once). The save keeps only a reference to that condition, so its value cannot be edited here, and
+  a short delay alone will not bring reinforcements while the enemy is at full strength. Other missions may use other conditions.
 - **Restarting a fight:** the save's `SaveGameRestartDataCache` entry (used when a fight restarts) is left as it is. It holds no
   unit health, so a restart reloads the original encounter.

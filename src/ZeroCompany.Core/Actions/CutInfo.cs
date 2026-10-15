@@ -49,4 +49,6 @@ public sealed class CutInfo
     public string? EnemySpawnSet { get; set; }
     /// <summary>Combat: expected turn structure after a change.</summary>
     public string? TurnStructure { get; set; }
+    /// <summary>Combat: expected round after a change.</summary>
+    public int? CurrentRound { get; set; }
 }

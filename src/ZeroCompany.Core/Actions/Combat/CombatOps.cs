@@ -95,7 +95,7 @@ public static partial class CombatOps
     // ---- the view of the whole combat state --------------------------------------------
     public static CombatView Build(GvasFile g, string title)
     {
-        var view = new CombatView { Title = title };
+        var view = new CombatView { Title = title, Round = CurrentRound(g) };
         var units = Units(g);
         for (int i = 0; i < units.Count; i++)
         {
@@ -124,8 +124,9 @@ public static partial class CombatOps
                 {
                     if (g.Child(av, "Name") is not { } nm) continue;
                     var name = g.GetStr(nm);
-                    var fr = Scalar(g, g.Child(av, "BaseValue"), name is "Health" or "MaxHealth" or "ActionPoints" or "MovementActionPoints" ? 0 : -1e6, 1e6);
-                    if (fr != null) cv.Attributes.Add(new AttributeView { Set = set, Name = name, Ref = fr });
+                    var info = CombatStatCatalog.Of(set, name);
+                    var fr = Scalar(g, g.Child(av, "BaseValue"), info.Min, info.Max);
+                    if (fr != null) cv.Attributes.Add(new AttributeView { Set = set, Name = name, Ref = fr, Info = info });
                 }
             }
             var effects = EffectsNode(g, i)?.Children ?? new List<GvasNode>();

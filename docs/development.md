@@ -103,13 +103,22 @@ zcdebug install            copy the ZcDebug mod into UE4SS's Mods folder (zcdebu
 zcdebug status             is the game running, is the mod answering
 zcdebug find Pawn          live instances of an Unreal class
 zcdebug props <object>     a class's properties and types
-zcdebug get <object> Prop  read a property
+zcdebug get <object> Path  read a property; Path can walk in (SpawnedAttributes.1, Health.CurrentValue)
+zcdebug dump <object>      every simple property with its value (attribute structs show base and current)
+zcdebug effects <unit>     the unit's active gameplay effects (Burning, Spotted ...)
 zcdebug set ... --write    change a property in the running game   (also: exec <console command>, eval <lua>)
+zcdebug attr <unit> <Attribute> <n> --write   set a stat (Health, ActionPoints ...) in the game and on the HUD
+zcdebug fx <unit> add|remove <Name> [n] --write   add (n stacks) or remove a status effect (Burning, Spotted ...)
+zcdebug saves [filter] [--all]   the save folder: file names as load wants them, in-game names, and which the game lists (no game needed)
+zcdebug load <save name> --write   load a save by file name, without .sav (the game must already list it, see below)
 zcdebug repl [--write]     the same, interactively
 ```
 
-Reads need no flag; anything that changes the running game (`set`, `exec`, `eval`) is refused without `--write`. `<object>` is a
-full object path or a short class name (its first live instance).
+Reads need no flag; anything that changes the running game (`set`, `attr`, `fx`, `load`, `exec`, `eval`) is refused without `--write`.
+`<object>` is a full object path or a short class name (its first live instance). A path after the object is not walked for
+you: `get <object> A.B.C` walks `A.B.C` inside the object, but the object itself must be a real object path (for example
+`...PersistentLevel.Char_Hero_HAWKS_Control_C_0.BitReactorHealthSet_0`). After `zcdebug install`, reload the mods in the game
+(Ctrl+R in the UE4SS window) so the game runs the new Lua.
 
 The `--write` check is in `zcdebug` only. The mod itself runs whatever request it finds, `eval` included (arbitrary Lua inside the
 game), so while it is installed any program running as your Windows user can drive the game through the request file. That gives
@@ -121,18 +130,40 @@ nothing such a program could not already do, but uninstall the mod (`zcdebug uni
 in a newline; see `Protocol.cs`. The mod polls every 200 ms and runs each command on the game thread.
 
 **State of it.** The tool, the protocol and the installer are covered by tests against a fake mod. The Lua mod itself
-(`src/ZeroCompany.DebugCli/mod/ZcDebug/Scripts/main.lua`) has **not been run against the game yet**: it uses the UE4SS Lua API
-from memory (`FindAllOf`, `StaticFindObject`, `ForEachProperty`, `ExecuteInGameThread`), and it is not known whether a UE4SS build
-that supports this game's Unreal version works with it. Errors from the mod come back as `error: ...` and also go to UE4SS's log.
-Mods change the game's behaviour: use it for exploring, not in a save you care about, and expect that updating or repairing the
-game (the EA app may repair modified files) can undo the install.
+(`src/ZeroCompany.DebugCli/mod/ZcDebug/Scripts/main.lua`) was **run against the real game on 2026-10-14** (EA App build 197649,
+Unreal 5.6.1) in a Brentaal skirmish: `find`, `props`, `get`, `dump`, `set`, `attr` and `exec` worked, and so did `eval`; `effects` and
+`fx` were tried as plain `eval` calls. What was seen:
 
+- Units are plain actors (`Char_Hero_<Name>_<Class>_C`, `Char_Enemy_Coil_<Type>_NotInfected_C`). Their stats are Gameplay Ability System
+  attribute sets on `<unit>.AbilitySystemComponent.SpawnedAttributes` (`BitReactorHealthSet`, `CombatSet`, `AdvantageSet` ...); each
+  attribute has a `BaseValue` and a `CurrentValue`. Damage changes both. Writing both changes the game's logic, for example extra
+  action points let a hero act more times and later damage subtracts from the written health.
+- "Spotted" and "Burning" are gameplay effects (`ActiveGameplayEffects`), not attributes.
+- The HUD does not follow a direct write: the UI reads `BrunoGameplayAttributeViewModel` objects. `attr` also sets those and
+  broadcasts the change (`K2_BroadcastFieldValueChanged`), which made the AP pips and health bars update.
+- In the save a hero's `hp` shows as `151/28`: Health 151 against the *base* MaxHealth 28; the live current MaxHealth is 151.
 
-**Known problem.** On the EA App build 197649, installing the UE4SS 1.1.2 pack made the game start as a process and then show
-nothing (no window, no `UE4SS.log`, no game log). Renaming `dwmapi.dll` (UE4SS's loader) back out of the way let the game start
-normally, so UE4SS itself hangs this build and `zcdebug` can't be used with it until a UE4SS build is confirmed to work. The pack's
-own diagnostic report lists this EA build as "runtime feedback pending". The game folder is under `Program Files`, so
-`zcdebug install` needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
+**Loading an edited save without restarting the game.** The load menu and `BrunoSaveGameSubsystem.LoadFile` use a list of saves
+(`SavePreviews`) that the game builds once, at start-up. A file written while the game runs is not in it: the menu does not show it
+(re-opening the menu rebuilds the list from the same cache), and `zcdebug load` is refused with "the requested save does not exist or is
+invalid". The game does rescan the folder when asked (`GetAllSaves` returned the new file), but nothing exposed refreshes the cache.
+What works is a **slot file**: pick a save the game already lists (for example a throwaway copy you made earlier and restarted for),
+overwrite its contents on disk with the new save, then `zcdebug load <that file's name>`. Checked with two test copies: the game loaded
+the overwritten file's new data (an Enforcer at 60 instead of 61). The menu entry keeps the old name and thumbnail. Only overwrite
+files you made for testing, never a save you care about. Send one `load` and wait for the level to finish loading: a second `load` during a load (even a refused one) left the level with no enemies and heroes that could not move, so the mod now refuses a second request for 30 seconds. `zcdebug saves` shows which files the game should accept: a file created after the game started is marked NEW (a heuristic from file creation times; an overwritten file keeps its creation time, so it stays "listed"). The editor does not depend on any of this: it only reads and writes saves.
+
+**Some properties must not be read.** Reading arrays of soft object paths crashed the game twice (`SaveLoadReinforcementWaveSelectedSpawnGroups` on the encounter actor, once through `get` and once through `dump`). `get` and `dump` now look up each property's declared type before reading it: `get` refuses arrays whose element type is not an object, struct, number or bool, plus maps, sets and soft or lazy references, and `dump` reads only plain values (numbers, bools, names, strings, enums) and attribute structs. The mod's own `eval` has no such guard. A request that times out is a warning: stop and check the game before sending anything else, and never run a wide read on an actor that has just crashed the game.
+
+**Do not bulk-scan from Lua.** An `eval` that looped over every character walking each one's `ActiveGameplayEffects` crashed the game
+(`EXCEPTION_ACCESS_VIOLATION` reading address 0x18). Read one named unit at a time and stop after the first timeout. Unreal's
+crash reports are in `%LOCALAPPDATA%\SWZeroCompany\Saved\Crashes`. Errors from the mod come back as `error: ...` and also go to
+UE4SS's log. Mods change the game's behaviour: use it for exploring, not in a save you care about, and expect that updating or
+repairing the game (the EA app may repair modified files) can undo the install.
+
+**UE4SS.** An earlier try with the UE4SS 1.1.2 pack made this build start as a process and show nothing (no window, no log), and
+renaming `dwmapi.dll` back out of the way fixed it. A later install loaded and ran mods fine on the same build, so it is not a
+permanent problem, but which UE4SS build works is not recorded here. The game folder is under `Program Files`, so `zcdebug install`
+needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
 Like `zcsave`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
 
 ## zcassets: browsing the game's own assets

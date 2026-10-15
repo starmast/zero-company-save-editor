@@ -48,7 +48,12 @@ public sealed class Bridge
         TryDelete(ReplyPath);                                        // an old answer must never be taken for this one
         var tmp = RequestPath + ".tmp";
         File.WriteAllText(tmp, Protocol.FormatRequest(id, command, args));
-        File.Move(tmp, RequestPath, overwrite: true);
+        // the mod may have request.txt open (reading or deleting it) right now, which Windows refuses to overwrite
+        for (var attempt = 0; ; attempt++)
+        {
+            try { File.Move(tmp, RequestPath, overwrite: true); break; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException && attempt < 40) { Thread.Sleep(25); }
+        }
 
         var until = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < until)

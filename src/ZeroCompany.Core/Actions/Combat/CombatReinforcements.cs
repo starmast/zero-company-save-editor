@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Text;
 using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Model;
 using ZeroCompany.Core.Views;
@@ -125,7 +127,77 @@ public static partial class CombatOps
             var n = GroupNodes(g, kind, logic, index)[which];
             if (g.GetStr(n) != group) g = g.SetString(n, group);
         }
-        return g;
+        // The game restores a definition's group from a second, separate list when it loads (tested in the game: with only the
+        // definition changed, the old group came back), so that entry has to change too.
+        return kind == "config" ? SetSavedGroup(g, logic, index, group, cut) : g;
+    }
+
+    // ---- the saved copy of the definitions' groups -----------------------------------------------------------------------------
+    // SaveLoadReinforcementWaveSelectedSpawnGroups is an array of soft object paths, one per wave definition, in the same order.
+    // Its value is an int32 count, then per element three FStrings: the package path, the asset name and a (normally empty) sub-path.
+
+    const string SavedGroupsProp = "SaveLoadReinforcementWaveSelectedSpawnGroups";
+
+    sealed record SoftPath(string Package, string Asset, string Sub);
+
+    static GvasNode? SavedGroupsNode(GvasFile g, int logic) =>
+        LogicAt(g, logic) is { } w ? g.Child(LogicArchive(g, w), SavedGroupsProp) : null;
+
+    static List<SoftPath>? ParseSoftPaths(GvasFile g, GvasNode n)
+    {
+        var d = g.Data; int p = n.ValueOffset; int end = n.End;
+        if (n.TName != "ArrayProperty" || end - p < 4 || end > d.Length) return null;
+        int count = BinaryPrimitives.ReadInt32LittleEndian(d.AsSpan(p)); p += 4;
+        if (count < 0 || count > 10000) return null;
+        string? ReadString()
+        {
+            if (p + 4 > end) return null;
+            int len = BinaryPrimitives.ReadInt32LittleEndian(d.AsSpan(p)); p += 4;
+            if (len == 0) return "";
+            if (len < 1 || p + len > end || d[p + len - 1] != 0) return null;     // only plain (non-UTF-16) strings are handled
+            var s = Encoding.ASCII.GetString(d, p, len - 1); p += len;
+            return s;
+        }
+        var list = new List<SoftPath>(count);
+        for (int i = 0; i < count; i++)
+        {
+            var pkg = ReadString(); var asset = ReadString(); var sub = ReadString();
+            if (pkg == null || asset == null || sub == null) return null;
+            list.Add(new SoftPath(pkg, asset, sub));
+        }
+        return p == end ? list : null;                                             // every byte accounted for, or it is not what we think
+    }
+
+    static byte[] BuildSoftPaths(IReadOnlyList<SoftPath> list)
+    {
+        var o = new List<byte>();
+        void Int(int v) { var b = new byte[4]; BinaryPrimitives.WriteInt32LittleEndian(b, v); o.AddRange(b); }
+        void Str(string s) { if (s.Length == 0) { Int(0); return; } Int(s.Length + 1); o.AddRange(Encoding.ASCII.GetBytes(s)); o.Add(0); }
+        Int(list.Count);
+        foreach (var e in list) { Str(e.Package); Str(e.Asset); Str(e.Sub); }
+        return o.ToArray();
+    }
+
+    /// <summary>Whether this encounter actor keeps the saved list of definition groups.</summary>
+    public static bool HasSavedSpawnGroups(GvasFile g, int logic) => SavedGroupsNode(g, logic) != null;
+
+    /// <summary>The saved group ("/Game/.../SG_X.SG_X") of wave definition <paramref name="index"/>, or null when there is no list or it cannot be read.</summary>
+    public static string? SavedSpawnGroupOf(GvasFile g, int logic, int index)
+    {
+        if (SavedGroupsNode(g, logic) is not { } n || ParseSoftPaths(g, n) is not { } list || index < 0 || index >= list.Count) return null;
+        return list[index].Package + "." + list[index].Asset;
+    }
+
+    static GvasFile SetSavedGroup(GvasFile g, int logic, int index, string group, CutInfo cut)
+    {
+        if (SavedGroupsNode(g, logic) is not { } n) return g;                      // a save without the list: nothing more to change
+        var list = ParseSoftPaths(g, n) ?? throw new GvasException("the saved wave group list is not in the form this editor knows");
+        if (index < 0 || index >= list.Count) throw new GvasException("the saved wave group list does not match the wave definitions; re-open the save");
+        int dot = group.LastIndexOf('.');
+        if (dot <= 0 || dot == group.Length - 1 || group.Any(c => c > 127)) throw new GvasException("that spawn group is not a plain asset path");
+        list[index] = list[index] with { Package = group[..dot], Asset = group[(dot + 1)..] };
+        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(n)));
+        return g.ReplaceValue(n, BuildSoftPaths(list));
     }
 
     static GvasNode? TriggerFlag(GvasFile g, int logic) => g.Child(LogicArchive(g, LogicAt(g, logic)), "bIsActive");

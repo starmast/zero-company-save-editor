@@ -13,6 +13,8 @@ public sealed class FieldRowViewModel
     public string Label { get; }
     public string Note { get; }
     public bool HasNote => Note.Length > 0;
+    /// <summary>The note as a tooltip, or null so an empty one is never shown.</summary>
+    public string? Tip => HasNote ? Note : null;
     public EditableField Field { get; }
 }
 

@@ -34,6 +34,7 @@ public sealed class CombatViewModel : ScreenViewModel
         foreach (var t in _combat.Timers) Timers.Add(new TimerRowViewModel(fields, t));
         if (_combat.SpawnSet != null) SpawnSet = Own(new SpawnSetPicker(_pending, _combat.SpawnSet));
         if (_combat.TurnStructure != null) Turn = Own(new TurnStructurePicker(_pending, _combat.TurnStructure));
+        if (_combat.Round is { } round) Round = Own(new RoundEditor(_pending, round));
         foreach (var h in _combat.Hazards) Hazards.Add(new HazardRowViewModel(fields, h));
         if (_combat.Props.Count > 0) Scenery = Own(new SceneryPanelViewModel(_pending, fields, _combat.Props));
         var rv = _combat.Reinforcements;
@@ -77,6 +78,8 @@ public sealed class CombatViewModel : ScreenViewModel
     public ObservableCollection<TriggerRowViewModel> Triggers { get; } = new();
     public SpawnSetPicker? SpawnSet { get; }
     public TurnStructurePicker? Turn { get; }
+    public RoundEditor? Round { get; }
+    public bool HasRound => Round != null;
     public bool HasTurn => Turn != null;
     public bool HasSpawnSet => SpawnSet != null;
     public bool NoWaves => Waves.Count == 0;

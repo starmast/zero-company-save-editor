@@ -1,3 +1,4 @@
+using ZeroCompany.Core.Actions;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -62,12 +63,14 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
         foreach (var (label, field) in new[] { ("Health", Health), ("Max health (base)", MaxHealth), ("Action points", ActionPoints),
                                                ("Movement action points", MovePoints), ("Advantage", Advantage) })
             if (field != null) Rows.Add(new FieldRowViewModel(label, field));
-        foreach (var a in u.Attributes)
-        {
-            bool shown = a.Name is "Health" or "MaxHealth" or "ActionPoints" or "MovementActionPoints"
-                         && a.Set is "BitReactorHealthSet" or "BitReactorCombatSet";
-            if (!shown) Stats.Add(new FieldRowViewModel($"{Trim(a.Set)} · {a.Name}", fields.Make(a.Ref, 0, a.Name)!));
-        }
+        // Everything the save stores for the unit, grouped (Health, Actions, Offense ...) with plain names and notes.
+        // Health, max health and the action points are already in the main rows above.
+        var groupRank = CombatStatCatalog.GroupOrder.Select((g, i) => (g, i)).ToDictionary(x => x.g, x => x.i);
+        foreach (var a in u.Attributes
+                     .Where(a => !(a.Name is "Health" or "MaxHealth" or "ActionPoints" or "MovementActionPoints"
+                                   && a.Set is "BitReactorHealthSet" or "BitReactorCombatSet"))
+                     .OrderBy(a => groupRank.GetValueOrDefault(a.Info.Group, 99)))
+            Stats.Add(new FieldRowViewModel($"{a.Info.Group} · {a.Info.Label}", fields.Make(a.Ref, 0, a.Name)!, a.Info.Note));
         foreach (var e in u.Effects) Effects.Add(new CombatEffectRowViewModel(pending, fields, u.Index, e));
         Choices = choices.Where(c => c.FromUnit != u.Index).ToList();
         _dead = new ToggleActionViewModel(pending, () => pending.DeadChanges.ContainsKey(u.Index),
@@ -79,8 +82,6 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
         _pending.Changed += OnPendingChanged;
         RefreshCopies();
     }
-
-    static string Trim(string set) => set.StartsWith("BitReactor", StringComparison.Ordinal) ? set[10..].Replace("Set", "") : set;
 
     /// <summary>The sub-tab a unit of this team is listed under.</summary>
     public static string TabOf(string team) => team switch { "Player" => "allies", "Enemy" or "Enemy2" => "enemies", "Civilian" => "civilians", _ => "other" };

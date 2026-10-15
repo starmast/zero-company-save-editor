@@ -5,6 +5,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
+  keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
+
+- Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
+  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. How a change affects
+  waves is not tried in the game yet.
+
+### Changed
+- Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes
+  taken from testing in the game. For example, weapon damage, crit and range are rebuilt from the equipped weapon when the unit fires, so editing
+  them does not change attacks; the damage multiplier and attack did not change a standard shot either.
+
+### Fixed
+- Combat, Reinforcements: changing a wave definition's spawn group did nothing in the game. A test loaded the old group back, because the
+  game restores each definition's group from a second list kept on the encounter (SaveLoadReinforcementWaveSelectedSpawnGroups) when it loads.
+  The editor now changes that entry together with the definition and checks both before writing. Confirmed in the game: after the change the
+  definition kept the new group, and the wave that arrived was the new one (3 Enforcers and 2 Strikers instead of the original Fodder Strikers).
+
 ## [0.6.0] - 2026-10-13
 
 ### Added
@@ -32,7 +51,7 @@ All notable changes to this project are documented here. The format follows
   units back on Enemy when it loads the save, so the option is hidden there and the editor refuses to set it.
 - Combat: a Scenery tab with the fire zones' turns left and every destructible prop the save tracks (not just the ones already hit). It has
   a search, a condition filter, and Destroy / Restore buttons per prop or for everything the filters show. The save marks a prop Destroyed
-  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Restore is confirmed working in the game; Destroy is not yet tried.
+  or Damaged separately from its health, so Restore and Destroy rewrite that mark as well as the health. Restore and Destroy are both confirmed working in the game (destroyed barricades vanish: hidden, with collision off).
 - Combat: the mission's enemy threat tier (for example Coil threat 10) can be swapped for another known tier on the Reinforcements
   tab (other factions' tiers are offered too, marked experimental). It does nothing for the encounter already started, because the
   enemies and waves in the save are fixed by then (tried on a hero mission); the editor counts the later encounters and says so beside

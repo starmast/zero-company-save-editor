@@ -142,6 +142,40 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void The_current_round_can_be_changed_queued_and_applied()
+    {
+        using var rig = OpenCombat();
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Skip.If(!vm.HasRound, "this save has no round block");
+        var round = vm.Round!;
+        var saved = (int)round.Value!.Value;
+        Assert.False(round.IsChanged);
+        Assert.Equal($"In the save: round {saved}", round.SavedText);
+
+        Headless.Run(() => round.Value = saved + 4);
+        Assert.True(round.IsChanged);
+        Assert.Equal(saved + 4, round.Value);
+        Assert.Equal(1, rig.Main.Session.Pending.Count);
+        Assert.Contains(rig.Main.PendingBar.Lines, l => (l.Label ?? "").Contains($"Current round: {saved + 4}"));
+
+        Headless.Run(() => round.Value = 0);                                   // out of range or empty: ignored, the real value is shown again
+        Headless.Run(() => round.Value = null);
+        Headless.Run(() => round.Value = round.Maximum + 1);
+        Assert.Equal(saved + 4, round.Value);
+
+        Headless.Run(() => round.Value = saved);                               // back to the saved round: nothing queued
+        Assert.False(round.IsChanged);
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+
+        Headless.Run(() => round.Value = saved + 4);
+        rig.Main.Session.Apply(asCopy: false, force: true);
+        Headless.Run(() => rig.Main.ReloadScreen());
+        var vm2 = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Assert.Equal(saved + 4, vm2.Round!.Value);
+        Assert.Equal($"In the save: round {saved + 4}", vm2.Round.SavedText);
+    }
+
+    [SkippableFact]
     public void Team_dropdown_queues_a_team_change_and_applies_it()
     {
         using var rig = OpenCombat();

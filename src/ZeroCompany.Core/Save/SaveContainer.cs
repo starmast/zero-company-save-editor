@@ -156,6 +156,57 @@ public sealed class SaveContainer
     public JsonObject? SaveInfo() =>
         Blobs.TryGetValue("SaveGameInfoJSON.txt", out var b) ? DecodeUtf16Json(b) as JsonObject : null;
 
+    /// <summary>The name the game lists the save under, or null when the save has none.</summary>
+    public string? Comment => SaveInfo()?["comment"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+
+    /// <summary>
+    /// The two header entries with a new comment, ready for <see cref="Rebuild"/>. The comment is stored twice: in
+    /// <c>SaveGameInfoJSON.txt</c> (UTF-16 JSON) and in the binary <c>SaveGameInfo</c> as a length-prefixed string, and the game's
+    /// load list reads the binary one, so both must change. Throws <see cref="SaveFormatException"/> when the header is not in the
+    /// expected shape (nothing is guessed).
+    /// </summary>
+    public IReadOnlyDictionary<string, byte[]> WithComment(string comment)
+    {
+        var old = Comment;
+        if (string.IsNullOrEmpty(old)) throw new SaveFormatException("this save has no name to replace");
+        if (!Blobs.TryGetValue("SaveGameInfoJSON.txt", out var json) || !Blobs.TryGetValue("SaveGameInfo", out var info))
+            throw new SaveFormatException("this save has no header entries to rename");
+
+        // the JSON entry: keep a byte order mark if there is one, replace the first "comment" value
+        int skip = json.Length >= 2 && json[0] == 0xFF && json[1] == 0xFE ? 2 : 0;
+        var text = Encoding.Unicode.GetString(json, skip, json.Length - skip);
+        var rx = new Regex("(\"comment\"\\s*:\\s*\")((?:[^\"\\\\]|\\\\.)*)(\")");
+        if (rx.Matches(text).Count != 1) throw new SaveFormatException("the save's name was not found exactly once in its header");
+        var escaped = JsonEncodedText.Encode(comment).ToString();
+        var newText = rx.Replace(text, m => m.Groups[1].Value + escaped + m.Groups[3].Value);
+        var newJson = json.Take(skip).Concat(Encoding.Unicode.GetBytes(newText)).ToArray();
+
+        // the binary entry: an Unreal string is an int32 length (including the terminator) then the characters; a negative length
+        // means UTF-16. Find the old one exactly once and splice in the new one.
+        var oldBytes = UnrealString(old);
+        int at = IndexOf(info, oldBytes);
+        if (at < 0 || IndexOf(info, oldBytes, at + 1) >= 0) throw new SaveFormatException("the save's name was not found exactly once in its header");
+        var newInfo = info.Take(at).Concat(UnrealString(comment)).Concat(info.Skip(at + oldBytes.Length)).ToArray();
+
+        return new Dictionary<string, byte[]> { ["SaveGameInfoJSON.txt"] = newJson, ["SaveGameInfo"] = newInfo };
+    }
+
+    static byte[] UnrealString(string s)
+    {
+        bool ascii = s.All(c => c < 128);
+        var body = ascii ? Encoding.ASCII.GetBytes(s).Append((byte)0) : Encoding.Unicode.GetBytes(s).Concat(new byte[] { 0, 0 });
+        var len = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len, ascii ? s.Length + 1 : -(s.Length + 1));
+        return len.Concat(body).ToArray();
+    }
+
+    static int IndexOf(byte[] hay, byte[] needle, int from = 0)
+    {
+        for (int i = from; i <= hay.Length - needle.Length; i++)
+            if (hay.AsSpan(i, needle.Length).SequenceEqual(needle)) return i;
+        return -1;
+    }
+
     /// <summary>(characterDataWrapperSize, {GUID: wrappedSize}) as recorded in SaveGameMetaData.json.</summary>
     public (int? WrapperSize, Dictionary<string, int?> Characters) ReadCharacterSizes()
     {

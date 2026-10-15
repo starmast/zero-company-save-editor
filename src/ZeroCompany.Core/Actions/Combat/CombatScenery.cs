@@ -71,7 +71,15 @@ public static partial class CombatOps
     /// <summary>
     /// The state tag in an actor record, or null when the record is not one. A record is [byte count][three int32 flags][the tag as an
     /// FString]. The flags vary from prop to prop and change when the game destroys one (an intact prop has (1,0,0) or (0,1,0), a
-    /// destroyed one (0,0,1) or (0,0,0)) and nothing I found says why, so they are only read around, never interpreted.
+    /// destroyed one (0,0,0), once (0,0,1)). What they mean is still not known, but live tests narrowed it down:
+    /// they are stored data, not recomputed (a copy with flags swapped on six props was loaded and the game's own save wrote the swapped
+    /// values back); they are a stable per-prop value (when the game itself restored destroyed props they returned to exactly the triple each
+    /// had before, so the editor's restore, which uses (0,1,0) for all, differs from the game for classes that normally have (1,0,0));
+    /// they mostly follow the prop's class (all barricades (1,0,0), all cannisters (0,1,0), but 5 of 22 identical 2x1 crates have (1,0,0));
+    /// and changing them changed none of a prop's 99 plain live values. They do matter at load, though (looked at in the game with copies
+    /// of the same save): a prop whose tag is Destroyed vanishes whatever its flags are ((1,0,0) too; the editor writes (0,0,1) and it
+    /// leaves rubble); a Pristine prop with all-zero flags (0,0,0), which the game never writes for an intact prop, also vanishes; and
+    /// Pristine with (0,0,1) or (1,1,1) looked normal. So never write (0,0,0) on an intact prop. The editor's Destroy and Restore avoid that.
     /// </summary>
     static string? RecordTag(GvasFile g, GvasNode record)
     {

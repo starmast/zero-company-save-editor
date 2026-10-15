@@ -62,6 +62,8 @@ public abstract record SaveAction
     public sealed record SetTriggerActive(int Logic, string Name, bool Active) : CombatAction;
     /// <summary>Set an objective to "Active" or "Succeeded". <c>Name</c> guards against a stale index.</summary>
     public sealed record SetObjectiveStatus(int Index, string Name, string Status) : CombatAction;
+    /// <summary>Set the round the fight is on (the tactical game state's saved round counter).</summary>
+    public sealed record SetCurrentRound(int Round) : CombatAction;
 }
 
 public sealed record ApplyResult(string Written, bool Copy, int Count, string? Backup);
