@@ -152,6 +152,8 @@ overwrite its contents on disk with the new save, then `zcdebug load <that file'
 the overwritten file's new data (an Enforcer at 60 instead of 61). The menu entry keeps the old name and thumbnail. Only overwrite
 files you made for testing, never a save you care about. Send one `load` and wait for the level to finish loading: a second `load` during a load (even a refused one) left the level with no enemies and heroes that could not move, so the mod now refuses a second request for 30 seconds. `zcdebug saves` shows which files the game should accept: a file created after the game started is marked NEW (a heuristic from file creation times; an overwritten file keeps its creation time, so it stays "listed"). The editor does not depend on any of this: it only reads and writes saves.
 
+**Arrays: only list safe ones.** `get` lists an array's elements only when its element type is an object, struct, number or bool; for anything else (names, soft object paths ...) it prints the count. Listing an array of soft object paths (`SaveLoadReinforcementWaveSelectedSpawnGroups`) crashed the game. A `get` that times out is a warning: stop and check the game before sending anything else.
+
 **Do not bulk-scan from Lua.** An `eval` that looped over every character walking each one's `ActiveGameplayEffects` crashed the game
 (`EXCEPTION_ACCESS_VIOLATION` reading address 0x18). Read one named unit at a time and stop after the first timeout. Unreal's
 crash reports are in `%LOCALAPPDATA%\SWZeroCompany\Saved\Crashes`. Errors from the mod come back as `error: ...` and also go to

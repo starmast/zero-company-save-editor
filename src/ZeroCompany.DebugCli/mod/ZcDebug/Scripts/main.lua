@@ -151,17 +151,37 @@ function commands.get(args)
     local o, err = resolve(a[1])
     if not o then error(err) end
     -- a path like SpawnedAttributes.1.Health: numbers index arrays (1-based), names read properties
-    local v = o
+    local v, owner, lastName = o, nil, nil
     for part in a[2]:gmatch("[^%.]+") do
         local n = tonumber(part)
         local ok, nxt = pcall(function() if n then return v[n] end return v[part] end)
         if not ok then error("cannot read '" .. part .. "': " .. tostring(nxt)) end
+        owner, lastName = v, (not n) and part or nil
         v = nxt
         if v == nil then error("'" .. part .. "' is nil") end
     end
-    -- an array with no index: list its elements
+    -- an array with no index: list its elements, but only when the element type is known to be safe to read. Listing an array of
+    -- soft object paths crashed the game (access violation), so anything else prints just the count.
     local ok, count = pcall(function() return #v end)
     if type(v) == "userdata" and ok and type(count) == "number" and not pcall(function() return v:GetFullName() end) then
+        local inner
+        if owner and lastName then
+            local c = owner:GetClass()
+            while c and c:IsValid() and not inner do
+                c:ForEachProperty(function(p)
+                    if not inner and p:GetFName():ToString() == lastName then
+                        pcall(function() inner = p:GetInner():GetClass():GetFName():ToString() end)
+                    end
+                end)
+                local okS, super = pcall(function() return c:GetSuperStruct() end)
+                if not okS then break end
+                c = super
+            end
+        end
+        local safe = { ObjectProperty = true, StructProperty = true, IntProperty = true, FloatProperty = true, DoubleProperty = true, BoolProperty = true }
+        if not (inner and safe[inner]) then
+            return "[array of " .. count .. "] (elements are " .. tostring(inner or "of unknown type") .. "; not listed, read one as Prop.N only if you know it is safe)"
+        end
         local out = { "[array of " .. count .. "]" }
         for i = 1, math.min(count, 50) do out[#out + 1] = i .. ": " .. fmt(v[i]) end
         return table.concat(out, "\n")
