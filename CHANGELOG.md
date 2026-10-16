@@ -23,6 +23,11 @@ All notable changes to this project are documented here. The format follows
   (build 199049). See [docs/development.md](docs/development.md).
 
 - `zcdebug load` now waits until the loaded level is up and says so (`--no-wait` returns at once; new `zcdebug loadstatus`).
+- `zcdebug fix [--elevate]`: checks the game folders the mod and UE4SS write to and fixes the write errors under Program Files, such as UE4SS
+  logging "Access is denied" for the missing `Content\Paks\LogicMods` folder. It creates what it can as your user and, with `--elevate`, asks
+  Windows (through the normal UAC prompt) to run only the one command that is needed; without it, it prints the commands for an Administrator terminal.
+  It also handles a game update that makes UE4SS's signature pack reject the new build (UE4SS stops at start-up and no mod runs): it reads the new
+  exe's identity from its PE header and lists it in the pack's scripts, after backing them up (`--undo-signatures` restores them, `--no-signatures` skips it).
 
 - Combat, All stats: stats with no lasting effect are hidden until a "Show stats with no lasting effect" box is ticked (the header says how many are
   hidden). Besides the ones the game puts back or rebuilds (below), Accuracy, Aim, Attack and Defense are hidden because changing them did not change the

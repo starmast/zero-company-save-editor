@@ -143,6 +143,95 @@ public class DebugBridgeTests : IDisposable
     }
 
     [Fact]
+    public void Fix_never_builds_a_command_from_a_path_with_shell_characters()
+    {
+        var project = Path.Combine(_dir, "Zero & del *", "SWZeroCompany");
+        var bin = Path.Combine(project, "Binaries", "Win64");
+        var host = new FakeHost();
+        host.Dirs.Add(Path.Combine(bin, "ue4ss", "Mods"));
+        host.Unwritable.Add(Path.Combine(project, "Content", "Paks"));
+        Assert.Empty(Fix.Find(bin, host, new StringWriter()));              // nothing is offered for a path it cannot quote safely
+    }
+
+    [Fact]
+    public void Fix_only_asks_windows_for_elevation_when_told_to_and_checks_the_result()
+    {
+        var game = Path.Combine(_dir, "game");
+        // a game folder the real FindGameDir accepts: use the same layout under the test directory
+        var realBin = Path.Combine(game, "SWZeroCompany", "Binaries", "Win64");
+        Directory.CreateDirectory(Path.Combine(realBin, "ue4ss", "Mods"));
+        File.WriteAllText(Path.Combine(realBin, "SWZeroCompany.exe"), "");
+        var paks = Path.Combine(game, "SWZeroCompany", "Content", "Paks");
+
+        var host = new FakeHost();
+        host.Dirs.Add(Path.Combine(realBin, "ue4ss", "Mods"));
+        host.Unwritable.Add(paks);
+        var sw = new StringWriter();
+        Assert.Equal(1, Fix.Run(game, elevate: false, sw, host));          // reports, asks for nothing
+        Assert.Empty(host.Elevated);
+        Assert.Contains("--elevate", sw.ToString());
+        Assert.Contains("Administrator", sw.ToString());
+
+        sw = new StringWriter();
+        Assert.Equal(0, Fix.Run(game, elevate: true, sw, host));           // now it asks, once, and the second look finds it fixed
+        Assert.Single(host.Elevated);
+        Assert.StartsWith("mkdir \"", host.Elevated[0]);
+        Assert.Contains("Fixed.", sw.ToString());
+
+        host = new FakeHost { ElevatedWorks = false };
+        host.Dirs.Add(Path.Combine(realBin, "ue4ss", "Mods"));
+        host.Unwritable.Add(paks);
+        Assert.Equal(1, Fix.Run(game, elevate: true, new StringWriter(), host));    // declined prompt: still reported as not fixed
+    }
+
+    [Fact]
+    public void Fix_creates_what_it_can_and_names_the_one_command_for_the_rest()
+    {
+        var project = Path.Combine(_dir, "Zero", "SWZeroCompany");
+        var bin = Path.Combine(project, "Binaries", "Win64");
+        var ue4ss = Path.Combine(bin, "ue4ss");
+        var paks = Path.Combine(project, "Content", "Paks");
+        var logic = Path.Combine(paks, "LogicMods");
+        Assert.Equal(logic, Fix.LogicModsDir(bin));
+
+        var host = new FakeHost();
+        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
+        var sw = new StringWriter();
+        Assert.Empty(Fix.Find(bin, host, sw));                              // the user may create LogicMods, so it just does
+        Assert.Contains(logic, host.Dirs);
+        Assert.Contains("created", sw.ToString());
+
+        host = new FakeHost();                                              // Program Files: Paks refuses, and the Mods folder is read-only too
+        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
+        host.Unwritable.Add(paks);
+        host.Unwritable.Add(Path.Combine(ue4ss, "Mods"));
+        var problems = Fix.Find(bin, host, new StringWriter());
+        Assert.Equal(2, problems.Count);
+        Assert.Contains(problems, p => p.AdminCommand == $"mkdir \"{logic}\"");
+        Assert.Contains(problems, p => p.AdminCommand == $"icacls \"{ue4ss}\" /grant \"PC\\me:(OI)(CI)M\" /T /C /Q");
+    }
+
+    sealed class FakeHost : IFixHost
+    {
+        public HashSet<string> Dirs = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Unwritable = new(StringComparer.OrdinalIgnoreCase);     // folders the user may not create things in
+        public List<string> Elevated = new();
+        public bool ElevatedWorks = true;
+        public string UserName => @"PC\me";
+        public bool DirExists(string p) => Dirs.Contains(p);
+        public bool TryCreateDir(string p) { if (Unwritable.Contains(Path.GetDirectoryName(p)!)) return false; Dirs.Add(p); return true; }
+        public bool CanWriteIn(string d) => !Unwritable.Contains(d);
+        public bool RunElevated(string c)
+        {
+            Elevated.Add(c);
+            if (!ElevatedWorks) return false;
+            if (c.StartsWith("mkdir \"")) Dirs.Add(c["mkdir \"".Length..^1]);
+            if (c.StartsWith("icacls ")) Unwritable.Clear();
+            return true;
+        }
+    }
+
+    [Fact]
     public void A_load_that_never_finishes_gives_up_with_a_message()
     {
         var b = new Bridge(_dir);

@@ -7,6 +7,10 @@ const string Usage = """
       zcdebug status                          is the game running, is the mod answering
       zcdebug install [--game DIR] [--out DIR]  copy the ZcDebug mod into UE4SS's Mods folder, or write it to DIR to copy by hand
       zcdebug uninstall [--game DIR]          remove it again
+      zcdebug fix [--game DIR] [--elevate]    check the game folders the mod and UE4SS write to (Mods, LogicMods), create what it can, and say
+                                              what needs Administrator; --elevate runs just those commands through the Windows UAC prompt.
+                                              Also adds a game build that a game update made UE4SS's signature pack reject to the pack's
+                                              scripts (backed up first; --no-signatures skips it, --undo-signatures restores the backup)
       zcdebug ping
       zcdebug find <Class> [limit]            live instances of an Unreal class, e.g. Pawn, PlayerController
       zcdebug props <object|Class>            a class's properties (name : type)
@@ -50,6 +54,7 @@ return CliApp.Run("zcdebug", Usage, args, a =>
                 : Saves.List(a.Workspace, filter, all, Saves.GameStart(), Console.Out);
         }
         case "repl": return Session.Repl(new Bridge(), write, timeout);
+        case "fix": return Fix.Run(game, a.Flag("--elevate"), Console.Out, checkSignatures: !a.Flag("--no-signatures"), undoSignatures: a.Flag("--undo-signatures"));
         default:
         {
             // `load` returns once the level is up (give up after --load-wait seconds, default 180); --no-wait returns at once

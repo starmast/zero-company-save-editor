@@ -188,6 +188,7 @@ itself. Instead it talks to a small Lua mod, **ZcDebug**, that runs inside the g
 
 ```
 zcdebug install            copy the ZcDebug mod into UE4SS's Mods folder (zcdebug uninstall removes it)
+zcdebug fix [--elevate]    check the game folders the mod and UE4SS write to (Mods, LogicMods) and fix what is not writable (see below)
 zcdebug status             is the game running, is the mod answering
 zcdebug find Pawn          live instances of an Unreal class
 zcdebug props <object>     a class's properties and types
@@ -259,7 +260,18 @@ profile; signature rejected` in `UE4SS.log`, and ZcDebug never starts. The game'
 against the running game. When the pack's author has not yet shipped the new build, the one thing that stopped build 199049 (game 1.2) was the
 `builds` table at the top of each of the four scripts (FName_Constructor, GUObjectArray, ProcessLocalScriptFunction, StaticConstructObject): the
 byte patterns still matched, and adding one table entry for the new exe, with the values read from its PE header, made UE4SS load and every
-`zcdebug` command work. This is the pack's own safety check being extended by hand, not something the pack's author tested. Keep a copy of the
-original scripts, try it on a save you can lose, and prefer the author's own pack as soon as there is one. If a script then reports `no validated
-loaded function entry`, the function itself changed and needs a new pattern.
+`zcdebug` command work. This is the pack's own safety check being extended by hand, not something the pack's author tested. `zcdebug fix` does
+this for you: it reads the exe's identity (length, PE timestamp, image size, CodeView GUID) from its PE header, adds an entry to the `builds`
+table of every script in the pack's format that does not list it yet, and leaves everything else alone (scripts it does not recognise are not
+touched). The originals are copied first to `ue4ss\zcdebug-signature-backup\<time>` and `zcdebug fix --undo-signatures` puts the newest set
+back; `--no-signatures` skips the step. Try it on a save you can lose, and prefer the author's own pack as soon as there is one. If a script
+then reports `no validated loaded function entry`, the function itself changed and needs a new pattern.
 Like `zc`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
+**Write errors under Program Files.** `zcdebug fix` checks the two folders that matter and says what it finds. UE4SS's own `ue4ss` folder
+(where `zcdebug install` writes the mod and UE4SS writes its log) is often writable by your user already; `Content\Paks\LogicMods`
+usually is not, and UE4SS's BPModLoaderMod (shipped with the pack) logs `CreateLogicModsDirectory: Error creating directory: Access is
+denied` at every start because of it. The error is harmless (no Blueprint mods are used) but `zcdebug fix --elevate` removes it: it
+creates what it can as your user, and for the rest asks Windows to run just that command (a `mkdir`, or an `icacls` that grants your
+user write access to the `ue4ss` folder) through the normal UAC prompt. Without `--elevate` it only prints the commands, to run from
+an Administrator terminal. It never touches the game's own files.
+
