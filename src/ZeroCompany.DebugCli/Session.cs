@@ -6,8 +6,20 @@ namespace ZeroCompany.DebugCli;
 public static class Session
 {
     /// <summary>Commands that read only. Everything else changes the game and needs --write.</summary>
-    public static readonly IReadOnlySet<string> ReadOnly = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus" };
-    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus", "set", "attr", "fx", "load", "exec", "eval" };
+    public static readonly IReadOnlySet<string> ReadOnly = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus", "log", "funcs" };
+    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus", "log", "funcs", "set", "attr", "fx", "load", "exec", "eval", "call", "trace", "reload" };
+
+    /// <summary>Send one command (with the same checks as <see cref="Run"/>) and return the mod's answer without printing it.</summary>
+    public static Reply RunQuiet(Bridge b, string command, string args, bool write, TimeSpan timeout)
+    {
+        if (!All.Contains(command)) throw new CliException($"unknown command '{command}' (zcdebug --help)");
+        if (!ReadOnly.Contains(command) && !write)
+            throw new CliException($"'{command}' changes the running game; add --write if you mean it");
+        if (!b.Connected(TimeSpan.FromSeconds(10)))
+            throw new CliException("the mod is not answering (no recent heartbeat). Run `zcdebug status`.");
+        try { return b.Send(command, args, timeout); }
+        catch (TimeoutException e) { throw new CliException(e.Message + ". The game may be paused, loading or busy."); }
+    }
 
     public static int Status(Bridge b)
     {
@@ -32,7 +44,7 @@ public static class Session
         if (!All.Contains(command)) throw new CliException($"unknown command '{command}' (zcdebug --help)");
         if (!ReadOnly.Contains(command) && !write)
             throw new CliException($"'{command}' changes the running game; add --write if you mean it");
-        if (args.Trim().Length == 0 && command is not ("ping" or "loadstatus"))
+        if (args.Trim().Length == 0 && command is not ("ping" or "loadstatus" or "log"))
             throw new CliException($"'{command}' needs an argument (zcdebug --help)");
         if (!b.Connected(TimeSpan.FromSeconds(10)))
             throw new CliException("the mod is not answering (no recent heartbeat). Run `zcdebug status`.");

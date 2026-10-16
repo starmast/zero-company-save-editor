@@ -24,6 +24,15 @@ const string Usage = """
       zcdebug load <save name> --write      load a save by file name, no .sav (the game must already list it; see docs); waits until the level
                                             is up (--no-wait returns at once, --load-wait SECONDS gives up after that long, default 180)
       zcdebug loadstatus                    whether the level of the last load is up
+      zcdebug log on|off|clear|snap         record the game's own combat events (abilities used, moves, shots, hits with damage, kills, turns, rounds)
+                                            to combat.log without polling; snap writes the units' numbers once
+      zcdebug log show [n]                  the last n (default 60) lines of that log
+      zcdebug funcs <object|Class> [filter]   the functions a live object's class has, with parameter types
+      zcdebug call <object|Class> <Function> [args] --write   call one (numbers, true/false, @/object/path, n:Name, text)
+      zcdebug trace <Class:Function> [on|off|list] [max] --write   log every call of a function, with its parameters, to combat.log
+      zcdebug reload [--from FILE]            run the mod's script again without restarting it (copy FILE over it first) --write
+      zcdebug shot [--out FILE]               have the game save a screenshot with the HUD and print its path
+      zcdebug api <text> [--limit N]          search the dumped class, struct and function declarations (UE4SS "Dump CXX Headers")
       zcdebug exec <console command> --write  run an Unreal console command
       zcdebug eval <lua> --write              run Lua inside the game (UE4SS API: FindAllOf, StaticFindObject ...)
       zcdebug repl [--write]                  the same commands interactively
@@ -45,6 +54,7 @@ return CliApp.Run("zcdebug", Usage, args, a =>
     {
         case "install": Console.WriteLine(Install.Setup(game, uninstall: false, a.Opt("--out"))); return 0;
         case "uninstall": Console.WriteLine(Install.Setup(game, uninstall: true)); return 0;
+        case "fix": return Fix.Run(game, a.Flag("--elevate"), Console.Out, checkSignatures: !a.Flag("--no-signatures"), undoSignatures: a.Flag("--undo-signatures"));
         case "status": return Session.Status(new Bridge());
         case "saves":
         {
@@ -54,7 +64,16 @@ return CliApp.Run("zcdebug", Usage, args, a =>
                 : Saves.List(a.Workspace, filter, all, Saves.GameStart(), Console.Out);
         }
         case "repl": return Session.Repl(new Bridge(), write, timeout);
-        case "fix": return Fix.Run(game, a.Flag("--elevate"), Console.Out, checkSignatures: !a.Flag("--no-signatures"), undoSignatures: a.Flag("--undo-signatures"));
+        case "reload": return Investigate.Reload(new Bridge(), game, a.Opt("--from"), write, timeout, Console.Out);
+        case "shot": return Investigate.Shot(new Bridge(), a.Opt("--out"), timeout, Console.Out);
+        case "api":
+        {
+            var hdr = a.Opt("--headers") ?? Investigate.HeaderDumpDir(game)
+                ?? throw new CliException("no CXXHeaderDump folder: in the UE4SS window open Dumpers and press \"Dump CXX Headers\" once (or pass --headers DIR)");
+            return Investigate.Api(hdr, string.Join(' ', a.TakeAll()), int.TryParse(a.Opt("--limit"), out var lim) ? lim : 60, Console.Out);
+        }
+        case "log" when a.First == "show":
+            return CombatLog.Show(new Bridge().Dir, string.Join(' ', a.TakeAll()), Console.Out, Console.Error);
         default:
         {
             // `load` returns once the level is up (give up after --load-wait seconds, default 180); --no-wait returns at once

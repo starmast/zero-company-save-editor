@@ -23,11 +23,19 @@ All notable changes to this project are documented here. The format follows
   (build 199049). See [docs/development.md](docs/development.md).
 
 - `zcdebug load` now waits until the loaded level is up and says so (`--no-wait` returns at once; new `zcdebug loadstatus`).
+- `zcdebug` can investigate the running game without anyone at its window: `reload` swaps the mod's script without a restart (syntax-checked first, rolled
+  back if the new one fails to start), `trace` logs every call of a game function with its parameters, `funcs` lists a live object's functions and their
+  parameter types, `call` calls one, `shot` saves a screenshot with the HUD and prints its path, and `api` searches the class and function declarations
+  UE4SS dumped. The mod also no longer re-runs a stale request from an earlier run when it starts.
 - `zcdebug fix [--elevate]`: checks the game folders the mod and UE4SS write to and fixes the write errors under Program Files, such as UE4SS
   logging "Access is denied" for the missing `Content\Paks\LogicMods` folder. It creates what it can as your user and, with `--elevate`, asks
   Windows (through the normal UAC prompt) to run only the one command that is needed; without it, it prints the commands for an Administrator terminal.
   It also handles a game update that makes UE4SS's signature pack reject the new build (UE4SS stops at start-up and no mod runs): it reads the new
   exe's identity from its PE header and lists it in the pack's scripts, after backing them up (`--undo-signatures` restores them, `--no-signatures` skips it).
+- `zcdebug log on|off|clear|snap|show`: a combat log built only from the game's own events, with no polling (so it costs nothing between events): ABILITY
+  (which unit used which ability), MOVE (where), SHOT (who fired at whom), HIT and KILLED (target, attacker, the exact damage, CRIT and the ability, for
+  example GA_StandardShot_Longarm_C or a teamwork assist shot), DOWNED, HEAL, each team's turn and each round. One snapshot of every unit's health, armor,
+  shields, action points and position is written at the start of a round (and on `log snap`). A shot with no HIT after it missed.
 
 - Combat, All stats: stats with no lasting effect are hidden until a "Show stats with no lasting effect" box is ticked (the header says how many are
   hidden). Besides the ones the game puts back or rebuilds (below), Accuracy, Aim, Attack and Defense are hidden because changing them did not change the

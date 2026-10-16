@@ -11,9 +11,26 @@
 -- An <object|Class> is a full object path (contains "/" or ".") or a short class name (its first live instance).
 -- Nothing here changes the game on its own: set/exec/eval run only when zcdebug sends them (it asks for --write first).
 
-local VERSION = "0.1"
+local VERSION = "0.13"
 local DIR = (os.getenv("LOCALAPPDATA") or ".") .. "\\ZeroCompanyEditor\\debug\\"
 local REQUEST, RESPONSE, HEARTBEAT = DIR .. "request.txt", DIR .. "response.txt", DIR .. "heartbeat.txt"
+
+-- Every load of this script is a "generation". `reload` runs the file again in the same Lua state: the new generation unregisters the old
+-- one's hooks and the old one's loops see they are stale and stop, so nothing is doubled and no Ctrl+R is needed.
+local GEN = (_G.ZC_GEN or 0) + 1
+_G.ZC_GEN = GEN
+for _, h in ipairs(_G.ZC_HOOKS or {}) do pcall(UnregisterHook, h[1], h[2], h[3]) end
+_G.ZC_HOOKS = {}
+local function alive() return _G.ZC_GEN == GEN end
+local SCRIPT = (debug.getinfo(1, "S").source or ""):match("^@(.+)$")
+
+-- RegisterHook that remembers its ids, so the next generation (or `trace off`) can remove it
+local function trackedHook(path, fn, postFn)
+    local ok, pre, post
+    if postFn then ok, pre, post = pcall(RegisterHook, path, fn, postFn) else ok, pre, post = pcall(RegisterHook, path, fn) end
+    if ok then _G.ZC_HOOKS[#_G.ZC_HOOKS + 1] = { path, pre, post } end
+    return ok, pre, post
+end
 
 local lastId = nil
 local busy = false
@@ -69,7 +86,10 @@ local function fmt(v, depth)
         end
         return "{" .. table.concat(parts, ", ") .. "}"
     end
-    -- userdata: an object, a name, a string or an array
+    -- userdata: an object, a name, a string or an array. A NULL object must never get another method call: UE4SS dereferences it
+    -- (an access violation at address 0x10 that takes the whole game down), so objects are asked IsValid() first.
+    local okv, valid = pcall(function() return v:IsValid() end)
+    if okv and valid == false then return "(null object)" end
     local ok, s = pcall(function() return v:ToString() end)
     if ok and s then return tostring(s) end
     ok, s = pcall(function() return v:GetFullName() end)
@@ -419,6 +439,362 @@ function commands.eval(args)
     return #out == 0 and "(no result)" or table.concat(out, "\t")
 end
 
+-- ---- combat log --------------------------------------------------------------------------
+-- log on|off|clear|snap: while on, the game's own events are written to combat.log. Nothing polls: every line comes from a hook on an event the
+-- game raises (a unit damaged, killed, moving, a shot fired, an ability used, a turn or a round starting), so the log costs nothing between
+-- events. At the start of each round, and on `log snap`, one snapshot of every unit's health, armor, shields, action points and position is
+-- written. `zcdebug log show [n]` prints the end of the file.
+local COMBAT_LOG = DIR .. "combat.log"
+local logging = _G.ZC_LOGGING == true     -- a reload keeps the log on
+
+local function logLine(text)
+    local f = io.open(COMBAT_LOG, "ab")
+    if f then f:write(os.date("%H:%M:%S") .. "  " .. text .. "\n"); f:close() end
+end
+
+local function num(v) return type(v) == "number" and v or nil end
+local function g(v) return v and string.format("%g", math.floor(v * 100 + 0.5) / 100) or "?" end
+
+-- every name read goes through IsValid first: a method call on a null object takes the game down
+-- UE4SS hands an event's object arguments either as the object itself or wrapped (a "param" with :get()): obj() gives the valid object or nil
+local function obj(p)
+    if p == nil then return nil end
+    local ok, valid = pcall(function() return p:IsValid() end)
+    if ok then return valid and p or nil end                            -- an object: usable, or null
+    local ok2, o = pcall(function() return p:get() end)                -- a wrapped one
+    if ok2 and o ~= nil then
+        local ok3, v3 = pcall(function() return o:IsValid() end)
+        if ok3 then return v3 and o or nil end
+        return o
+    end
+    return nil
+end
+
+local function who(p)           -- the name of an object parameter
+    local ok, v = pcall(function() local o = obj(p); if o then return o:GetFName():ToString() end end)
+    return (ok and v) or "?"
+end
+
+local function abilityOf(p)     -- the ability's class name, e.g. GA_StandardShot_BlasterRifle_C
+    local ok, v = pcall(function() local o = obj(p); if o then return o:GetClass():GetFName():ToString() end end)
+    return (ok and v) or "?"
+end
+
+local function payload(p)       -- the struct an event passes (UE4SS wraps it; its fields read by name)
+    local ok, o = pcall(function() return p:get() end)
+    return ok and o or nil
+end
+
+local function field(o, name)
+    if o == nil then return nil end
+    local ok, v = pcall(function() return o[name] end)
+    return ok and v or nil
+end
+
+-- one unit's numbers, or nil when it cannot be read right now
+local function readUnit(c)
+    local asc = c.AbilitySystemComponent
+    if not (asc and asc:IsValid()) then return nil end
+    local sets = asc.SpawnedAttributes
+    if not sets then return nil end
+    local u = {}
+    for i = 1, sets:GetArrayNum() do
+        local s = sets[i]
+        local cn = s:GetClass():GetFName():ToString()
+        if cn == "BitReactorHealthSet" then
+            u.hp, u.maxhp = num(s.Health.CurrentValue), num(s.MaxHealth.CurrentValue)
+        elseif cn == "BitReactorCombatSet" then
+            u.armor, u.shields = num(s.CurrentArmor.CurrentValue), num(s.CurrentShields.CurrentValue)
+            u.ap, u.mp = num(s.ActionPoints.CurrentValue), num(s.MovementActionPoints.CurrentValue)
+        end
+    end
+    local l = c:K2_GetActorLocation()
+    u.x, u.y, u.z = num(l.X), num(l.Y), num(l.Z)
+    return u
+end
+
+-- one pass over the units in the level, once per round: this is the only place units are read in bulk
+local function snapshot(reason)
+    logLine("---- units (" .. reason .. ")")
+    for _, c in ipairs(FindAllOf("Character") or {}) do
+        if c:IsValid() and c:GetFullName():find("PersistentLevel.Char_", 1, true) then
+            local u = readUnit(c)
+            if u and (u.hp or 0) > 0 then
+                logLine(string.format("%s  hp %s/%s armor %s shields %s ap %s move %s at (%d,%d)", c:GetFName():ToString(),
+                    g(u.hp), g(u.maxhp), g(u.armor), g(u.shields), g(u.ap), g(u.mp), math.floor(u.x or 0), math.floor(u.y or 0)))
+            end
+        end
+    end
+end
+
+local lastShot = {}
+local CHARACTER = "/Game/Game/Core/Pawns/Char_BrunoBaseCharacter.Char_BrunoBaseCharacter_C:"
+local GAMEPLAY = "/Script/BitReactorGame."
+
+-- Hookable events: functions the game's native code (or a delegate) calls through Unreal's reflection. Blueprint functions that are called
+-- inside their own graph (OnUnitDamaged on the character, DisplayDamageNumber, the accuracy calculation ...) are never seen by a hook.
+local events = {
+    -- every character that listens gets this call, so only the target's own copy is logged; a burst is one SHOT line per second
+    { CHARACTER .. "OnProjectileFired", function(self, firer, target)
+        if who(self) ~= who(target) then return end
+        local line = string.format("SHOT    %s -> %s", who(firer), who(target))
+        local now = os.time()
+        if lastShot[line] ~= now then lastShot[line] = now; logLine(line) end
+    end },
+    { GAMEPLAY .. "UnitEventDelegateHandler:OnUnitDamaged", function(self, p)
+        local o = payload(p)
+        logLine(string.format("HIT     %s <- %s  damage %s%s  via %s", who(field(o, "Target")), who(field(o, "Instigator")), g(num(field(o, "DamageReceived"))),
+            field(o, "bWasCriticalDamage") == true and " CRIT" or "", abilityOf(field(o, "InstigatorAbility"))))
+    end },
+    { GAMEPLAY .. "UnitEventDelegateHandler:OnUnitKilled", function(self, p)
+        local o = payload(p)
+        if field(o, "bIsLoadGameReapply") == true then return end              -- the game re-applies earlier deaths when a save loads
+        logLine(string.format("KILLED  %s <- %s  damage %s  via %s", who(field(o, "Target")), who(field(o, "Instigator")), g(num(field(o, "DamageReceived"))),
+            abilityOf(field(o, "InstigatorAbility"))))
+    end },
+    { GAMEPLAY .. "UnitEventDelegateHandler:OnUnitMoving", function(self, p)
+        local o = payload(p)
+        local loc = field(o, "MovementTargetLocation")
+        logLine(string.format("MOVE    %s -> (%d,%d)", who(field(o, "Target")), math.floor(num(field(loc, "X")) or 0), math.floor(num(field(loc, "Y")) or 0)))
+    end },
+    { "/Script/Bruno.TSB_AbilityEventHandler:OnAbilityPresented", function(self, p)
+        local name = abilityOf(p)
+        if name:find("Listener") or name:find("^GA_Passive") or name:find("^GA_Cooldown") or name:find("DifficultTarget") then return end   -- passives are noise
+        local owner = "?"
+        pcall(function()
+            local ab = obj(p)
+            if ab then
+                local a = ab:GetOwningActorFromActorInfo()
+                if a and a:IsValid() then owner = a:GetFName():ToString() end
+            end
+        end)
+        logLine(string.format("ABILITY %s  %s", owner, name))
+    end },
+    { GAMEPLAY .. "TurnEventDelegateHandler:OnTeamTurnStarted", function(self, p) logLine("== " .. who(p) .. " turn starts") end },
+    { GAMEPLAY .. "TurnEventDelegateHandler:OnGameTurnStarted", function(self, n)
+        local round = "?"
+        pcall(function() round = tostring(n:get()) end)
+        logLine("== round " .. round)
+        snapshot("round " .. round)
+    end },
+    { CHARACTER .. "ReceiveUnitDowned", function(self) logLine(string.format("DOWNED  %s", who(self))) end },
+    { CHARACTER .. "ReceiveUnitHealed", function(self, source, ability) logLine(string.format("HEAL    %s <- %s  via %s", who(self), who(source), abilityOf(ability))) end },
+}
+
+local hooksState = nil          -- nil: not tried yet, otherwise "n of m event hooks installed"
+
+local function installHooks()
+    if hooksState then return hooksState end
+    local ok = 0
+    for _, e in ipairs(events) do
+        local path, handler = e[1], e[2]
+        local installed, err = trackedHook(path, function(...)
+            if not logging or not alive() then return end
+            local good, msg = pcall(handler, ...)
+            if not good then logLine("hook error in " .. path:match("[^:]+$") .. ": " .. tostring(msg)) end
+        end)
+        if installed then ok = ok + 1 else logLine("could not hook " .. path:match("[^:]+$") .. ": " .. tostring(err)) end
+    end
+    hooksState = ok .. " of " .. #events .. " event hooks installed"
+    return hooksState
+end
+if logging then installHooks() end        -- after a reload the new generation hooks again
+
+function commands.log(args)
+    local what = args:match("^%s*(%S*)")
+    if what == "on" then
+        local hooks = installHooks()
+        logging = true; _G.ZC_LOGGING = true
+        logLine("---- combat log started (" .. hooks .. ")")
+        return "combat log on (" .. hooks .. "); lines go to " .. COMBAT_LOG
+    elseif what == "off" then
+        logging = false; _G.ZC_LOGGING = false
+        logLine("---- combat log stopped")
+        return "combat log off"
+    elseif what == "clear" then
+        os.remove(COMBAT_LOG)
+        return "combat log cleared"
+    elseif what == "snap" then
+        snapshot("requested")
+        return "snapshot written"
+    end
+    return "combat log is " .. (logging and "on" or "off") .. " (log on | log off | log clear | log snap)"
+end
+
+-- ---- investigating: funcs, call, trace, reload ------------------------------------------------
+-- funcs <object|Class> [filter]: the functions a live object's class has (and its parents'), with parameter types.
+-- call <object|Class> <Function> [args]: call one (numbers, true/false, @/object/path, n:Name, anything else is text). Changes the game: --write.
+-- trace <Class:Function | /full/path:Function> [on|off|list] [max]: log each call of a function, with its parameters, to combat.log.
+-- reload [file]: run this script again from disk (or from <file>) without restarting the mod.
+local function isClassObject(o)
+    local ok, full = pcall(function() return o:GetFullName() end)
+    return ok and full and (full:find("^Class ") or full:find("^BlueprintGeneratedClass ")) ~= nil
+end
+
+local function paramList(fn)
+    local parts = {}
+    pcall(function()
+        fn:ForEachProperty(function(p)
+            local name = p:GetFName():ToString()
+            -- a Blueprint function's own temporaries (CallFunc_..., K2Node_...) are properties of it too; they are not parameters
+            if name:find("^CallFunc_") or name:find("^K2Node_") or name:find("^Temp_") or name:find("^NewLocalVar") then return end
+            local t = "?"
+            pcall(function() t = (p:GetClass():GetFName():ToString():gsub("Property$", "")) end)
+            parts[#parts + 1] = t .. " " .. name
+        end)
+    end)
+    return table.concat(parts, ", ")
+end
+
+function commands.funcs(args)
+    local a = splitArgs(args, 2)
+    local o, err = resolve(a[1])
+    if not o then error(err) end
+    local flt = (a[2] or ""):lower()
+    local out, seen, depth = {}, {}, 0
+    local cls = isClassObject(o) and o or o:GetClass()
+    while cls and cls:IsValid() and depth < 14 and #out < 200 do
+        depth = depth + 1
+        local cn = cls:GetFName():ToString()
+        pcall(function()
+            cls:ForEachFunction(function(fn)
+                local nm = fn:GetFName():ToString()
+                if not seen[nm] and #out < 200 and (flt == "" or nm:lower():find(flt, 1, true)) then
+                    seen[nm] = true
+                    out[#out + 1] = cn .. ":" .. nm .. "(" .. paramList(fn) .. ")"
+                end
+            end)
+        end)
+        local ok, s = pcall(function() return cls:GetSuperStruct() end)
+        if ok and s and s:IsValid() then cls = s else cls = nil end
+    end
+    return #out .. " function(s)" .. (#out > 0 and ("\n" .. table.concat(out, "\n")) or "")
+end
+
+local function parseArg(tok)
+    if tok == "true" then return true elseif tok == "false" then return false end
+    local n = tonumber(tok)
+    if n then return n end
+    local path = tok:match("^@(.+)$")
+    if path then
+        local o = StaticFindObject(path)
+        if not (o and o:IsValid()) then error("no object at " .. path) end
+        return o
+    end
+    local nm = tok:match("^n:(.+)$")
+    if nm then return FName(nm) end
+    return tok
+end
+
+function commands.call(args)
+    local a = splitArgs(args, 3)
+    local o, err = resolve(a[1])
+    if not o then error(err) end
+    local name = a[2]
+    if not name or name == "" then error("usage: call <object|Class> <Function> [args]") end
+    local params = {}
+    for tok in (a[3] or ""):gmatch("%S+") do params[#params + 1] = parseArg(tok) end
+    local res = table.pack(o[name](o, table.unpack(params, 1, #params)))
+    local out = {}
+    for i = 1, res.n do out[i] = fmt(res[i]) end
+    return #out == 0 and "(called; no result)" or table.concat(out, "\t")
+end
+
+local traces = {}     -- function path -> { ids, count, limit }
+
+local function functionPath(spec)
+    if spec:find("^/") then return spec end
+    local cls, fn = spec:match("^([^:]+):(.+)$")
+    if not cls then error("usage: trace <Class:Function | /full/path:Function> [on|off|list] [max]") end
+    local o = FindFirstOf(cls)
+    if not (o and o:IsValid()) then error("no live instance of class " .. cls) end
+    local c, depth = o:GetClass(), 0
+    while c and c:IsValid() and depth < 14 do
+        depth = depth + 1
+        local full = c:GetFullName():match("^%S+%s+(.+)$")
+        if full then
+            local f = StaticFindObject(full .. ":" .. fn)
+            if f and f:IsValid() then return full .. ":" .. fn end
+        end
+        local ok, s = pcall(function() return c:GetSuperStruct() end)
+        if ok and s and s:IsValid() then c = s else c = nil end
+    end
+    error("no function " .. fn .. " on " .. cls .. " or its parents")
+end
+
+function commands.trace(args)
+    local a = splitArgs(args, 3)
+    local spec = a[1] or ""
+    if spec == "" or spec == "list" then
+        local lines = {}
+        for path, t in pairs(traces) do lines[#lines + 1] = path .. "  (" .. t.count .. " calls)" end
+        return #lines == 0 and "no traces" or table.concat(lines, "\n")
+    end
+    local path = functionPath(spec)
+    local mode = (a[2] or "on"):match("^(%S+)") or "on"
+    if mode == "off" then
+        local t = traces[path]
+        if not t then return "not tracing " .. path end
+        pcall(UnregisterHook, path, t.pre, t.post)
+        traces[path] = nil
+        return "stopped tracing " .. path .. " after " .. t.count .. " calls"
+    end
+    if traces[path] then return "already tracing " .. path end
+    local limit = tonumber((a[3] or ""):match("%d+")) or 300
+    local short = path:match("[^:]+$")
+    local t = { count = 0 }
+    -- logged from the post-hook, so the line also carries the function's result (the last value, when the function returns one)
+    local ok, pre, post = trackedHook(path, function() end, function(self, ...)
+        if not alive() then return end
+        t.count = t.count + 1
+        if t.count > limit then return end
+        local parts = { "self=" .. who(self) }
+        for i = 1, select("#", ...) do
+            local p = select(i, ...)
+            local good, v = pcall(function()
+                if type(p) == "userdata" and p.get then
+                    local o = p:get()
+                    if type(o) == "userdata" and o.GetFName and o.IsValid and o:IsValid() then return who(o) end
+                    return fmt(o)
+                end
+                return fmt(p)
+            end)
+            parts[#parts + 1] = "p" .. i .. "=" .. (good and v or "?")
+        end
+        logLine("CALL    " .. short .. "(" .. table.concat(parts, ", ") .. ")")
+        if t.count == limit then logLine("CALL    " .. short .. ": " .. limit .. " lines written; further calls are only counted (trace ... off to stop)") end
+    end)
+    if not ok then error("could not hook " .. path .. ": " .. tostring(pre)) end
+    t.pre, t.post = pre, post
+    traces[path] = t
+    return "tracing " .. path .. "; the first " .. limit .. " calls go to " .. COMBAT_LOG
+end
+
+function commands.reload(args)
+    local path = args:match("^%s*(.-)%s*$")
+    if path == "" then path = SCRIPT end
+    if not path then error("do not know where this script lives; pass a file") end
+    local f = io.open(path, "rb")
+    if not f then error("cannot read " .. path) end
+    local src = f:read("*a")
+    f:close()
+    local chunk, err = load(src, "@" .. path, "t", _ENV or _G)
+    if not chunk then error("not reloaded, syntax error: " .. tostring(err)) end          -- the running version stays
+    local newVersion = src:match('local VERSION = "([^"]+)"') or "?"
+    local oldGen = GEN
+    -- run it after this request has been answered
+    ExecuteWithDelay(300, function()
+        ExecuteInGameThread(function()
+            local ok, e = pcall(chunk)
+            if not ok then
+                _G.ZC_GEN = oldGen          -- the new generation failed half way: the running one carries on
+                print("[ZcDebug] reload failed: " .. tostring(e) .. "\n")
+            end
+        end)
+    end)
+    return "reloading " .. VERSION .. " -> " .. newVersion
+end
+
 -- ---- loop --------------------------------------------------------------------------------
 local function handle(id, command, args)
     local fn = commands[command]
@@ -448,7 +824,14 @@ local function tick()
     return false
 end
 
+-- a request left in the file by an earlier run (or an earlier generation) is not run again when this script starts
+do
+    local text = readAll(REQUEST)
+    if text then lastId = text:match("^([^\t\r\n]*)") end
+end
+
 LoopAsync(200, function()
+    if not alive() then return true end
     local ok, err = pcall(tick)
     if not ok then print("[ZcDebug] " .. tostring(err) .. "\n"); busy = false end
     return false

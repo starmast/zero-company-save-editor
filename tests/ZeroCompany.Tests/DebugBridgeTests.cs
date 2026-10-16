@@ -143,14 +143,180 @@ public class DebugBridgeTests : IDisposable
     }
 
     [Fact]
-    public void Fix_never_builds_a_command_from_a_path_with_shell_characters()
+    public void The_combat_log_is_read_from_its_file_and_switching_it_on_needs_no_write_flag()
     {
-        var project = Path.Combine(_dir, "Zero & del *", "SWZeroCompany");
+        var b = new Bridge(_dir);
+        var err = new StringWriter();
+        Assert.Equal(1, CombatLog.Show(_dir, "show", new StringWriter(), err));                      // nothing logged yet
+        Assert.Contains("zcdebug log on", err.ToString());
+
+        File.WriteAllLines(CombatLog.PathIn(_dir), Enumerable.Range(1, 100).Select(i => $"12:00:{i % 60:00}  Char_Enemy_X  hp 66->{i}"));
+        var sw = new StringWriter();
+        Assert.Equal(0, CombatLog.Show(_dir, "show 3", sw, new StringWriter()));
+        Assert.Equal(new[] { "12:00:38  Char_Enemy_X  hp 66->98", "12:00:39  Char_Enemy_X  hp 66->99", "12:00:40  Char_Enemy_X  hp 66->100" },
+                     sw.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        var all = new StringWriter();
+        CombatLog.Show(_dir, "show", all, new StringWriter());
+        Assert.Equal(60, all.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);   // the default
+
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.2\n");
+        using var mod = new FakeMod(b, (_, _) => (true, "combat log on"));
+        Assert.Equal(0, Session.Run(b, "log", "on", write: false, TimeSpan.FromSeconds(3), new StringWriter()));   // it only watches
+        Assert.Equal(new[] { "log on" }, mod.Seen);
+    }
+
+    [Fact]
+    public void Api_search_finds_declarations_in_the_dumped_headers_and_ignores_other_lines()
+    {
+        var hdr = Path.Combine(_dir, "CXXHeaderDump");
+        Directory.CreateDirectory(hdr);
+        File.WriteAllText(Path.Combine(hdr, "BitReactorGame.hpp"),
+            "class UBitReactorToHitCalculation : public UObject\n{\n" +
+            "    float GetChanceToHit(class AActor* Source, class AActor* Target);\n" +
+            "    float ChanceToHitValue;                       // a property, not a function\n" +
+            "    // GetChanceToHit mentioned in a comment\n}; // Size: 0x40\n" +
+            "struct FUnitDamagedEventData\n{\n    int32 DamageReceived;\n};\n");
+        var sw = new StringWriter();
+        Assert.Equal(0, Investigate.Api(hdr, "chancetohit", 10, sw));
+        var lines = sw.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Single(lines);                                                     // the function line only: not the property, not the comment
+        Assert.Contains("BitReactorGame.hpp:3  float GetChanceToHit(", lines[0]);
+
+        sw = new StringWriter();
+        Assert.Equal(0, Investigate.Api(hdr, "FUnitDamaged", 10, sw));
+        Assert.Contains("BitReactorGame.hpp:7  struct FUnitDamagedEventData", sw.ToString());
+        Assert.Equal(1, Investigate.Api(hdr, "nothing like this", 10, new StringWriter()));
+        Assert.Throws<CliException>(() => Investigate.Api(hdr, "  ", 10, new StringWriter()));
+
+        sw = new StringWriter();
+        File.AppendAllText(Path.Combine(hdr, "BitReactorGame.hpp"), "struct FOne {};\nstruct FTwo {};\nstruct FThree {};\n");
+        Investigate.Api(hdr, "struct F", 2, sw);
+        Assert.Contains("stopped at 2 matches", sw.ToString());
+    }
+
+    [Fact]
+    public void Shot_asks_the_game_for_a_screenshot_and_returns_the_new_file()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.6\n");
+        var shots = Path.Combine(_dir, "Screenshots");
+        Directory.CreateDirectory(shots);
+        File.WriteAllText(Path.Combine(shots, "ScreenShot00000.png"), "old");                  // an earlier shot is not the answer
+        using var mod = new FakeMod(b, (cmd, args) =>
+        {
+            if (cmd == "exec" && args == "Shot showui") File.WriteAllText(Path.Combine(shots, "ScreenShot00001.png"), "new");
+            return (true, "sent: " + args);
+        });
+        var sw = new StringWriter();
+        Assert.Equal(0, Investigate.Shot(b, null, TimeSpan.FromSeconds(3), sw, shots, TimeSpan.FromSeconds(5)));
+        Assert.Equal(Path.Combine(shots, "ScreenShot00001.png"), sw.ToString().Trim());
+        Assert.Equal(new[] { "exec Shot showui" }, mod.Seen);
+
+        var copy = Path.Combine(_dir, "copy.png");
+        File.Delete(Path.Combine(shots, "ScreenShot00001.png"));
+        sw = new StringWriter();
+        Assert.Equal(0, Investigate.Shot(b, copy, TimeSpan.FromSeconds(3), sw, shots, TimeSpan.FromSeconds(5)));
+        Assert.Equal("new", File.ReadAllText(copy));
+    }
+
+    [Fact]
+    public void Shot_says_so_when_no_screenshot_appears()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.6\n");
+        using var mod = new FakeMod(b, (_, args) => (true, "sent: " + args));
+        var sw = new StringWriter();
+        Assert.Equal(1, Investigate.Shot(b, null, TimeSpan.FromSeconds(3), sw, Path.Combine(_dir, "empty"), TimeSpan.FromMilliseconds(700)));
+        Assert.Contains("no screenshot appeared", sw.ToString());
+    }
+
+    [Fact]
+    public void Reload_needs_write_waits_for_the_new_version_and_reports_one_that_never_comes()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.5\n");
+        Assert.Contains("--write", Assert.Throws<CliException>(() => Investigate.Reload(b, null, null, write: false, TimeSpan.FromSeconds(1), new StringWriter())).Message);
+
+        bool reloaded = false;
+        using (var mod = new FakeMod(b, (cmd, _) => cmd switch
+        {
+            "reload" => (true, "reloading 0.5 -> 0.6"),
+            "ping" => (true, "pong 1 zcdebug-mod " + (reloaded ? "0.6" : "0.5")),
+            _ => (false, "nope"),
+        }))
+        {
+            var sw = new StringWriter();
+            _ = Task.Run(() => { Thread.Sleep(700); reloaded = true; });                       // the new script takes a moment to start
+            Assert.Equal(0, Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), sw, TimeSpan.FromSeconds(8)));
+            Assert.Contains("now running 0.6", sw.ToString());
+        }
+
+        using var stuck = new FakeMod(b, (cmd, _) => cmd == "reload" ? (true, "reloading 0.5 -> 0.7") : (true, "pong 1 zcdebug-mod 0.5"));
+        var sw2 = new StringWriter();
+        Assert.Equal(1, Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), sw2, TimeSpan.FromMilliseconds(900)));
+        Assert.Contains("did not answer as 0.7", sw2.ToString());
+
+        using var broken = new FakeMod(b, (_, _) => (false, "not reloaded, syntax error: x"));
+        Assert.Equal(1, Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), new StringWriter()));
+    }
+
+    [Fact]
+    public void The_investigation_commands_are_read_only_or_need_write_as_they_should()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.6\n");
+        using var mod = new FakeMod(b, (_, _) => (true, "ok"));
+        Assert.Equal(0, Session.Run(b, "funcs", "Pawn move", write: false, TimeSpan.FromSeconds(3), new StringWriter()));   // listing functions changes nothing
+        foreach (var cmd in new[] { "call", "trace", "reload" })
+            Assert.Contains("--write", Assert.Throws<CliException>(() => Session.Run(b, cmd, "Pawn Fn", write: false, TimeSpan.FromSeconds(1))).Message);
+        Assert.Equal(new[] { "funcs Pawn move" }, mod.Seen);
+    }
+
+    sealed class FakeHost : IFixHost
+    {
+        public HashSet<string> Dirs = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Unwritable = new(StringComparer.OrdinalIgnoreCase);     // folders the user may not create things in
+        public List<string> Elevated = new();
+        public bool ElevatedWorks = true;
+        public string UserName => @"PC\me";
+        public bool DirExists(string p) => Dirs.Contains(p);
+        public bool TryCreateDir(string p) { if (Unwritable.Contains(Path.GetDirectoryName(p)!)) return false; Dirs.Add(p); return true; }
+        public bool CanWriteIn(string d) => !Unwritable.Contains(d);
+        public bool RunElevated(string c)
+        {
+            Elevated.Add(c);
+            if (!ElevatedWorks) return false;
+            if (c.StartsWith("mkdir \"")) Dirs.Add(c["mkdir \"".Length..^1]);
+            if (c.StartsWith("icacls ")) Unwritable.Clear();
+            return true;
+        }
+    }
+
+    [Fact]
+    public void Fix_creates_what_it_can_and_names_the_one_command_for_the_rest()
+    {
+        var project = Path.Combine(_dir, "Zero", "SWZeroCompany");
         var bin = Path.Combine(project, "Binaries", "Win64");
+        var ue4ss = Path.Combine(bin, "ue4ss");
+        var paks = Path.Combine(project, "Content", "Paks");
+        var logic = Path.Combine(paks, "LogicMods");
+        Assert.Equal(logic, Fix.LogicModsDir(bin));
+
         var host = new FakeHost();
-        host.Dirs.Add(Path.Combine(bin, "ue4ss", "Mods"));
-        host.Unwritable.Add(Path.Combine(project, "Content", "Paks"));
-        Assert.Empty(Fix.Find(bin, host, new StringWriter()));              // nothing is offered for a path it cannot quote safely
+        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
+        var sw = new StringWriter();
+        Assert.Empty(Fix.Find(bin, host, sw));                              // the user may create LogicMods, so it just does
+        Assert.Contains(logic, host.Dirs);
+        Assert.Contains("created", sw.ToString());
+
+        host = new FakeHost();                                              // Program Files: Paks refuses, and the Mods folder is read-only too
+        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
+        host.Unwritable.Add(paks);
+        host.Unwritable.Add(Path.Combine(ue4ss, "Mods"));
+        var problems = Fix.Find(bin, host, new StringWriter());
+        Assert.Equal(2, problems.Count);
+        Assert.Contains(problems, p => p.AdminCommand == $"mkdir \"{logic}\"");
+        Assert.Contains(problems, p => p.AdminCommand == $"icacls \"{ue4ss}\" /grant \"PC\\me:(OI)(CI)M\" /T /C /Q");
     }
 
     [Fact]
@@ -185,50 +351,14 @@ public class DebugBridgeTests : IDisposable
     }
 
     [Fact]
-    public void Fix_creates_what_it_can_and_names_the_one_command_for_the_rest()
+    public void Fix_never_builds_a_command_from_a_path_with_shell_characters()
     {
-        var project = Path.Combine(_dir, "Zero", "SWZeroCompany");
+        var project = Path.Combine(_dir, "Zero & del *", "SWZeroCompany");
         var bin = Path.Combine(project, "Binaries", "Win64");
-        var ue4ss = Path.Combine(bin, "ue4ss");
-        var paks = Path.Combine(project, "Content", "Paks");
-        var logic = Path.Combine(paks, "LogicMods");
-        Assert.Equal(logic, Fix.LogicModsDir(bin));
-
         var host = new FakeHost();
-        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
-        var sw = new StringWriter();
-        Assert.Empty(Fix.Find(bin, host, sw));                              // the user may create LogicMods, so it just does
-        Assert.Contains(logic, host.Dirs);
-        Assert.Contains("created", sw.ToString());
-
-        host = new FakeHost();                                              // Program Files: Paks refuses, and the Mods folder is read-only too
-        host.Dirs.Add(Path.Combine(ue4ss, "Mods"));
-        host.Unwritable.Add(paks);
-        host.Unwritable.Add(Path.Combine(ue4ss, "Mods"));
-        var problems = Fix.Find(bin, host, new StringWriter());
-        Assert.Equal(2, problems.Count);
-        Assert.Contains(problems, p => p.AdminCommand == $"mkdir \"{logic}\"");
-        Assert.Contains(problems, p => p.AdminCommand == $"icacls \"{ue4ss}\" /grant \"PC\\me:(OI)(CI)M\" /T /C /Q");
-    }
-
-    sealed class FakeHost : IFixHost
-    {
-        public HashSet<string> Dirs = new(StringComparer.OrdinalIgnoreCase);
-        public HashSet<string> Unwritable = new(StringComparer.OrdinalIgnoreCase);     // folders the user may not create things in
-        public List<string> Elevated = new();
-        public bool ElevatedWorks = true;
-        public string UserName => @"PC\me";
-        public bool DirExists(string p) => Dirs.Contains(p);
-        public bool TryCreateDir(string p) { if (Unwritable.Contains(Path.GetDirectoryName(p)!)) return false; Dirs.Add(p); return true; }
-        public bool CanWriteIn(string d) => !Unwritable.Contains(d);
-        public bool RunElevated(string c)
-        {
-            Elevated.Add(c);
-            if (!ElevatedWorks) return false;
-            if (c.StartsWith("mkdir \"")) Dirs.Add(c["mkdir \"".Length..^1]);
-            if (c.StartsWith("icacls ")) Unwritable.Clear();
-            return true;
-        }
+        host.Dirs.Add(Path.Combine(bin, "ue4ss", "Mods"));
+        host.Unwritable.Add(Path.Combine(project, "Content", "Paks"));
+        Assert.Empty(Fix.Find(bin, host, new StringWriter()));              // nothing is offered for a path it cannot quote safely
     }
 
     [Fact]
