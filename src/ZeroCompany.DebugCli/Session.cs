@@ -6,8 +6,8 @@ namespace ZeroCompany.DebugCli;
 public static class Session
 {
     /// <summary>Commands that read only. Everything else changes the game and needs --write.</summary>
-    public static readonly IReadOnlySet<string> ReadOnly = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects" };
-    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "set", "attr", "fx", "load", "exec", "eval" };
+    public static readonly IReadOnlySet<string> ReadOnly = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus" };
+    static readonly IReadOnlySet<string> All = new HashSet<string> { "ping", "find", "props", "get", "dump", "effects", "loadstatus", "set", "attr", "fx", "load", "exec", "eval" };
 
     public static int Status(Bridge b)
     {
@@ -25,13 +25,14 @@ public static class Session
     }
 
     /// <summary>Run one command; prints the answer, returns the process exit code.</summary>
-    public static int Run(Bridge b, string command, string args, bool write, TimeSpan timeout, TextWriter? output = null, TextWriter? error = null)
+    public static int Run(Bridge b, string command, string args, bool write, TimeSpan timeout, TextWriter? output = null, TextWriter? error = null,
+                          TimeSpan? waitForLoad = null)
     {
         output ??= Console.Out; error ??= Console.Error;
         if (!All.Contains(command)) throw new CliException($"unknown command '{command}' (zcdebug --help)");
         if (!ReadOnly.Contains(command) && !write)
             throw new CliException($"'{command}' changes the running game; add --write if you mean it");
-        if (args.Trim().Length == 0 && command is not ("ping"))
+        if (args.Trim().Length == 0 && command is not ("ping" or "loadstatus"))
             throw new CliException($"'{command}' needs an argument (zcdebug --help)");
         if (!b.Connected(TimeSpan.FromSeconds(10)))
             throw new CliException("the mod is not answering (no recent heartbeat). Run `zcdebug status`.");
@@ -39,9 +40,40 @@ public static class Session
         {
             var r = b.Send(command, args, timeout);
             (r.Ok ? output : error).WriteLine(r.Ok ? r.Text : "error: " + r.Text);
+            if (r.Ok && command == "load" && waitForLoad is { } max && r.Text.StartsWith("loading", StringComparison.Ordinal))
+                return WaitForLoad(b, output, error, max);
             return r.Ok ? 0 : 1;
         }
         catch (TimeoutException e) { throw new CliException(e.Message + ". The game may be paused, loading or busy."); }
+    }
+
+    /// <summary>
+    /// Poll the mod's <c>loadstatus</c> until the loaded level is up. While the game loads it does not answer, so timeouts and
+    /// errors only mean "not yet". Two "ready" answers in a row are needed, so a level that is still being built is not taken
+    /// for a finished one. Returns 0 when ready, 3 if the time ran out. <paramref name="pause"/> is how long to wait between polls.
+    /// </summary>
+    public static int WaitForLoad(Bridge b, TextWriter output, TextWriter error, TimeSpan max, TimeSpan? pause = null)
+    {
+        var gap = pause ?? TimeSpan.FromSeconds(2);
+        var until = DateTime.UtcNow + max;
+        string last = "";
+        int ready = 0;
+        while (DateTime.UtcNow < until)
+        {
+            Thread.Sleep(gap);
+            string text;
+            try
+            {
+                var r = b.Send("loadstatus", "", TimeSpan.FromSeconds(3));
+                text = r.Ok ? r.Text : "error: " + r.Text;
+            }
+            catch (TimeoutException) { text = "loading: the game is busy"; }
+            ready = text.StartsWith("ready", StringComparison.Ordinal) ? ready + 1 : 0;
+            if (ready >= 2) { output.WriteLine("load finished (" + text + ")"); return 0; }
+            if (text != last && ready == 0) { output.WriteLine("  " + text); last = text; }
+        }
+        error.WriteLine($"the load did not finish within {max.TotalSeconds:0}s (last: {last}). Look at the game before sending anything else.");
+        return 3;
     }
 
     public static int Repl(Bridge b, bool write, TimeSpan timeout)

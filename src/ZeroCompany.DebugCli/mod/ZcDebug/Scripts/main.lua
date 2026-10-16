@@ -356,6 +356,13 @@ end
 -- load <save name>: ask the game to load a save by file name (without .sav). The game only accepts names it listed when it
 -- started: a file added while it runs is refused, but a known file whose contents were overwritten on disk loads the new data.
 local lastLoad = 0
+local loadMarker = 0   -- address of the tactical game state when the last load started: a finished load has a different one
+
+local function tacticalState()
+    local g = FindFirstOf("BP_BrunoTacticalGameState_C")
+    if g and g:IsValid() then return g end
+end
+
 function commands.load(args)
     local name = args:match("^%s*(.-)%s*$"):gsub("%.sav$", "")
     if name == "" then error("usage: load <save file name>") end
@@ -364,8 +371,33 @@ function commands.load(args)
     if wait > 0 then error("a load was started " .. (30 - wait) .. "s ago; wait " .. wait .. "s so the game can finish it") end
     local subsystem = FindFirstOf("BrunoSaveGameSubsystem")
     if not (subsystem and subsystem:IsValid()) then error("the game's save subsystem was not found") end
-    if subsystem:LoadFile(name) then lastLoad = os.time(); return "loading " .. name end
+    local before = tacticalState()
+    if subsystem:LoadFile(name) then
+        lastLoad = os.time()
+        loadMarker = before and before:GetAddress() or 0
+        return "loading " .. name
+    end
     return "refused: the game does not know a save called '" .. name .. "' (names are listed once, at start-up; overwrite a known file instead)"
+end
+
+-- loadstatus: "ready ..." once the level of the last load is up (a new tactical game state that can be read, with heroes in
+-- the level); otherwise "loading ..." with what is still missing. Reads only; zcdebug load polls it.
+function commands.loadstatus()
+    if lastLoad == 0 then return "none: no load was started since the mod started" end
+    local g = tacticalState()
+    if not g then return "loading: no tactical game state yet" end
+    if g:GetAddress() == loadMarker then return "loading: the previous level is still there" end
+    local ok, round = pcall(function() return g.CurrentRound end)
+    if not ok or math.type(round) ~= "integer" then return "loading: the game state cannot be read yet" end
+    local heroes = 0
+    for _, c in ipairs(FindAllOf("Character") or {}) do
+        if c:IsValid() then
+            local full = c:GetFullName()
+            if full:find("PersistentLevel.Char_Hero_", 1, true) then heroes = heroes + 1 end
+        end
+    end
+    if heroes == 0 then return "loading: no heroes in the level yet" end
+    return "ready: round " .. round .. ", " .. heroes .. " hero(es) in the level"
 end
 
 function commands.exec(args)

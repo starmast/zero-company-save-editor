@@ -124,6 +124,36 @@ public class DebugBridgeTests : IDisposable
     }
 
     [Fact]
+    public void Load_waits_until_the_level_reports_ready_twice_in_a_row()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.1\n");
+        int polls = 0;
+        using var mod = new FakeMod(b, (cmd, _) =>
+        {
+            if (cmd == "load") return (true, "loading Slot");
+            polls++;
+            return (true, polls switch { 1 => "loading: the previous level is still there", 2 => "ready: round 1, 4 hero(es) in the level",
+                                         3 => "loading: no heroes in the level yet", _ => "ready: round 3, 4 hero(es) in the level" });
+        });
+        var sw = new StringWriter();
+        Assert.Equal(0, Session.WaitForLoad(b, sw, new StringWriter(), TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(50)));
+        Assert.Equal(5, polls);                                  // one ready in the middle did not end the wait
+        Assert.Contains("load finished (ready: round 3", sw.ToString());
+    }
+
+    [Fact]
+    public void A_load_that_never_finishes_gives_up_with_a_message()
+    {
+        var b = new Bridge(_dir);
+        File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod 0.1\n");
+        using var mod = new FakeMod(b, (_, _) => (true, "loading: no tactical game state yet"));
+        var err = new StringWriter();
+        Assert.Equal(3, Session.WaitForLoad(b, new StringWriter(), err, TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(50)));
+        Assert.Contains("did not finish", err.ToString());
+    }
+
+    [Fact]
     public void A_mod_error_comes_back_as_a_failed_run()
     {
         var b = new Bridge(_dir);

@@ -252,4 +252,14 @@ repairing the game (the EA app may repair modified files) can undo the install.
 renaming `dwmapi.dll` back out of the way fixed it. A later install loaded and ran mods fine on the same build, so it is not a
 permanent problem, but which UE4SS build works is not recorded here. The game folder is under `Program Files`, so `zcdebug install`
 needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
+
+**After a game update.** The "SWZC" signature pack for UE4SS (`ue4ss/UE4SS_Signatures/*.lua` in the game folder) only accepts game builds it lists
+by exe length, PE timestamp, image size and CodeView GUID. A new build makes UE4SS stop at start-up with `loaded fallback has no verified build
+profile; signature rejected` in `UE4SS.log`, and ZcDebug never starts. The game's code is packed on disk, so the patterns can only be checked
+against the running game. When the pack's author has not yet shipped the new build, the one thing that stopped build 199049 (game 1.2) was the
+`builds` table at the top of each of the four scripts (FName_Constructor, GUObjectArray, ProcessLocalScriptFunction, StaticConstructObject): the
+byte patterns still matched, and adding one table entry for the new exe, with the values read from its PE header, made UE4SS load and every
+`zcdebug` command work. This is the pack's own safety check being extended by hand, not something the pack's author tested. Keep a copy of the
+original scripts, try it on a save you can lose, and prefer the author's own pack as soon as there is one. If a script then reports `no validated
+loaded function entry`, the function itself changed and needs a new pattern.
 Like `zc`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).

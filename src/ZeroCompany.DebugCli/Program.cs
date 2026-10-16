@@ -17,7 +17,9 @@ const string Usage = """
       zcdebug effects <unit>                  the unit's active gameplay effects (Burning, Spotted ...)
       zcdebug fx <unit> add|remove <Name> [n] --write  add (n stacks) or remove a status effect
       zcdebug saves [filter] [--all] [--saves DIR]  the save folders: file names (as load wants them), in-game names, and which the game lists
-      zcdebug load <save name> --write      load a save by file name, no .sav (the game must already list it; see docs)
+      zcdebug load <save name> --write      load a save by file name, no .sav (the game must already list it; see docs); waits until the level
+                                            is up (--no-wait returns at once, --load-wait SECONDS gives up after that long, default 180)
+      zcdebug loadstatus                    whether the level of the last load is up
       zcdebug exec <console command> --write  run an Unreal console command
       zcdebug eval <lua> --write              run Lua inside the game (UE4SS API: FindAllOf, StaticFindObject ...)
       zcdebug repl [--write]                  the same commands interactively
@@ -48,6 +50,12 @@ return CliApp.Run("zcdebug", Usage, args, a =>
                 : Saves.List(a.Workspace, filter, all, Saves.GameStart(), Console.Out);
         }
         case "repl": return Session.Repl(new Bridge(), write, timeout);
-        default: return Session.Run(new Bridge(), cmd, string.Join(' ', a.TakeAll()), write, timeout);
+        default:
+        {
+            // `load` returns once the level is up (give up after --load-wait seconds, default 180); --no-wait returns at once
+            var noWait = a.Flag("--no-wait");
+            var loadWait = TimeSpan.FromSeconds(double.TryParse(a.Opt("--load-wait"), out var lw) ? lw : 180);
+            return Session.Run(new Bridge(), cmd, string.Join(' ', a.TakeAll()), write, timeout, waitForLoad: noWait ? null : loadWait);
+        }
     }
 });
