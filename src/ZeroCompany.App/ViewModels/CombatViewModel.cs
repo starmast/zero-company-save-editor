@@ -29,7 +29,7 @@ public sealed class CombatViewModel : ScreenViewModel
             .GroupBy(x => x.e.Def).Select(g => g.First())
             .OrderBy(x => x.e.Title, StringComparer.Ordinal)
             .Select(x => new EffectChoice($"{x.e.Title} (on {x.u.Name})", x.u.Index, x.e.Index)).ToList();
-        foreach (var u in _combat.Units) _cards.Add(Own(new UnitCardViewModel(_pending, fields, _combat, u, choices)));
+        foreach (var u in _combat.Units) _cards.Add(Own(new UnitCardViewModel(_pending, fields, _combat, u, choices, StatVisibility)));
         foreach (var o in _combat.Objectives) Objectives.Add(Own(new ObjectiveRowViewModel(_pending, fields, o)));
         foreach (var t in _combat.Timers) Timers.Add(new TimerRowViewModel(fields, t));
         if (_combat.SpawnSet != null) SpawnSet = Own(new SpawnSetPicker(_pending, _combat.SpawnSet));
@@ -61,6 +61,9 @@ public sealed class CombatViewModel : ScreenViewModel
         });
         Refresh();
     }
+
+    /// <summary>The "show stats the game does not keep" box on the unit tabs; every unit card follows it.</summary>
+    public StatVisibility StatVisibility { get; } = new();
 
     public bool HasCombat => _combat != null;
     public bool NoCombat => _combat == null;

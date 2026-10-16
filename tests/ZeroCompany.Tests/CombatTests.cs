@@ -71,7 +71,7 @@ public class CombatTests : IDisposable
         var res = svc.Apply(new[]
         {
             new FieldChange(e.Attr("Health")!.Id, 1),
-            new FieldChange(e.Attr("ActionPoints")!.Id, 7),
+            new FieldChange(e.Attr("ActionPoints")!.Id, 2),
             new FieldChange(e.Advantage!.Id, 4),
             new FieldChange(e.X!.Id, e.X.Value + 150.5),
             new FieldChange(e.Z!.Id, e.Z.Value - 20),
@@ -81,7 +81,7 @@ public class CombatTests : IDisposable
         var e2 = Enemy(svc.Current!.Combat!);
         Assert.Equal(1, e2.Attr("Health")!.Value);
         Assert.Equal(62, e2.Attr("MaxHealth")!.Value);
-        Assert.Equal(7, e2.Attr("ActionPoints")!.Value);
+        Assert.Equal(2, e2.Attr("ActionPoints")!.Value);
         Assert.Equal(4, e2.Advantage!.Value);
         Assert.Equal(e.X.Value + 150.5, e2.X!.Value, 6);
         Assert.Equal(e.Y!.Value, e2.Y!.Value);

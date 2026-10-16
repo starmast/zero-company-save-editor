@@ -36,6 +36,8 @@
           <Button Content="Heal allies to full" Command="{Binding SquadHeal}" IsVisible="{Binding ShowAllyActions}" />
           <Button Content="Enemies to 1 HP" Command="{Binding EnemiesTo1Hp}" IsVisible="{Binding ShowEnemyActions}" />
           <Button Content="Restore scenery" Command="{Binding RestoreScenery}" IsVisible="{Binding ShowDestructibles}" />
+          <CheckBox Content="Show stats with no lasting effect" IsChecked="{Binding StatVisibility.ShowAll, Mode=TwoWay}" IsVisible="{Binding ShowUnits}"
+                    ToolTip.Tip="Some stats are put back by the game when it loads the save, rebuilt from the unit's gear, or changed nothing a shot showed, so an edit does nothing lasting. They are hidden unless you tick this." />
         </StackPanel>
       </Grid>
 

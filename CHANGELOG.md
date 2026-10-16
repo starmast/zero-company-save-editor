@@ -19,7 +19,24 @@ All notable changes to this project are documented here. The format follows
   a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. How a change affects
   waves is not tried in the game yet.
 
+- Developer notes on getting `zcdebug` running again after a game update (the UE4SS signature pack needs the new build listed); checked on game 1.2
+  (build 199049). See [docs/development.md](docs/development.md).
+
+- `zcdebug load` now waits until the loaded level is up and says so (`--no-wait` returns at once; new `zcdebug loadstatus`).
+
+- Combat, All stats: stats with no lasting effect are hidden until a "Show stats with no lasting effect" box is ticked (the header says how many are
+  hidden). Besides the ones the game puts back or rebuilds (below), Accuracy, Aim, Attack and Defense are hidden because changing them did not change the
+  hit chance or damage the game shows for a standard shot. Max accuracy (a cap on hit chance), Accuracy reduction (5 points of hit chance per point),
+  Deflection chance (hit chance x (1 - value)), Damage multiplier, Bonus damage (added before the multiplier), Flat damage reduction, Incoming damage
+  multiplier, Chance to ignore damage, Armor, Shields (a pool that takes damage before health), Defense penetration (cancels armor), grenade Critical
+  chance / damage and Movement per action point were each loaded in the game and changed what it showed or did. Grenade bonus damage and the Burn and
+  Shock chance bonuses changed nothing a grenade throw or rifle shot showed, so they are hidden too. Checked in the game by changing all 616 attributes of the 8 living units in one save, loading it, shooting, and ending the turn: the game
+  puts the Advantage set back on load, rebuilds weapon and grenade stats from the equipped gear for player heroes (on load if the unit had already
+  fired, otherwise when it first acts), and the scratch values do nothing. Action points, class tactic points and special action points are set back
+  at the start of the unit's turn. Everything else (accuracy, defense, armor, shields, health, multipliers ...) was still there after both.
+
 ### Changed
+- Combat: a unit's action points are limited to 0-3. The game caps them at 3 when it loads a save, so a higher number (9 was tried) used to come back as 3.
 - `zcsave` and `zcassets` are now one tool, `zc` (`zc save ...`, `zc assets ...`); the commands and their output are the same. `zcdebug saves` now also
   lists the Wine-prefix and added save folders, and `zcdebug install` finds the game folder the same way the editor does.
 - Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes

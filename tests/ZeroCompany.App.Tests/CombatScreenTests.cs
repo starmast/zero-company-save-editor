@@ -57,6 +57,31 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void Stats_the_game_does_not_keep_are_hidden_until_the_box_is_ticked()
+    {
+        using var rig = OpenCombat();
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Assert.False(vm.StatVisibility.ShowAll);
+        var hero = vm.Units[0];                                    // first tab is Allies
+        var before = hero.Stats.Count;
+        Assert.DoesNotContain(hero.Stats, r => r.Label.Contains("(no lasting effect)"));
+        Assert.DoesNotContain(hero.Stats, r => r.Label.StartsWith("Ranged weapon · Damage"));    // rebuilt from the equipped weapon
+        Assert.Contains("hidden", hero.StatsHeader);
+
+        Headless.Run(() => vm.StatVisibility.ShowAll = true);
+        Assert.True(hero.Stats.Count > before);
+        Assert.Contains(hero.Stats, r => r.Label.StartsWith("Ranged weapon · Damage") && r.Label.EndsWith("(no lasting effect)"));
+        Assert.DoesNotContain("hidden", hero.StatsHeader);
+
+        Headless.Run(() => vm.StatVisibility.ShowAll = false);
+        Assert.Equal(before, hero.Stats.Count);
+
+        // an enemy's weapon stats are not known to be rebuilt, so they stay listed
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "enemies").Command.Execute(null));
+        Assert.Contains(vm.Units[0].Stats, r => r.Label.StartsWith("Ranged weapon · Damage"));
+    }
+
+    [SkippableFact]
     public void The_enemy_threat_setting_says_when_it_cannot_do_anything()
     {
         using var rig = OpenCombat();

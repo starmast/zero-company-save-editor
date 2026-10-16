@@ -32,6 +32,32 @@ public class CombatStatCatalogTests
     }
 
     [Fact]
+    public void Says_which_stats_the_game_keeps_after_loading_the_save()
+    {
+        // put back by the game / scratch values: never kept
+        Assert.Equal(StatKeep.No, CombatStatCatalog.Of("BitReactorAdvantageSet", "Advantage").Keep);
+        Assert.Equal(StatKeep.No, CombatStatCatalog.Of("BitReactorHealthSet", "Damage").Keep);
+        // rebuilt from the equipped weapon for player heroes
+        Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "Damage").Keep);
+        Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorMeleeWeaponSet", "RangeOptimalMax").Keep);
+        Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorGrenadeUserSet", "GrenadeDamage").Keep);
+        // weapon stats that stayed, and everything else
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "FlankDamage").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "StoppingPower").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorCombatSet", "DamageMultiplier").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorCombatSet", "DeflectionChance").Keep);
+        // changed neither the hit chance nor the damage the game shows for a standard shot
+        foreach (var n in new[] { "Accuracy", "Aim", "Attack", "Defense", "BurnApplyChanceBonus", "ShockApplyChanceBonus" })
+            Assert.Equal(StatKeep.No, CombatStatCatalog.Of("BitReactorCombatSet", n).Keep);
+        Assert.Equal(StatKeep.No, CombatStatCatalog.Of("BitReactorGrenadeUserSet", "GrenadeBonusDamage").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorGrenadeUserSet", "CriticalHitChance").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorHealthSet", "ChanceToIgnoreIncomingDamage").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorHealthSet", "MaxHealth").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorSomethingNewSet", "Whatever").Keep);   // unknown stats are shown
+        Assert.Equal(3, CombatStatCatalog.Of("BitReactorCombatSet", "ActionPoints").Max);                // the game caps action points at 3
+    }
+
+    [Fact]
     public void Every_group_a_stat_can_land_in_has_a_place_in_the_order()
     {
         foreach (var set in new[] { "BitReactorHealthSet", "BitReactorCombatSet", "BitReactorAdvantageSet", "BitReactorGrenadeUserSet", "BitReactorRangedWeaponSet", "BitReactorMeleeWeaponSet", "Other" })
