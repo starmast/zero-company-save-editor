@@ -29,7 +29,9 @@ All notable changes to this project are documented here. The format follows
   hit chance or damage the game shows for a standard shot. Max accuracy (a cap on hit chance), Accuracy reduction (5 points of hit chance per point),
   Deflection chance (hit chance x (1 - value)), Damage multiplier, Bonus damage (added before the multiplier), Flat damage reduction, Incoming damage
   multiplier, Chance to ignore damage, Armor, Shields (a pool that takes damage before health), Defense penetration (cancels armor), grenade Critical
-  chance / damage and Movement per action point were each loaded in the game and changed what it showed or did. Grenade bonus damage and the Burn and
+  chance / damage, Max damage per hit (caps each hit), Class tactic points per turn and Movement per action point were each loaded in the game and changed
+  what it showed or did. An enemy's weapon Damage works and stays after it attacks (a Striker with melee damage 60 hit a hero for 57 after armor, an Enforcer with ranged damage 50 hit a hero for 47).
+  Action points, movement points and special points per turn did not change a hero's next turn, so those three are hidden for heroes. Grenade bonus damage and the Burn and
   Shock chance bonuses changed nothing a grenade throw or rifle shot showed, so they are hidden too. Checked in the game by changing all 616 attributes of the 8 living units in one save, loading it, shooting, and ending the turn: the game
   puts the Advantage set back on load, rebuilds weapon and grenade stats from the equipped gear for player heroes (on load if the unit had already
   fired, otherwise when it first acts), and the scratch values do nothing. Action points, class tactic points and special action points are set back

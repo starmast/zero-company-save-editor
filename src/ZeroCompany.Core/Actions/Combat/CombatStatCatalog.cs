@@ -33,7 +33,8 @@ public static class CombatStatCatalog
     const string Kept = "Stays after the unit fires.";
     const string Scratch = "Scratch value the game fills in while it resolves a hit; normally 0, so editing it does nothing useful.";
     const string NoShotEffect = "Changing it did not change the hit chance or damage the game shows for a standard shot.";
-    const string PerTurn ="The game sets it back at the start of the unit's turn, so an edit only lasts for the turn the save was made in.";
+    const string RefreshIgnored = "Changing it did not change what the unit had at the start of its next turn.";
+    const string PerTurn = "The game sets it back at the start of the unit's turn, so an edit only lasts for the turn the save was made in.";
 
     /// <summary>Weapon stats the game rebuilds from the equipped weapon for player heroes (checked live: they went back to the weapon's values).</summary>
     static readonly HashSet<string> WeaponRebuilt = new()
@@ -61,13 +62,13 @@ public static class CombatStatCatalog
 
         [("BitReactorCombatSet", "ActionPoints")] = new(Actions, "Action points", "Spent by attacks and abilities (a standard attack costs 2). The game limits this to 3 when it loads the save, so a higher number comes back as 3. " + PerTurn, 0, 3),
         [("BitReactorCombatSet", "MovementActionPoints")] = new(Actions, "Movement action points", "", 0, 99),
-        [("BitReactorCombatSet", "RefreshActionPoints")] = new(Actions, "Action points per turn", "What the unit gets back at the start of its turn.", 0, 99),
-        [("BitReactorCombatSet", "RefreshMovementActionPoints")] = new(Actions, "Movement points per turn", "", 0, 99),
+        [("BitReactorCombatSet", "RefreshActionPoints")] = new(Actions, "Action points per turn", RefreshIgnored + " Heroes get 3 action points every turn whatever this says.", 0, 99, StatKeep.NotForHeroes),
+        [("BitReactorCombatSet", "RefreshMovementActionPoints")] = new(Actions, "Movement points per turn", RefreshIgnored + " Heroes' movement points did not follow it.", 0, 99, StatKeep.NotForHeroes),
         [("BitReactorCombatSet", "MovementPerAP")] = new(Actions, "Movement per action point", "Distance one point of movement covers, in game units. Raising it widens the movement range (1000 instead of 500 about doubled it).", 0),
         [("BitReactorCombatSet", "ClassTacticPoints")] = new(Actions, "Class tactic points", PerTurn),
-        [("BitReactorCombatSet", "RefreshClassTacticPoints")] = new(Actions, "Class tactic points per turn", ""),
+        [("BitReactorCombatSet", "RefreshClassTacticPoints")] = new(Actions, "Class tactic points per turn", "The class tactic points the unit has at the start of each turn (set to 2, a hero had 2 more points next turn; set to 0, none)."),
         [("BitReactorCombatSet", "SpecialActionPoints")] = new(Actions, "Special action points", PerTurn),
-        [("BitReactorCombatSet", "RefreshSpecialActionPoints")] = new(Actions, "Special points per turn", ""),
+        [("BitReactorCombatSet", "RefreshSpecialActionPoints")] = new(Actions, "Special points per turn", RefreshIgnored + " Heroes' special points stayed at 0.", Keep: StatKeep.NotForHeroes),
         [("BitReactorCombatSet", "AbilityUsesPerCooldown")] = new(Actions, "Ability uses per cooldown", "", 0),
 
         [("BitReactorCombatSet", "Attack")] = new(Offense, "Attack", NoShotEffect, Keep: StatKeep.No),
@@ -80,7 +81,7 @@ public static class CombatStatCatalog
         [("BitReactorCombatSet", "BonusShieldDamage")] = new(Offense, "Bonus shield damage"),
         [("BitReactorCombatSet", "DefensePenetration")] = new(Offense, "Defense penetration", "Cancels the target's armor: 20 against armor 20 turned a shot that did 0 into one that did the full 24."),
         [("BitReactorCombatSet", "CriticalHitCount")] = new(Offense, "Critical hit count", "", 0),
-        [("BitReactorCombatSet", "MaxDamageAllowed")] = new(Offense, "Max damage per hit", "", 0),
+        [("BitReactorCombatSet", "MaxDamageAllowed")] = new(Offense, "Max damage per hit", "Caps what a single hit can do: 10 held a 17-damage shot to 10.", 0),
         [("BitReactorCombatSet", "BonusHealing")] = new(Offense, "Bonus healing"),
         [("BitReactorCombatSet", "OutgoingHealMultiplier")] = new(Offense, "Outgoing heal multiplier", "1 = normal.", 0),
         [("BitReactorCombatSet", "ShockApplyChanceBonus")] = new(Offense, "Shock chance bonus", "A bonus of 100 did not make rifle shots shock their target.", Keep: StatKeep.No),
@@ -113,7 +114,7 @@ public static class CombatStatCatalog
     /// <summary>Names shared by the ranged and melee weapon sets, shown under whichever weapon set holds them.</summary>
     static readonly Dictionary<string, (string Label, string Note, double Min, double Max)> Weapon = new()
     {
-        ["Damage"] = ("Damage", BaseOnly + " A hero's ranged base 12 showed 16 in the game with gear. " + Rebuilt, 0, 1e6),
+        ["Damage"] = ("Damage", BaseOnly + " A hero's ranged base 12 showed 16 in the game with gear. " + Rebuilt + " An enemy keeps it and uses it: a Striker with melee damage 60 hit a hero for 57 (after armor 3), an unedited Striker for 19, and an Enforcer with ranged damage 50 hit a hero for 47. Enemy ranged shots rarely land on heroes who carry Evasion or Difficult Target.", 0, 1e6),
         ["CriticalHitChance"] = ("Critical chance", Chance + " " + BaseOnly + " " + Rebuilt, 0, 1),
         ["CriticalHitDamage"] = ("Critical damage", Rebuilt, 0, 1e6),
         ["Range"] = ("Range", Rebuilt, 0, 1e6),

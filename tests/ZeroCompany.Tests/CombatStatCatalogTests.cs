@@ -41,6 +41,11 @@ public class CombatStatCatalogTests
         Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "Damage").Keep);
         Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorMeleeWeaponSet", "RangeOptimalMax").Keep);
         Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorGrenadeUserSet", "GrenadeDamage").Keep);
+        // refresh values a hero's next turn did not follow
+        foreach (var n in new[] { "RefreshActionPoints", "RefreshMovementActionPoints", "RefreshSpecialActionPoints" })
+            Assert.Equal(StatKeep.NotForHeroes, CombatStatCatalog.Of("BitReactorCombatSet", n).Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorCombatSet", "RefreshClassTacticPoints").Keep);
+        Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorCombatSet", "MaxDamageAllowed").Keep);
         // weapon stats that stayed, and everything else
         Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "FlankDamage").Keep);
         Assert.Equal(StatKeep.Yes, CombatStatCatalog.Of("BitReactorRangedWeaponSet", "StoppingPower").Keep);
