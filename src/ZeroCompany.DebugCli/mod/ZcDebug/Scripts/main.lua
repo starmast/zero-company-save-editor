@@ -377,6 +377,18 @@ end
 -- started: a file added while it runs is refused, but a known file whose contents were overwritten on disk loads the new data.
 local lastLoad = 0
 local loadMarker = 0   -- address of the tactical game state when the last load started: a finished load has a different one
+local loadHub = {}     -- addresses of the Den's heroes when the last load started: a finished hub load has new ones
+
+-- the Den's heroes (the Den is a sublevel of the one persistent world, so the World itself never changes)
+local function hubHeroes()
+    local found = {}
+    for _, c in ipairs(FindAllOf("Character") or {}) do
+        if c:IsValid() and c:GetFullName():find("HUB_Root.HUB_Root:PersistentLevel.Char_Hero_", 1, true) then
+            found[c:GetAddress()] = true
+        end
+    end
+    return found
+end
 
 local function tacticalState()
     local g = FindFirstOf("BP_BrunoTacticalGameState_C")
@@ -395,6 +407,7 @@ function commands.load(args)
     if subsystem:LoadFile(name) then
         lastLoad = os.time()
         loadMarker = before and before:GetAddress() or 0
+        loadHub = hubHeroes()
         return "loading " .. name
     end
     return "refused: the game does not know a save called '" .. name .. "' (names are listed once, at start-up; overwrite a known file instead)"
@@ -405,7 +418,13 @@ end
 function commands.loadstatus()
     if lastLoad == 0 then return "none: no load was started since the mod started" end
     local g = tacticalState()
-    if not g then return "loading: no tactical game state yet" end
+    if not g then
+        -- the Den has no tactical game state: a hub load is up once it has heroes that were not there when the load started
+        local n = 0
+        for addr in pairs(hubHeroes()) do if not loadHub[addr] then n = n + 1 end end
+        if n > 0 then return "ready: the Den, " .. n .. " hero(es) in the level" end
+        return "loading: no tactical game state yet"
+    end
     if g:GetAddress() == loadMarker then return "loading: the previous level is still there" end
     local ok, round = pcall(function() return g.CurrentRound end)
     if not ok or math.type(round) ~= "integer" then return "loading: the game state cannot be read yet" end
