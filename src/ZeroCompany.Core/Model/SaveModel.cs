@@ -139,8 +139,35 @@ public sealed class SaveModel
         FactValues();
         foreach (var (key, fact, label, hi, note) in DenFacts)
             Prog[key] = Add(Facts.GetValueOrDefault(fact), "Progression", "Den", label, lo: 0, hi: hi, note: note);
+        BlackMarketTables();
         Prog["roster_cap"] = Add(Facts.GetValueOrDefault("Facts.Values.MaximumRosterCount"), "Progression", "Roster", "Roster capacity",
                                  lo: 1, hi: 1000, note: "How many operators the roster holds. Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
+    }
+
+    /// <summary>
+    /// The Black Market (the Armory's shop) restocks by rolling a number of items from each quality table (StrategyData.ShopInventories
+    /// [Armory].RestockTables: table tag -> how many). Tier 1, 2 and 3 are Basic, Superior and Exquisite items.
+    /// </summary>
+    void BlackMarketTables()
+    {
+        var g = G;
+        foreach (var shop in g.Child(Sd, "ShopInventories")?.Children ?? new List<GvasNode>())
+        {
+            if (g.Child(shop.Children![0], "TagName") is not { } ft || !g.GetStr(ft).EndsWith(".Armory", StringComparison.Ordinal)) continue;
+            foreach (var e in g.Child(shop.Children[1], "RestockTables")?.Children ?? new List<GvasNode>())
+            {
+                if (g.Child(e.Children![0], "TagName") is not { } t) continue;
+                var tag = g.GetStr(t);                                   // br.ShopTable.Mods.Tier2
+                var parts = tag.Split('.');
+                if (parts.Length < 4 || !parts[^1].StartsWith("Tier", StringComparison.Ordinal)) continue;
+                var kind = parts[^2] == "Mods" ? "weapon mods" : parts[^2].ToLowerInvariant();
+                var tier = parts[^1]["Tier".Length..];
+                var quality = tier switch { "1" => "Basic", "2" => "Superior", "3" => "Exquisite", _ => "tier " + tier };
+                Prog["market_" + parts[^2].ToLowerInvariant() + "_" + tier] = Add(e.Children[1], "Progression", "Den",
+                    $"Black Market {kind}: {quality} items per refresh", lo: 0, hi: 12,
+                    note: "How many items the Black Market rolls from this table when it restocks.");
+            }
+        }
     }
 
     /// <summary>Den numbers the save keeps as literal facts: (key, fact, label, highest value, note).</summary>

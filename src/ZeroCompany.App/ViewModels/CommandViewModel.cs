@@ -123,6 +123,8 @@ public sealed class CommandViewModel : ScreenViewModel
                                   : "Every operator gets the new slots, empty and ready to equip.", now, most)));
         }
         foreach (var (key, _, label, _, note) in SaveModel.DenFacts) Add(key, label, 0, note);
+        foreach (var (key, f) in open.Model.Prog.Where(kv => kv.Key.StartsWith("market_", StringComparison.Ordinal) && kv.Value != null).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            Add(key, f!.Label, 0, f.Note);
         foreach (var r in v.Header.Resources)
             Stockpile.Add(new FieldRowViewModel(r.Label, fields.Make(r, 0, r.Label)!, r.Description));
         foreach (var b in main.Session.Service.ListBackups(open.Name)) Backups.Add(new BackupRowViewModel(this, b));
