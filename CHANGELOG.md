@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-16
+
 ### Added
 - **`zc`, a command-line tool**, and a shared **Zero Company Save SDK** (`src/ZeroCompany.Sdk`) that the editor, `zc` and `zcdebug` now all use for finding the
   game and the saves, so they agree. `zc edit` changes a save without the editor, with no UI needed (so scripts and agents can do it): `fields`, `get`, `set`,
