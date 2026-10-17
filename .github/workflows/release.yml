@@ -37,7 +37,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag || github.ref_name }}
         # The notes are that version's CHANGELOG.md section plus the downloads table (tools/release-notes.sh).
-        run: gh release view "$TAG" > /dev/null 2>&1 || { tools/release-notes.sh "$TAG" > "$RUNNER_TEMP/notes.md" && gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"; }
+        run: gh release view "$TAG" > /dev/null 2>&1 || { bash tools/release-notes.sh "$TAG" > "$RUNNER_TEMP/notes.md" && gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"; }
       - id: m
         shell: bash
         env:
