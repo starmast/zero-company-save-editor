@@ -244,6 +244,15 @@ public sealed class SaveEditor
             if (!o.CanEdit) throw new ZcException($"{o.Title} has not started, so its status cannot be changed");
             var st = Choice("status", a[1], new[] { ("Active", "Active"), ("Succeeded", "Succeeded") }); p.SetObjective(i, st, o.Status); return $"objective {o.Title}: {st}";
         }, combat: true);
+        Reg("add-squad", "add-squad <operator>|all [heal]", "bring a roster operator into this fight (the game spawns them when the save loads); heal also removes injuries so they arrive at full health", a =>
+        {
+            bool heal = a.Count > 1 && a[1].Equals("heal", StringComparison.OrdinalIgnoreCase);
+            if (a.Count > 1 && !heal) throw new ZcException("the only option is 'heal'");
+            var open = Save.Combat!.Squad.Where(m => !m.InSquad && !m.Dead).ToList();
+            var who = a[0].Equals("all", StringComparison.OrdinalIgnoreCase) ? open : new List<SquadMemberView> { Pick("operator", open, a[0], x => x.Guid, x => x.Name) };
+            foreach (var m in who) { p.SetSquadAdd(m.Guid, true); if (heal && m.Injuries > 0) p.ToggleHeal(m.Guid, true); }
+            return who.Count == 1 ? $"bring {who[0].Name} into the fight" : $"bring {who.Count} operator(s) into the fight";
+        }, combat: true);
         Reg("round", "round <n>", "set the round the fight is on", a =>
         {
             int r = (int)Count(a[0], 0, 9999); p.SetRound(r, Save.Combat!.Round ?? 0); return $"round {r}";

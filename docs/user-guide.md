@@ -90,9 +90,13 @@ actions for that tab.
   (both enemy sides).
 - **Objectives** - each mission objective with its status; **Mark succeeded** or **Set back to active**. Counters such as
   occupy-region points and interactions are editable too. Above them, **Timers** show the turns left on a countdown, what it
-  fails when it runs out, and let you raise it.
+  fails when it runs out, and let you change the turns left and the total.
+- **Roster** - operators of your roster who are not in this fight, each with **Bring into the fight** (and **Bring in everyone**). The game
+  spawns them with your squad when the save loads, with the health the roster records; the box above the list also queues the free Medbay heal for
+  injured ones. The game places them itself near the start point and some land outside the playable area, so apply, load the save, save it in the
+  game, open that save here and set their Position X Y Z (Allies tab) to a spot next to your squad.
 - **Reinforcements** - the **current round** of the fight (the game saves it; you can change it), the waves already on their way (the round each arrives, its spawn group, **Cancel wave**), the encounter's
-  wave definitions (delay, how many times each may spawn, group) and the triggers that start waves (switch off). **Mission
+  wave definitions (how many times each may spawn, how many times it has been triggered, group) and the triggers that start waves (switch off). **Mission
   settings** above them has the **enemy threat tier** the mission draws its units from (for example *Coil threat 10*; tiers of
   other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. **The threat tier does nothing for
   the encounter you are in**: it is read when an encounter starts, so the enemies on the map and the waves in the save are already fixed

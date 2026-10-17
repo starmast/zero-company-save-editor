@@ -11,8 +11,14 @@ public sealed class Bridge
     public string ReplyPath => Path.Combine(Dir, "response.txt");
     public string HeartbeatPath => Path.Combine(Dir, "heartbeat.txt");
 
+    /// <summary>
+    /// The channel folder. <c>ZCDEBUG_DIR</c> overrides it, for running the CLI somewhere other than the game's own Windows (for example under WSL,
+    /// with <c>/mnt/c/Users/NAME/AppData/Local/ZeroCompanyEditor/debug</c>).
+    /// </summary>
     public static string DefaultDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZeroCompanyEditor", "debug");
+        Environment.GetEnvironmentVariable("ZCDEBUG_DIR") is { Length: > 0 } over
+            ? over
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZeroCompanyEditor", "debug");
 
     public Bridge(string? dir = null)
     {

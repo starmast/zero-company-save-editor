@@ -57,6 +57,31 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void Stats_the_game_does_not_keep_are_hidden_until_the_box_is_ticked()
+    {
+        using var rig = OpenCombat();
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Assert.False(vm.StatVisibility.ShowAll);
+        var hero = vm.Units[0];                                    // first tab is Allies
+        var before = hero.Stats.Count;
+        Assert.DoesNotContain(hero.Stats, r => r.Label.Contains("(no lasting effect)"));
+        Assert.DoesNotContain(hero.Stats, r => r.Label.StartsWith("Ranged weapon · Damage"));    // rebuilt from the equipped weapon
+        Assert.Contains("hidden", hero.StatsHeader);
+
+        Headless.Run(() => vm.StatVisibility.ShowAll = true);
+        Assert.True(hero.Stats.Count > before);
+        Assert.Contains(hero.Stats, r => r.Label.StartsWith("Ranged weapon · Damage") && r.Label.EndsWith("(no lasting effect)"));
+        Assert.DoesNotContain("hidden", hero.StatsHeader);
+
+        Headless.Run(() => vm.StatVisibility.ShowAll = false);
+        Assert.Equal(before, hero.Stats.Count);
+
+        // an enemy's weapon stats are not known to be rebuilt, so they stay listed
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "enemies").Command.Execute(null));
+        Assert.Contains(vm.Units[0].Stats, r => r.Label.StartsWith("Ranged weapon · Damage"));
+    }
+
+    [SkippableFact]
     public void The_enemy_threat_setting_says_when_it_cannot_do_anything()
     {
         using var rig = OpenCombat();
@@ -214,6 +239,7 @@ public class CombatScreenTests
         Assert.True(vm.ShowTimers);
         var timer = Assert.Single(vm.Timers);
         Assert.Equal(1, timer.Remaining!.Value);
+        Assert.True(timer.HasTotal); Assert.Equal(3, timer.TotalField!.Value);
         Assert.Contains("Critical Interact 1", timer.Detail);
         rig.Shot("25-combat-timer");
         Headless.Run(() => timer.Remaining.SetTo(3));
@@ -282,7 +308,7 @@ public class CombatScreenTests
         Headless.Run(() => wave.Group.Selected = other);
         Assert.True(wave.Group.IsChanged); Assert.Equal(1, pending.Count);
         var cfg = vm.Configs[0];
-        Headless.Run(() => cfg.Delay!.SetTo(4));
+        Headless.Run(() => cfg.TimesToSpawn!.SetTo(4));
         var trig = vm.Triggers.First(t => t.HasFlag && t.StatusText == "On");
         Headless.Run(() => trig.Toggle.Command.Execute(null));
         Assert.Equal("Off", trig.StatusText);
@@ -295,8 +321,38 @@ public class CombatScreenTests
         var vm2 = Assert.IsType<CombatViewModel>(rig.Main.Screen);
         Assert.Equal("reinforcements", vm2.ActiveTab);
         Assert.Equal(other.Value, vm2.Waves[0].Group.Selected!.Value);
-        Assert.Equal(4, vm2.Configs[0].Delay!.Value);
+        Assert.Equal(4, vm2.Configs[0].TimesToSpawn!.Value);
         Assert.Equal("Off", vm2.Triggers.First(t => t.Title == trig.Title).StatusText);
+    }
+
+    [SkippableFact]
+    public void The_roster_tab_queues_operators_into_the_fight_and_they_show_as_in_it_after_saving()
+    {
+        Skip.If(Repo.CombatSaveNamed("Combat_Rescue_before.sav") == null, "no rescue sample");
+        using var rig = new TestRig(combat: true, combatFile: "Combat_Rescue_before.sav");
+        rig.Start();
+        Headless.Run(() => rig.Main.Navigate("combat"));
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Skip.If(vm.Tabs.All(t => t.Key != "squad"), "every operator is already in this fight");
+
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "squad").Command.Execute(null));
+        Assert.True(vm.ShowSquad);
+        var row = vm.Squad.First(r => r.CanAdd);
+        Headless.Run(() => row.Toggle.Command.Execute(null));
+        Assert.Equal(1, rig.Main.Session.Pending.Count);
+        Assert.Contains(rig.Main.PendingBar.Lines, l => l.Label.Contains("into the fight"));
+        Headless.Run(() => row.Toggle.Command.Execute(null));                       // undo
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+        Headless.Run(() => vm.BringInEveryone!.Execute(null));
+        Assert.True(rig.Main.Session.Pending.Count >= 1);
+        Assert.Equal(vm.Squad.Count(r => r.CanAdd && r.Status == "Injured"), rig.Main.Session.Pending.Heals.Count);   // injured operators are healed as they join
+        rig.Shot("30-combat-roster");
+
+        rig.Main.Session.Apply(asCopy: false, force: true);
+        Headless.Run(() => rig.Main.ReloadScreen());
+        var vm2 = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Assert.DoesNotContain(vm2.Tabs, t => t.Key == "squad");                     // nobody left to bring in
+        Assert.Equal("In this fight", vm2.Squad.First(r => r.Title == row.Title).Status);
     }
 
     [SkippableFact]

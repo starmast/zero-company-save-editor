@@ -63,15 +63,30 @@ against saves the game wrote and re-read after editing, but not played through (
   out in the objective list, but its counter stayed at 0 of 1 and the objective that normally follows did not start. A real completion
   also records the interaction count, removes the objective's waypoint and starts the next one with about two dozen runtime fields, so
   objectives that have not started cannot be edited.
+  Played through in the game on Brentaal 035: completing the interact objective the game's own way started the next one (hold the zone for 3
+  points), finishing that started the evacuation, and getting all four operators into the evacuation region ended the mission.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved. Lowering
   one from 6 to 2 was confirmed in the game (the countdown showed 2 on loading).
+  Tried on Brentaal 030 (rescue with a 6-turn timer): with 1 turn left the timer ran out at the next round and failed the rescue objective; with 10 turns left it counted
+  down to 8 over two rounds without failing; the total can be changed too and takes effect on loading.
 - **Reinforcements:** the game does save which round the fight is on (one number in the tactical game state, shown and editable as **Current
-  round**; a copy set to round 8 loaded as round 8), so a wave's round can be compared with it. How changing the round affects waves, delays or
-  anything else that counts rounds has not been tried in the game. Cancel
+  round**; a copy set to round 8 loaded as round 8, and the next round after loading a copy set to 12 was 13), so a wave's round can be
+  compared with it. Tried in the game on Brentaal 035: a queued wave's **round** and **group** and a wave definition's **group** and
+  **times triggered** all took effect (a wave moved from round 7 to 9 arrived two rounds later; a definition whose times triggered equalled its
+  times to spawn did not spawn when its trigger fired). A definition's **delay** did not change when a wave arrived, for a wave started by
+  its trigger or by the strength condition below (0 and 3 gave the same round), so treat that field as unproven. Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be
   switched off only once it has fired. An automatic wave may also be held back by a condition that is not in the save: in Brentaal 035 the
   wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in
   the running game queued the wave at once). The save keeps only a reference to that condition, so its value cannot be edited here, and
   a short delay alone will not bring reinforcements while the enemy is at full strength. Other missions may use other conditions.
+- **Bringing more of the roster into a fight** (Combat, *Roster* tab): the editor adds the operator's roster GUID to the mission squad
+  (`MissionSquadCharacterIDs`, and the in-progress mission's own squad list), and the game spawns them with the squad when the save loads.
+  Tried on Brentaal 030 with the whole roster: all 19 operators spawned and the game's portrait bar showed them, and a round played. They arrive
+  with the health their roster entry records (injured operators arrive hurt, so the tab can heal them as they join). The game places them
+  itself around the map's single start point: the first slots are outside the playable area, so an operator can arrive where they cannot move, and
+  the rest share one spot. A position written into the save for an operator the game has not saved yet is ignored, so placing them takes a second
+  step: load the save in the game, save it there, open that save in the editor and set the new operators' Position (Allies tab). Tried: a position
+  set that way was kept on the next load. Whether the mission counts the extra operators when it ends (experience, bonds) is not tried.
 - **Restarting a fight:** the save's `SaveGameRestartDataCache` entry (used when a fight restarts) is left as it is. It holds no
   unit health, so a restart reloads the original encounter.

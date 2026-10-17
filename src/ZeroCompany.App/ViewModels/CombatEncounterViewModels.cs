@@ -64,7 +64,7 @@ public sealed class WaveRowViewModel : IDisposable
     public void Dispose() { _cancel.Dispose(); _group.Dispose(); }
 }
 
-/// <summary>One of the encounter's wave definitions: group, delay, how many times it may spawn.</summary>
+/// <summary>One of the encounter's wave definitions: group, how many times it may spawn and how many times it has.</summary>
 public sealed class WaveConfigRowViewModel : IDisposable
 {
     readonly GroupPicker _group;
@@ -72,8 +72,7 @@ public sealed class WaveConfigRowViewModel : IDisposable
     public WaveConfigRowViewModel(PendingChanges p, FieldSet fields, ReinforcementsView rv, WaveConfigView c)
     {
         Title = $"Definition {c.Index + 1}";
-        Detail = $"{CombatOps.SpawnerLabel(c.EntryPoint)} · " + (c.Automatic ? "starts by itself" : "started by a trigger");
-        Delay = fields.Make(c.Delay, 0, "Rounds before it spawns");
+        Detail = $"{CombatOps.SpawnerLabel(c.EntryPoint)} · " + (c.Automatic ? "starts by itself when the game's condition for it is met" : "started by a trigger");
         TimesToSpawn = fields.Make(c.TimesToSpawn, 0, "Times it may spawn (-1 = no limit)");
         TimesTriggered = fields.Make(c.TimesTriggered, 0, "Times it has been triggered");
         _group = new GroupPicker(p, "config", c.Logic, c.Index, c.Group, rv.Groups);
@@ -81,7 +80,6 @@ public sealed class WaveConfigRowViewModel : IDisposable
 
     public string Title { get; }
     public string Detail { get; }
-    public EditableField? Delay { get; }
     public EditableField? TimesToSpawn { get; }
     public EditableField? TimesTriggered { get; }
     public GroupPicker Group => _group;
@@ -114,14 +112,38 @@ public sealed class TriggerRowViewModel : ViewModelBase, IDisposable
     public void Dispose() { _p.Changed -= OnChanged; _toggle.Dispose(); }
 }
 
-/// <summary>A countdown timer with an editable turns-left field.</summary>
+/// <summary>A roster operator, with a switch that queues bringing them into the fight.</summary>
+public sealed class SquadRowViewModel : IDisposable
+{
+    public SquadRowViewModel(PendingChanges p, SquadMemberView m, Action<SquadMemberView, bool> join)
+    {
+        Title = m.Name;
+        var parts = m.Class.StartsWith("Char_Hero_", StringComparison.Ordinal) && m.Class.EndsWith("_C", StringComparison.Ordinal)
+            ? m.Class["Char_Hero_".Length..^2].Split('_') : Array.Empty<string>();
+        var role = parts.Length > 1 ? parts[^1] : "";
+        Status = m.InSquad ? "In this fight" : m.Dead ? "Fallen" : m.Injuries > 0 ? "Injured" : "";
+        Detail = role;
+        CanAdd = !m.InSquad && !m.Dead;
+        Toggle = new ToggleActionViewModel(p, () => p.SquadAddWanted(m.Guid), () => join(m, !p.SquadAddWanted(m.Guid)),
+            "Bring into the fight", "Queued - undo", "The game spawns this operator with the squad when the save loads");
+    }
+
+    public string Title { get; }
+    public string Detail { get; }
+    public string Status { get; }
+    public bool CanAdd { get; }
+    public ToggleActionViewModel Toggle { get; }
+    public void Dispose() => Toggle.Dispose();
+}
+
+/// <summary>A countdown timer with editable turns-left and total fields.</summary>
 public sealed class TimerRowViewModel
 {
     public TimerRowViewModel(FieldSet fields, TimerView t)
     {
         Title = t.Title;
         Remaining = fields.Make(t.Remaining, 0, "Turns left");
-        Total = t.Total == null ? "" : $"of {t.Total.Value:0}";
+        TotalField = fields.Make(t.Total, 0, "Total turns");
         var counts = t.CountsOn == "TeamTurnEnd" ? "Counts down at the end of each of the team's turns" : "Counts down: " + t.CountsOn;
         var fails = t.Fails.Count > 0 ? ". When it reaches zero it fails: " + string.Join(", ", t.Fails) : "";
         Detail = t.Remaining == null ? "Finished: the game no longer saves this timer." : counts + fails + ".";
@@ -129,7 +151,8 @@ public sealed class TimerRowViewModel
 
     public string Title { get; }
     public string Detail { get; }
-    public string Total { get; }
+    public EditableField? TotalField { get; }
+    public bool HasTotal => TotalField != null;
     public EditableField? Remaining { get; }
     public bool HasRemaining => Remaining != null;
 }
@@ -150,7 +173,7 @@ public sealed class ObjectiveRowViewModel : ViewModelBase, IDisposable
         _toggle = new ToggleActionViewModel(pending, () => pending.ObjectiveChanges.ContainsKey(o.Index),
             () => pending.SetObjective(o.Index, pending.ObjectiveWanted(o.Index, o.Status) == "Succeeded" ? "Active" : "Succeeded", o.Status),
             o.Status == "Succeeded" ? "Set back to active" : "Mark succeeded", "Queued - undo",
-            "Changes only the objective's saved status. The game may not run the follow-on steps a normal completion triggers.");
+            "Changes only the objective's saved status. The game does not run the follow-on steps a normal completion triggers.");
         pending.Changed += OnChanged;
     }
 

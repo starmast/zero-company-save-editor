@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-16
+
 ### Added
 - **`zc`, a command-line tool**, and a shared **Zero Company Save SDK** (`src/ZeroCompany.Sdk`) that the editor, `zc` and `zcdebug` now all use for finding the
   game and the saves, so they agree. `zc edit` changes a save without the editor, with no UI needed (so scripts and agents can do it): `fields`, `get`, `set`,
@@ -15,11 +17,53 @@ All notable changes to this project are documented here. The format follows
 - Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
+- Combat, **Roster** tab: bring more of your roster into a combat save. The game builds a fight's heroes from the mission squad list, so adding an
+  operator's roster GUID there makes the game spawn them when the save loads (tried with the whole roster of 19: all spawned, and a round played);
+  operators arrive with the health their roster entry records, so the tab can also queue the Medbay heal for injured ones as they join, and `zc edit
+  do add-squad <operator>|all [heal]` does the same from the command line. The game places the new operators itself around the map's start point,
+  and some land outside the playable area, so the tab explains the second step (save in the game, then set their position here).
+- Combat, Reinforcements and Objectives, from trying the edits in the game: a wave definition's **Delay** field is gone from the screen (changing it did not change when a wave arrived, whether a trigger or the game's own condition started it; it is still available through `zc edit`), the **timers** now let you change the total turns as well as the turns left (both took effect on loading, and a timer set to 1 failed its objective at the next round), the automatic-wave line says the game's condition decides when it starts, and the objective notes say plainly that marking an objective Succeeded does not start what follows it.
+
 - Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
-  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. How a change affects
-  waves is not tried in the game yet.
+  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. Tried in the game since: a queued wave's round and group, a definition's group and its times triggered took effect; a definition's delay did not
+  change when a wave arrived.
+
+- Developer notes on getting `zcdebug` running again after a game update (the UE4SS signature pack needs the new build listed); checked on game 1.2
+  (build 199049). See [docs/development.md](docs/development.md).
+
+- `zcdebug load` now waits until the loaded level is up and says so (`--no-wait` returns at once; new `zcdebug loadstatus`).
+- `zcdebug` can investigate the running game without anyone at its window: `reload` swaps the mod's script without a restart (syntax-checked first, rolled
+  back if the new one fails to start), `trace` logs every call of a game function with its parameters, `funcs` lists a live object's functions and their
+  parameter types, `call` calls one, `shot` saves a screenshot with the HUD and prints its path, and `api` searches the class and function declarations
+  UE4SS dumped. The mod also no longer re-runs a stale request from an earlier run when it starts.
+- `zcdebug fix [--elevate]`: checks the game folders the mod and UE4SS write to and fixes the write errors under Program Files, such as UE4SS
+  logging "Access is denied" for the missing `Content\Paks\LogicMods` folder. It creates what it can as your user and, with `--elevate`, asks
+  Windows (through the normal UAC prompt) to run only the one command that is needed; without it, it prints the commands for an Administrator terminal.
+  It also handles a game update that makes UE4SS's signature pack reject the new build (UE4SS stops at start-up and no mod runs): it reads the new
+  exe's identity from its PE header and lists it in the pack's scripts, after backing them up (`--undo-signatures` restores them, `--no-signatures` skips it).
+- `zcdebug log on|off|clear|snap|show`: a combat log built only from the game's own events, with no polling (so it costs nothing between events): ABILITY
+  (which unit used which ability), MOVE (where), SHOT (who fired at whom), HIT and KILLED (target, attacker, the exact damage, CRIT and the ability, for
+  example GA_StandardShot_Longarm_C or a teamwork assist shot), DOWNED, HEAL, each team's turn and each round. One snapshot of every unit's health, armor,
+  shields, action points and position is written at the start of a round (and on `log snap`). A shot with no HIT after it missed. It also hooks the game's
+  other event broadcasters, each costing nothing until its event happens: game sub-phase changes (PHASE), a player starting to aim (AIM), cancelled shots,
+  melee, moves and grenades, and EVENT lines for objectives activated, progressing, succeeded or failed, bonds, destroyed props, reinforcements, toasts and
+  combat start and end (bond progress, combat start and fatal damage were seen firing in play; the objective, destroyed-prop, reinforcement and toast hooks never fired, even while an objective was completed and reinforcements arrived).
+
+- Combat, All stats: stats with no lasting effect are hidden until a "Show stats with no lasting effect" box is ticked (the header says how many are
+  hidden). Besides the ones the game puts back or rebuilds (below), Accuracy, Aim, Attack and Defense are hidden because changing them did not change the
+  hit chance or damage the game shows for a standard shot. Max accuracy (a cap on hit chance), Accuracy reduction (5 points of hit chance per point),
+  Deflection chance (hit chance x (1 - value)), Damage multiplier, Bonus damage (added before the multiplier), Flat damage reduction, Incoming damage
+  multiplier, Chance to ignore damage, Armor, Shields (a pool that takes damage before health), Defense penetration (cancels armor), grenade Critical
+  chance / damage, Max damage per hit (caps each hit), Class tactic points per turn and Movement per action point were each loaded in the game and changed
+  what it showed or did. An enemy's weapon Damage works and stays after it attacks (a Striker with melee damage 60 hit a hero for 57 after armor, an Enforcer with ranged damage 50 hit a hero for 47).
+  Action points, movement points and special points per turn did not change a hero's next turn, so those three are hidden for heroes. Grenade bonus damage and the Burn and
+  Shock chance bonuses changed nothing a grenade throw or rifle shot showed, so they are hidden too. Checked in the game by changing all 616 attributes of the 8 living units in one save, loading it, shooting, and ending the turn: the game
+  puts the Advantage set back on load, rebuilds weapon and grenade stats from the equipped gear for player heroes (on load if the unit had already
+  fired, otherwise when it first acts), and the scratch values do nothing. Action points, class tactic points and special action points are set back
+  at the start of the unit's turn. Everything else (accuracy, defense, armor, shields, health, multipliers ...) was still there after both.
 
 ### Changed
+- Combat: a unit's action points are limited to 0-3. The game caps them at 3 when it loads a save, so a higher number (9 was tried) used to come back as 3.
 - `zcsave` and `zcassets` are now one tool, `zc` (`zc save ...`, `zc assets ...`); the commands and their output are the same. `zcdebug saves` now also
   lists the Wine-prefix and added save folders, and `zcdebug install` finds the game folder the same way the editor does.
 - Combat: a unit's "All stats" list is grouped (Health, Actions, Offense, Defense, weapons, grenade ...) with plain names and hover notes

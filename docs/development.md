@@ -188,6 +188,7 @@ itself. Instead it talks to a small Lua mod, **ZcDebug**, that runs inside the g
 
 ```
 zcdebug install            copy the ZcDebug mod into UE4SS's Mods folder (zcdebug uninstall removes it)
+zcdebug fix [--elevate]    check the game folders the mod and UE4SS write to (Mods, LogicMods) and fix what is not writable (see below)
 zcdebug status             is the game running, is the mod answering
 zcdebug find Pawn          live instances of an Unreal class
 zcdebug props <object>     a class's properties and types
@@ -198,7 +199,17 @@ zcdebug set ... --write    change a property in the running game   (also: exec <
 zcdebug attr <unit> <Attribute> <n> --write   set a stat (Health, ActionPoints ...) in the game and on the HUD
 zcdebug fx <unit> add|remove <Name> [n] --write   add (n stacks) or remove a status effect (Burning, Spotted ...)
 zcdebug saves [filter] [--all]   the save folder: file names as load wants them, in-game names, and which the game lists (no game needed)
-zcdebug load <save name> --write   load a save by file name, without .sav (the game must already list it, see below)
+zcdebug load <save name> --write   load a save by file name, without .sav (the game must already list it, see below); waits until the level is up
+zcdebug loadstatus         whether the level of the last load is up
+zcdebug funcs <obj> [text] the functions a live object's class has (and its parents'), with parameter types
+zcdebug call <obj> <Fn> [args] --write   call one: numbers, true/false, @/object/path, n:Name, anything else is text
+zcdebug trace <Class:Fn> [on|off|list] [max] --write   log each call of a function with its parameters to combat.log (first 300 calls)
+zcdebug reload [--from FILE] --write   run the mod's script again without a restart; --from copies FILE over the installed script first
+zcdebug shot [--out FILE]  have the game save a screenshot with the HUD (Shot showui) and print its path
+zcdebug api <text> [--limit N]   search the class, struct and function declarations UE4SS dumped (Dumpers > "Dump CXX Headers", once)
+zcdebug log on|off|clear|snap   record the game's own combat events without polling: ABILITY (which unit used which ability), MOVE, SHOT, HIT/KILLED (target,
+                           attacker, exact damage, CRIT, ability), DOWNED, HEAL, each team's turn and each round, plus one snapshot of every unit per round
+zcdebug log show [n]       the last n lines of that log (combat.log in the channel folder; works without the game)
 zcdebug repl [--write]     the same, interactively
 ```
 
@@ -207,6 +218,29 @@ Reads need no flag; anything that changes the running game (`set`, `attr`, `fx`,
 you: `get <object> A.B.C` walks `A.B.C` inside the object, but the object itself must be a real object path (for example
 `...PersistentLevel.Char_Hero_HAWKS_Control_C_0.BitReactorHealthSet_0`). After `zcdebug install`, reload the mods in the game
 (Ctrl+R in the UE4SS window) so the game runs the new Lua.
+
+**Investigating without the game window.** After one Ctrl+R that loads a mod with `reload`, later changes to `mod/ZcDebug/Scripts/main.lua` go
+live with `zcdebug reload --from <that file> --write`: the mod syntax-checks the new script first, switches to it without a restart (the old
+generation's hooks are removed and its loops stop), and `zcdebug` waits until it answers as the new version; a script that fails to start leaves
+the running one in place. `zcdebug api` finds what to look at in the dumped headers, `funcs` lists a live object's functions, `trace` shows which
+of them are called (and with what) while something happens, `call` calls one, and `shot` saves a screenshot with the HUD. Only functions the
+game calls through Unreal's reflection system can be traced (Blueprint events and native events the engine raises); Blueprint custom events
+that are called inside their own graph, such as `OnUnitDamaged`, are not seen. The mod no longer re-runs a request left in the channel file by an
+earlier run when it starts.
+
+**When Windows blocks a freshly built `zcdebug.exe`.** Application Control / Smart App Control sometimes refuses new unsigned builds (and the
+test assemblies). The CLI also runs under WSL, where that policy does not apply, and reaches the Windows game through `/mnt/c`: set
+`ZCDEBUG_DIR=/mnt/c/Users/<you>/AppData/Local/ZeroCompanyEditor/debug` (the channel folder) and `ZCDEBUG_SHOTS=/mnt/c/Users/<you>/AppData/Local/SWZeroCompany/Saved/Screenshots/Windows`
+(where `shot` looks), and pass `--game "/mnt/c/Program Files/EA Games/Star Wars Zero Company"` to commands that touch the game folder (`reload --from`, `api`).
+`zcdebug status` cannot see the Windows game process from WSL, but every command that talks to the mod works.
+
+**Testing what a stat does.** `attr` and `set` write the attribute directly, which is right for health, action points and the HUD, but the
+game's hit-chance and damage calculations read stats through an aggregator that only its own setter updates, so a stat changed that way
+shows no effect there (Accuracy 20 and enemy Defense 10 changed nothing in the aim preview until the same values were loaded from a
+save). To see what a stat does, edit a copy of a combat save (`zc edit set ... --copy`), load it with `zcdebug load`, and look at the
+result: the aim preview (hit chance and damage), the health numbers after a shot, or `zcdebug log` over a turn. `zcdebug exec "Shot
+showui"` makes the game write a screenshot with the HUD to `%LOCALAPPDATA%\SWZeroCompany\Saved\Screenshots\Windows` (plain `HighResShot`
+leaves the HUD out), which is how the preview can be read without being at the screen.
 
 The `--write` check is in `zcdebug` only. The mod itself runs whatever request it finds, `eval` included (arbitrary Lua inside the
 game), so while it is installed any program running as your Windows user can drive the game through the request file. That gives
@@ -242,6 +276,12 @@ files you made for testing, never a save you care about. Send one `load` and wai
 
 **Some properties must not be read.** Reading arrays of soft object paths crashed the game twice (`SaveLoadReinforcementWaveSelectedSpawnGroups` on the encounter actor, once through `get` and once through `dump`). `get` and `dump` now look up each property's declared type before reading it: `get` refuses arrays whose element type is not an object, struct, number or bool, plus maps, sets and soft or lazy references, and `dump` reads only plain values (numbers, bools, names, strings, enums) and attribute structs. The mod's own `eval` has no such guard. A request that times out is a warning: stop and check the game before sending anything else, and never run a wide read on an actor that has just crashed the game.
 
+**Never call a method on a null object.** A function that returns an object can return a null one (UE4SS prints it as `<userdata>`), and UE4SS
+dereferences it when you call anything on it: the game dies with `EXCEPTION_ACCESS_VIOLATION reading address 0x10` (the class pointer's
+offset) and a stack made of UE4SS frames only. Always ask `obj:IsValid()` first. `call`, `funcs` and `trace` do (a null result prints as
+`(null object)`); `eval` and anything written by hand must. For example an ability's default object (CDO) has no to-hit calculation, only live
+ability instances do.
+
 **Do not bulk-scan from Lua.** An `eval` that looped over every character walking each one's `ActiveGameplayEffects` crashed the game
 (`EXCEPTION_ACCESS_VIOLATION` reading address 0x18). Read one named unit at a time and stop after the first timeout. Unreal's
 crash reports are in `%LOCALAPPDATA%\SWZeroCompany\Saved\Crashes`. Errors from the mod come back as `error: ...` and also go to
@@ -252,4 +292,37 @@ repairing the game (the EA app may repair modified files) can undo the install.
 renaming `dwmapi.dll` back out of the way fixed it. A later install loaded and ran mods fine on the same build, so it is not a
 permanent problem, but which UE4SS build works is not recorded here. The game folder is under `Program Files`, so `zcdebug install`
 needs an Administrator terminal there, or `zcdebug install --out <folder>` and a manual copy.
+
+**Write errors under Program Files.** `zcdebug fix` checks the two folders that matter and says what it finds. UE4SS's own `ue4ss` folder
+(where `zcdebug install` writes the mod and UE4SS writes its log) is often writable by your user already; `Content\Paks\LogicMods`
+usually is not, and UE4SS's BPModLoaderMod (shipped with the pack) logs `CreateLogicModsDirectory: Error creating directory: Access is
+denied` at every start because of it. The error is harmless (no Blueprint mods are used) but `zcdebug fix --elevate` removes it: it
+creates what it can as your user, and for the rest asks Windows to run just that command (a `mkdir`, or an `icacls` that grants your
+user write access to the `ue4ss` folder) through the normal UAC prompt. Without `--elevate` it only prints the commands, to run from
+an Administrator terminal. It never touches the game's own files.
+
+**After a game update.** The "SWZC" signature pack for UE4SS (`ue4ss/UE4SS_Signatures/*.lua` in the game folder) only accepts game builds it lists
+by exe length, PE timestamp, image size and CodeView GUID. A new build makes UE4SS stop at start-up with `loaded fallback has no verified build
+profile; signature rejected` in `UE4SS.log`, and ZcDebug never starts. The game's code is packed on disk, so the patterns can only be checked
+against the running game. When the pack's author has not yet shipped the new build, the one thing that stopped build 199049 (game 1.2) was the
+`builds` table at the top of each of the four scripts (FName_Constructor, GUObjectArray, ProcessLocalScriptFunction, StaticConstructObject): the
+byte patterns still matched, and adding one table entry for the new exe, with the values read from its PE header, made UE4SS load and every
+`zcdebug` command work. This is the pack's own safety check being extended by hand, not something the pack's author tested. `zcdebug fix` does
+this for you: it reads the exe's identity (length, PE timestamp, image size, CodeView GUID) from its PE header, adds an entry to the `builds`
+table of every script in the pack's format that does not list it yet, and leaves everything else alone (scripts it does not recognise are not
+touched). The originals are copied first to `ue4ss\zcdebug-signature-backup\<time>` and `zcdebug fix --undo-signatures` puts the newest set
+back; `--no-signatures` skips the step. Try it on a save you can lose, and prefer the author's own pack as soon as there is one. If a script
+then reports `no validated loaded function entry`, the function itself changed and needs a new pattern.
 Like `zc`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
+
+**Driving a fight without anyone at the keyboard.** With the mod loaded the combat log shows what happened, and these calls make it happen:
+`call BP_BrunoGameplayMaster_C RequestEndTurn --write` ends the player turn and `zcdebug loadstatus` / the log's `== round N` lines say when the
+next one starts. A hero's action is started the way a radial-menu click does it, by calling `TryActivatingAbilityOfClass(<ability class>)` on the
+`B_AbilitySelectionVM` whose `RepresentedCharacter` is that hero, which opens aiming; `ConfirmTargeting` on the `BRG_PlayerTargetingViewModel`
+then fires it at the suggested target (the log shows `ABILITY`, `SHOT` and `HIT` for it; `AddSelectedTarget` picks another). Check each object with `IsValid()`
+before calling a method on it: a method call on a null object crashes the game.
+The game's own manual save can be called from the mod, which gives a save of any live state (for example right after a wave was announced):
+`FindFirstOf('BrunoSaveGameSubsystem'):SaveGame(subsystem, '<name>', 1, 0, 0, 0, 0)`, where 1 is ManualSave; the file appears in the save folder
+within a couple of seconds. Edit that save with `zc edit apply --copy`, put it in the slot the game is loaded from and `zcdebug load` it to see what the
+edit did. Loading only works within the level the game is already in: loading a save from another mission leaves the current level and mixes
+the two, so test an edit on a save from the same map, put in a slot file whose name belongs to that map (the game takes the level from the file name, and only loads names it listed at start-up, so overwrite an existing save of that map and keep a backup).

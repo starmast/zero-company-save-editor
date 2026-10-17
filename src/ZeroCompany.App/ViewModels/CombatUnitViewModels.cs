@@ -29,6 +29,12 @@ public sealed class CombatEffectRowViewModel : IDisposable
     public void Dispose() => _remove.Dispose();
 }
 
+/// <summary>One switch shared by every unit card: also list the stats the game does not keep (off by default).</summary>
+public sealed partial class StatVisibility : ObservableObject
+{
+    [ObservableProperty] bool _showAll;
+}
+
 /// <summary>An effect that already exists on some unit and can be copied onto another.</summary>
 public sealed record EffectChoice(string Label, int FromUnit, int FromIndex);
 
@@ -47,9 +53,14 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     readonly CombatView _combat;
     readonly ToggleActionViewModel _dead;
 
-    public UnitCardViewModel(PendingChanges pending, FieldSet fields, CombatView combat, CombatUnitView u, IReadOnlyList<EffectChoice> choices)
+    readonly StatVisibility _visibility;
+    readonly List<(FieldRowViewModel Row, bool Ignored)> _allStats = new();
+
+    public UnitCardViewModel(PendingChanges pending, FieldSet fields, CombatView combat, CombatUnitView u, IReadOnlyList<EffectChoice> choices,
+                             StatVisibility? visibility = null)
     {
         _pending = pending; _unit = u; _combat = combat;
+        _visibility = visibility ?? new StatVisibility();
         TeamChoices = combat.ThreeWay ? new[] { "Ally", "Friendly AI", "Enemy", "Enemy2" } : new[] { "Ally", "Friendly AI", "Enemy" };
         Name = u.Name;
         Team = u.Team;
@@ -70,7 +81,14 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
                      .Where(a => !(a.Name is "Health" or "MaxHealth" or "ActionPoints" or "MovementActionPoints"
                                    && a.Set is "BitReactorHealthSet" or "BitReactorCombatSet"))
                      .OrderBy(a => groupRank.GetValueOrDefault(a.Info.Group, 99)))
-            Stats.Add(new FieldRowViewModel($"{a.Info.Group} · {a.Info.Label}", fields.Make(a.Ref, 0, a.Name)!, a.Info.Note));
+        {
+            // A stat with no lasting effect (the game rebuilds it, puts it back, or showed no effect) is hidden until the "show" box is ticked.
+            var ignored = a.Info.Keep == StatKeep.No || (a.Info.Keep == StatKeep.NotForHeroes && u.PlayerBehavior);
+            var label = $"{a.Info.Group} · {a.Info.Label}" + (ignored ? " (no lasting effect)" : "");
+            _allStats.Add((new FieldRowViewModel(label, fields.Make(a.Ref, 0, a.Name)!, a.Info.Note), ignored));
+        }
+        _visibility.PropertyChanged += OnVisibilityChanged;
+        RebuildStats();
         foreach (var e in u.Effects) Effects.Add(new CombatEffectRowViewModel(pending, fields, u.Index, e));
         Choices = choices.Where(c => c.FromUnit != u.Index).ToList();
         _dead = new ToggleActionViewModel(pending, () => pending.DeadChanges.ContainsKey(u.Index),
@@ -123,7 +141,24 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     /// <summary>Health, action points and the like, as label + field rows (only those the unit has).</summary>
     public List<FieldRowViewModel> Rows { get; } = new();
     public ObservableCollection<FieldRowViewModel> Stats { get; } = new();
-    public string StatsHeader => $"All stats ({Stats.Count})";
+    public string StatsHeader
+    {
+        get
+        {
+            var hidden = _allStats.Count - Stats.Count;
+            return hidden > 0 ? $"All stats ({Stats.Count}, {hidden} hidden)" : $"All stats ({Stats.Count})";
+        }
+    }
+
+    void OnVisibilityChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => RebuildStats();
+
+    void RebuildStats()
+    {
+        Stats.Clear();
+        foreach (var (row, ignored) in _allStats)
+            if (_visibility.ShowAll || !ignored) Stats.Add(row);
+        OnPropertyChanged(nameof(StatsHeader));
+    }
     public ObservableCollection<CombatEffectRowViewModel> Effects { get; } = new();
     public string EffectsHeader => $"Effects ({Effects.Count})";
     public IReadOnlyList<EffectChoice> Choices { get; }
@@ -152,6 +187,7 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     {
         _pending.Changed -= RefreshCopies;
         _pending.Changed -= OnPendingChanged;
+        _visibility.PropertyChanged -= OnVisibilityChanged;
         _dead.Dispose();
         foreach (var r in Effects) r.Dispose();
     }

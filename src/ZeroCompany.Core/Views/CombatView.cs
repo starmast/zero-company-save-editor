@@ -16,6 +16,8 @@ public sealed class CombatView
     public TurnStructureView? TurnStructure { get; set; }
     /// <summary>A three-way battle: Enemy2 can be used here.</summary>
     public bool ThreeWay { get; set; }
+    /// <summary>Roster operators and whether each is already in this fight (the mission squad).</summary>
+    public List<SquadMemberView> Squad { get; } = new();
     public List<HazardView> Hazards { get; } = new();
     public List<DestructibleView> Destructibles { get; } = new();
     /// <summary>Full object paths of every prop the save marks as destroyed (with or without a health entry).</summary>
@@ -24,6 +26,18 @@ public sealed class CombatView
     public List<string> DestroyedProps { get; } = new();
     /// <summary>Full object paths of every prop that is destroyed or damaged: what the "Restore scenery" button brings back.</summary>
     public List<string> WreckedProps { get; } = new();
+}
+
+/// <summary>A roster operator: in the fight's squad or not, and whether they have fallen.</summary>
+public sealed class SquadMemberView
+{
+    public string Guid { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Class { get; init; } = "";
+    public bool Dead { get; init; }
+    public bool InSquad { get; init; }
+    /// <summary>How many injuries the roster records for this operator; an injured operator arrives at reduced health.</summary>
+    public int Injuries { get; init; }
 }
 
 /// <summary>Reinforcements: waves already queued, the wave definitions the encounter draws from, and the trigger actors.</summary>

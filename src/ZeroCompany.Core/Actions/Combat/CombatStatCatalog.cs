@@ -1,7 +1,18 @@
 namespace ZeroCompany.Core.Actions;
 
-/// <summary>What is known about one saved attribute: how to show it and any limits worth enforcing.</summary>
-public sealed record StatInfo(string Group, string Label, string Note = "", double Min = -1e6, double Max = 1e6);
+/// <summary>Whether a saved attribute value is still there once the game has loaded the save and the unit has acted.</summary>
+public enum StatKeep
+{
+    /// <summary>Kept.</summary>
+    Yes,
+    /// <summary>The game rebuilds it from the equipped gear for a player hero, so the edit is lost; other units keep it.</summary>
+    NotForHeroes,
+    /// <summary>The game puts it back, it is a scratch value, or changing it showed no effect: editing it does nothing that was found.</summary>
+    No,
+}
+
+/// <summary>What is known about one saved attribute: how to show it, any limits worth enforcing, and whether the game keeps an edit.</summary>
+public sealed record StatInfo(string Group, string Label, string Note = "", double Min = -1e6, double Max = 1e6, StatKeep Keep = StatKeep.Yes);
 
 /// <summary>
 /// Names, groups and notes for the attribute base values a combat save stores per unit. The save keeps only each attribute's
@@ -18,81 +29,92 @@ public static class CombatStatCatalog
 
     const string Chance = "A fraction: 0.05 is 5%.";
     const string BaseOnly = "The save holds the base; gear and effects add on top in the game.";
-    const string Rebuilt = "In testing the game rebuilt this from the equipped weapon before the unit's first shot, and the shot did not use the edited value, so changing it has no effect on attacks.";
-    const string Kept = "Kept after the unit fired in testing.";
+    const string Rebuilt = "For your own heroes the game rebuilds this from the equipped weapon (on load, or when the unit first acts), so an edit is lost and never used in an attack.";
+    const string Kept = "Stays after the unit fires.";
     const string Scratch = "Scratch value the game fills in while it resolves a hit; normally 0, so editing it does nothing useful.";
+    const string NoShotEffect = "Changing it did not change the hit chance or damage the game shows for a standard shot.";
+    const string RefreshIgnored = "Changing it did not change what the unit had at the start of its next turn.";
+    const string PerTurn = "The game sets it back at the start of the unit's turn, so an edit only lasts for the turn the save was made in.";
+
+    /// <summary>Weapon stats the game rebuilds from the equipped weapon for player heroes (checked live: they went back to the weapon's values).</summary>
+    static readonly HashSet<string> WeaponRebuilt = new()
+    {
+        "Damage", "CriticalHitChance", "CriticalHitDamage", "Range", "RangeAbsoluteMin", "RangeAbsoluteMax", "RangeOptimalMin", "RangeOptimalMax",
+        "CloseRangeFalloffIncrement", "LongRangeFalloffIncrement", "ReactionDamage", "ReactionChanceToHit", "ReactionCriticalHitChance",
+        "AssistDamage", "AssistCriticalHitChance", "OverwatchRange", "OverwatchArc", "LOSTraceRadius", "MaxSkillBonus", "RetainMarkChance",
+    };
 
     static readonly Dictionary<(string Set, string Name), StatInfo> Known = new()
     {
-        [("BitReactorHealthSet", "Health")] = new(Health, "Health", "Current health. Damage lowers the saved base too.", 0),
+        [("BitReactorHealthSet", "Health")] = new(Health, "Health", "Current health. Damage lowers the saved base too. The game limits it to the unit's real maximum when it loads the save, for allies and enemies alike.", 0),
         [("BitReactorHealthSet", "MaxHealth")] = new(Health, "Max health (base)", BaseOnly + " A hero with base 28 can have 151 in the game once gear is counted.", 0),
         [("BitReactorHealthSet", "IncomingDamageMultiplier")] = new(Defense, "Incoming damage multiplier", "1 = normal, 0.5 = half damage taken.", 0),
-        [("BitReactorHealthSet", "FlatDamageReduction")] = new(Defense, "Flat damage reduction", "Armor and shields are added into this by effects, so the in-game value is usually higher than the base.", 0),
-        [("BitReactorHealthSet", "ChanceToIgnoreIncomingDamage")] = new(Defense, "Chance to ignore damage", Chance, 0, 1),
+        [("BitReactorHealthSet", "FlatDamageReduction")] = new(Defense, "Flat damage reduction", "Takes this much off every hit. Armor and shields are added into it by effects, so the in-game value is usually higher than the base.", 0),
+        [("BitReactorHealthSet", "ChanceToIgnoreIncomingDamage")] = new(Defense, "Chance to ignore damage", Chance + " 1 made a unit take no damage from a hit that would have hurt it.", 0, 1),
         [("BitReactorHealthSet", "IncomingHealMulitplier")] = new(Health, "Incoming heal multiplier", "1 = normal.", 0),
         [("BitReactorHealthSet", "FlatHealIncrease")] = new(Health, "Flat heal bonus", "", 0),
         [("BitReactorHealthSet", "PostEncounterAutoHealPercentage")] = new(Health, "Heal after the encounter", "1 = full heal.", 0, 1),
-        [("BitReactorHealthSet", "PreviewHealth")] = new(Internal, "Preview health", Scratch),
-        [("BitReactorHealthSet", "Healing")] = new(Internal, "Healing", Scratch),
-        [("BitReactorHealthSet", "Damage")] = new(Internal, "Damage", Scratch),
-        [("BitReactorHealthSet", "ShieldDamage")] = new(Internal, "Shield damage", Scratch),
-        [("BitReactorHealthSet", "HealthDamage")] = new(Internal, "Health damage", Scratch),
+        [("BitReactorHealthSet", "PreviewHealth")] = new(Internal, "Preview health", Scratch, Keep: StatKeep.No),
+        [("BitReactorHealthSet", "Healing")] = new(Internal, "Healing", Scratch, Keep: StatKeep.No),
+        [("BitReactorHealthSet", "Damage")] = new(Internal, "Damage", Scratch, Keep: StatKeep.No),
+        [("BitReactorHealthSet", "ShieldDamage")] = new(Internal, "Shield damage", Scratch, Keep: StatKeep.No),
+        [("BitReactorHealthSet", "HealthDamage")] = new(Internal, "Health damage", Scratch, Keep: StatKeep.No),
 
-        [("BitReactorCombatSet", "ActionPoints")] = new(Actions, "Action points", "Spent by attacks and abilities (a standard attack costs 2). More than the usual 3 works in the game, but its own pips only show the usual row.", 0, 99),
+        [("BitReactorCombatSet", "ActionPoints")] = new(Actions, "Action points", "Spent by attacks and abilities (a standard attack costs 2). The game limits this to 3 when it loads the save, so a higher number comes back as 3. " + PerTurn, 0, 3),
         [("BitReactorCombatSet", "MovementActionPoints")] = new(Actions, "Movement action points", "", 0, 99),
-        [("BitReactorCombatSet", "RefreshActionPoints")] = new(Actions, "Action points per turn", "What the unit gets back at the start of its turn.", 0, 99),
-        [("BitReactorCombatSet", "RefreshMovementActionPoints")] = new(Actions, "Movement points per turn", "", 0, 99),
-        [("BitReactorCombatSet", "MovementPerAP")] = new(Actions, "Movement per action point", "Distance one point of movement covers, in game units.", 0),
-        [("BitReactorCombatSet", "ClassTacticPoints")] = new(Actions, "Class tactic points", ""),
-        [("BitReactorCombatSet", "RefreshClassTacticPoints")] = new(Actions, "Class tactic points per turn", ""),
-        [("BitReactorCombatSet", "SpecialActionPoints")] = new(Actions, "Special action points", ""),
-        [("BitReactorCombatSet", "RefreshSpecialActionPoints")] = new(Actions, "Special points per turn", ""),
+        [("BitReactorCombatSet", "RefreshActionPoints")] = new(Actions, "Action points per turn", RefreshIgnored + " Heroes get 3 action points every turn whatever this says.", 0, 99, StatKeep.NotForHeroes),
+        [("BitReactorCombatSet", "RefreshMovementActionPoints")] = new(Actions, "Movement points per turn", RefreshIgnored + " Heroes' movement points did not follow it.", 0, 99, StatKeep.NotForHeroes),
+        [("BitReactorCombatSet", "MovementPerAP")] = new(Actions, "Movement per action point", "Distance one point of movement covers, in game units. Raising it widens the movement range (1000 instead of 500 about doubled it).", 0),
+        [("BitReactorCombatSet", "ClassTacticPoints")] = new(Actions, "Class tactic points", PerTurn),
+        [("BitReactorCombatSet", "RefreshClassTacticPoints")] = new(Actions, "Class tactic points per turn", "The class tactic points the unit has at the start of each turn (set to 2, a hero had 2 more points next turn; set to 0, none)."),
+        [("BitReactorCombatSet", "SpecialActionPoints")] = new(Actions, "Special action points", PerTurn),
+        [("BitReactorCombatSet", "RefreshSpecialActionPoints")] = new(Actions, "Special points per turn", RefreshIgnored + " Heroes' special points stayed at 0.", Keep: StatKeep.NotForHeroes),
         [("BitReactorCombatSet", "AbilityUsesPerCooldown")] = new(Actions, "Ability uses per cooldown", "", 0),
 
-        [("BitReactorCombatSet", "Attack")] = new(Offense, "Attack", "Raising it from 7 to 30 did not change the damage of a standard shot in testing."),
-        [("BitReactorCombatSet", "Accuracy")] = new(Offense, "Accuracy"),
-        [("BitReactorCombatSet", "MaxAccuracy")] = new(Offense, "Max accuracy"),
-        [("BitReactorCombatSet", "AccuracyReduction")] = new(Offense, "Accuracy reduction", "Effects lower this in the game (a hero showed -2 from a base of 0)."),
-        [("BitReactorCombatSet", "Aim")] = new(Offense, "Aim"),
-        [("BitReactorCombatSet", "DamageMultiplier")] = new(Offense, "Damage multiplier", "1 = normal. A standard shot did the same damage at 1 and at 3 in testing.", 0),
-        [("BitReactorCombatSet", "BonusDamage")] = new(Offense, "Bonus damage", "The game recomputes the current value from effects after a shot; a saved base of 20 showed no effect in testing."),
+        [("BitReactorCombatSet", "Attack")] = new(Offense, "Attack", NoShotEffect, Keep: StatKeep.No),
+        [("BitReactorCombatSet", "Accuracy")] = new(Offense, "Accuracy", NoShotEffect + " Hit chance does not follow it.", Keep: StatKeep.No),
+        [("BitReactorCombatSet", "MaxAccuracy")] = new(Offense, "Max accuracy", "Caps the hit chance of this unit's shots: 0.2 limits every shot to 20%, whatever the odds would be."),
+        [("BitReactorCombatSet", "AccuracyReduction")] = new(Offense, "Accuracy reduction", "Each point takes 5 points off the hit chance of this unit's shots (5 turned a 60% shot into 35%). Effects also lower it in the game."),
+        [("BitReactorCombatSet", "Aim")] = new(Offense, "Aim", NoShotEffect + " Hit chance does not follow it.", Keep: StatKeep.No),
+        [("BitReactorCombatSet", "DamageMultiplier")] = new(Offense, "Damage multiplier", "1 = normal. Multiplies the damage of this unit's attacks: 2 about doubled a standard shot.", 0),
+        [("BitReactorCombatSet", "BonusDamage")] = new(Offense, "Bonus damage", "Added to the damage of this unit's attacks before the damage multiplier."),
         [("BitReactorCombatSet", "BonusShieldDamage")] = new(Offense, "Bonus shield damage"),
-        [("BitReactorCombatSet", "DefensePenetration")] = new(Offense, "Defense penetration"),
+        [("BitReactorCombatSet", "DefensePenetration")] = new(Offense, "Defense penetration", "Cancels the target's armor: 20 against armor 20 turned a shot that did 0 into one that did the full 24."),
         [("BitReactorCombatSet", "CriticalHitCount")] = new(Offense, "Critical hit count", "", 0),
-        [("BitReactorCombatSet", "MaxDamageAllowed")] = new(Offense, "Max damage per hit", "", 0),
+        [("BitReactorCombatSet", "MaxDamageAllowed")] = new(Offense, "Max damage per hit", "Caps what a single hit can do: 10 held a 17-damage shot to 10.", 0),
         [("BitReactorCombatSet", "BonusHealing")] = new(Offense, "Bonus healing"),
         [("BitReactorCombatSet", "OutgoingHealMultiplier")] = new(Offense, "Outgoing heal multiplier", "1 = normal.", 0),
-        [("BitReactorCombatSet", "ShockApplyChanceBonus")] = new(Offense, "Shock chance bonus"),
-        [("BitReactorCombatSet", "BurnApplyChanceBonus")] = new(Offense, "Burn chance bonus"),
+        [("BitReactorCombatSet", "ShockApplyChanceBonus")] = new(Offense, "Shock chance bonus", "A bonus of 100 did not make rifle shots shock their target.", Keep: StatKeep.No),
+        [("BitReactorCombatSet", "BurnApplyChanceBonus")] = new(Offense, "Burn chance bonus", "A bonus of 100 did not make rifle shots burn their target.", Keep: StatKeep.No),
         [("BitReactorCombatSet", "VengeanceTriggerThreshold")] = new(Offense, "Vengeance threshold"),
 
-        [("BitReactorCombatSet", "Defense")] = new(Defense, "Defense"),
-        [("BitReactorCombatSet", "DeflectionChance")] = new(Defense, "Deflection chance"),
-        [("BitReactorCombatSet", "BaseArmor")] = new(Defense, "Armor (base)", "An effect adds armor into flat damage reduction. Both the base and current armor are stored.", 0),
-        [("BitReactorCombatSet", "CurrentArmor")] = new(Defense, "Armor (current)", "Armor left now; damage can wear it down.", 0),
-        [("BitReactorCombatSet", "BaseShields")] = new(Defense, "Shields (base)", "", 0),
-        [("BitReactorCombatSet", "CurrentShields")] = new(Defense, "Shields (current)", "", 0),
+        [("BitReactorCombatSet", "Defense")] = new(Defense, "Defense", NoShotEffect + " Neither the hit chance nor the damage of a standard shot at this unit follows it.", Keep: StatKeep.No),
+        [("BitReactorCombatSet", "DeflectionChance")] = new(Defense, "Deflection chance", "Multiplies the hit chance of shots at this unit by (1 - value): 0.25 turns a 60% shot into 45%, and 1 or more makes it impossible to hit."),
+        [("BitReactorCombatSet", "BaseArmor")] = new(Defense, "Armor (base)", "Cuts every hit this unit takes: 20 armor took a 24-damage shot down to 0. An effect adds armor into flat damage reduction; set the current armor too.", 0),
+        [("BitReactorCombatSet", "CurrentArmor")] = new(Defense, "Armor (current)", "The armor the unit has now (the HUD shows this number). It cuts every hit: 20 armor took a 24-damage shot down to 0.", 0),
+        [("BitReactorCombatSet", "BaseShields")] = new(Defense, "Shields (base)", "Set the current shields too.", 0),
+        [("BitReactorCombatSet", "CurrentShields")] = new(Defense, "Shields (current)", "A pool that takes damage before health: a 24-damage shot used up 20 shields and took 4 from health.", 0),
         [("BitReactorCombatSet", "CriticalHitResistance")] = new(Defense, "Critical hit resistance"),
 
         [("BitReactorCombatSet", "BonusOptimizationsSlots")] = new("Other", "Bonus optimization slots", "", 0),
         [("BitReactorCombatSet", "BonusEquipmentSlots")] = new("Other", "Bonus equipment slots", "", 0),
         [("BitReactorCombatSet", "BonusModificationSlots")] = new("Other", "Bonus modification slots", "", 0),
 
-        [("BitReactorAdvantageSet", "Advantage")] = new("Other", "Advantage (this unit)", "", 0),
-        [("BitReactorAdvantageSet", "MaximumAdvantage")] = new("Other", "Maximum advantage", "", 0),
+        [("BitReactorAdvantageSet", "Advantage")] = new("Other", "Advantage (this unit)", "The game puts this back to its own value when it loads the save.", 0, Keep: StatKeep.No),
+        [("BitReactorAdvantageSet", "MaximumAdvantage")] = new("Other", "Maximum advantage", "The game puts this back to its own value when it loads the save.", 0, Keep: StatKeep.No),
 
-        [("BitReactorGrenadeUserSet", "GrenadeMaxThrowDistance")] = new(Grenade, "Throw distance", "Game units; gear raises it in the game (1800 saved, 2000 shown).", 0),
-        [("BitReactorGrenadeUserSet", "GrenadeBlastRadius")] = new(Grenade, "Blast radius", "Game units.", 0),
-        [("BitReactorGrenadeUserSet", "GrenadeDamage")] = new(Grenade, "Damage", "", 0),
-        [("BitReactorGrenadeUserSet", "GrenadeBonusDamage")] = new(Grenade, "Bonus damage"),
-        [("BitReactorGrenadeUserSet", "CriticalHitChance")] = new(Grenade, "Critical chance", Chance, 0, 1),
-        [("BitReactorGrenadeUserSet", "CriticalHitDamage")] = new(Grenade, "Critical damage", "", 0),
+        [("BitReactorGrenadeUserSet", "GrenadeMaxThrowDistance")] = new(Grenade, "Throw distance", "Game units; gear raises it in the game (1800 saved, 2000 shown). " + Rebuilt, 0, Keep: StatKeep.NotForHeroes),
+        [("BitReactorGrenadeUserSet", "GrenadeBlastRadius")] = new(Grenade, "Blast radius", "Game units. " + Rebuilt, 0, Keep: StatKeep.NotForHeroes),
+        [("BitReactorGrenadeUserSet", "GrenadeDamage")] = new(Grenade, "Damage", Rebuilt, 0, Keep: StatKeep.NotForHeroes),
+        [("BitReactorGrenadeUserSet", "GrenadeBonusDamage")] = new(Grenade, "Bonus damage", "A bonus of 20 did not change what a thrown grenade did (the grenade item sets its own damage).", Keep: StatKeep.No),
+        [("BitReactorGrenadeUserSet", "CriticalHitChance")] = new(Grenade, "Critical chance", Chance + " Chance 1 with critical damage 10 raised a grenade from 29 damage to 47.", 0, 1),
+        [("BitReactorGrenadeUserSet", "CriticalHitDamage")] = new(Grenade, "Critical damage", "Extra damage when a grenade crits: chance 1 with critical damage 10 raised a grenade from 29 damage to 47.", 0),
     };
 
     /// <summary>Names shared by the ranged and melee weapon sets, shown under whichever weapon set holds them.</summary>
     static readonly Dictionary<string, (string Label, string Note, double Min, double Max)> Weapon = new()
     {
-        ["Damage"] = ("Damage", BaseOnly + " A hero's ranged base 12 showed 16 in the game with gear. " + Rebuilt, 0, 1e6),
+        ["Damage"] = ("Damage", BaseOnly + " A hero's ranged base 12 showed 16 in the game with gear. " + Rebuilt + " An enemy keeps it and uses it: a Striker with melee damage 60 hit a hero for 57 (after armor 3), an unedited Striker for 19, and an Enforcer with ranged damage 50 hit a hero for 47. Enemy ranged shots rarely land on heroes who carry Evasion or Difficult Target.", 0, 1e6),
         ["CriticalHitChance"] = ("Critical chance", Chance + " " + BaseOnly + " " + Rebuilt, 0, 1),
         ["CriticalHitDamage"] = ("Critical damage", Rebuilt, 0, 1e6),
         ["Range"] = ("Range", Rebuilt, 0, 1e6),
@@ -103,7 +125,7 @@ public static class CombatStatCatalog
         ["CloseRangeFalloffIncrement"] = ("Close range falloff", "", 0, 1e6),
         ["LongRangeFalloffIncrement"] = ("Long range falloff", "", 0, 1e6),
         ["FlankDamage"] = ("Flank damage", Kept, -1e6, 1e6),
-        ["SureshotDamage"] = ("Sureshot damage", "The saved base was kept after the unit fired in testing, but the game showed 0 as the current value.", -1e6, 1e6),
+        ["SureshotDamage"] = ("Sureshot damage", "The saved base stays after the unit fires, but the game may show 0 as the current value.", -1e6, 1e6),
         ["CloseRangeDamage"] = ("Close range damage", "", -1e6, 1e6),
         ["LongRangeDamage"] = ("Long range damage", "", -1e6, 1e6),
         ["HighGroundDamage"] = ("High ground damage", "", -1e6, 1e6),
@@ -123,7 +145,8 @@ public static class CombatStatCatalog
     {
         if (Known.TryGetValue((set, name), out var k)) return k;
         var group = set switch { "BitReactorRangedWeaponSet" => Ranged, "BitReactorMeleeWeaponSet" => Melee, _ => "Other" };
-        if (group != "Other" && Weapon.TryGetValue(name, out var w)) return new StatInfo(group, w.Label, w.Note, w.Min, w.Max);
+        if (group != "Other" && Weapon.TryGetValue(name, out var w))
+            return new StatInfo(group, w.Label, w.Note, w.Min, w.Max, WeaponRebuilt.Contains(name) ? StatKeep.NotForHeroes : StatKeep.Yes);
         return new StatInfo(group, Spaced(name));
     }
 
