@@ -11,7 +11,7 @@
 -- An <object|Class> is a full object path (contains "/" or ".") or a short class name (its first live instance).
 -- Nothing here changes the game on its own: set/exec/eval run only when zcdebug sends them (it asks for --write first).
 
-local VERSION = "0.13"
+local VERSION = "0.17"
 local DIR = (os.getenv("LOCALAPPDATA") or ".") .. "\\ZeroCompanyEditor\\debug\\"
 local REQUEST, RESPONSE, HEARTBEAT = DIR .. "request.txt", DIR .. "response.txt", DIR .. "heartbeat.txt"
 
@@ -491,6 +491,40 @@ local function field(o, name)
     return ok and v or nil
 end
 
+-- an event argument as text: a gameplay tag by its name, an object by its name, an objective/bond/actor struct by what it points at, else as eval would print it
+local function describeParam(p)
+    local o = payload(p)
+    if o == nil then
+        -- an array can arrive without a wrapper: read it directly
+        local okn, n = pcall(function() return #p end)
+        if okn and type(n) == "number" and n >= 0 and n < 1000 then
+            local names = {}
+            for i = 1, math.min(n, 6) do names[#names + 1] = who(p[i]) end
+            return "[" .. table.concat(names, ", ") .. (n > 6 and ", ..." or "") .. "]"
+        end
+        return fmt(p)
+    end
+    local tag = field(o, "TagName")
+    if tag ~= nil then local ok, s = pcall(function() return tag:ToString() end); if ok then return "tag " .. tostring(s) end end
+    for _, f in ipairs({ "TacticalObjective", "MissionObjective", "ObjectiveBase", "Actor", "SpawnedUnit" }) do
+        local v = field(o, f)
+        if v ~= nil then return f .. "=" .. who(v) end
+    end
+    local lvl = field(o, "BondLevel")
+    if lvl ~= nil then return string.format("bond level %s progress %s", tostring(lvl), tostring(field(o, "BondProgress"))) end
+    if type(o) == "userdata" then
+        local ok, valid = pcall(function() return o:IsValid() end)
+        if ok then return valid and who(o) or "(null object)" end
+        local okn, n = pcall(function() return #o end)                  -- an array of objects: the first few names
+        if okn and type(n) == "number" and n >= 0 then
+            local names = {}
+            for i = 1, math.min(n, 6) do names[#names + 1] = who(o[i]) end
+            return "[" .. table.concat(names, ", ") .. (n > 6 and ", ..." or "") .. "]"
+        end
+    end
+    return fmt(o)
+end
+
 -- one unit's numbers, or nil when it cannot be read right now
 local function readUnit(c)
     local asc = c.AbilitySystemComponent
@@ -577,9 +611,54 @@ local events = {
         logLine("== round " .. round)
         snapshot("round " .. round)
     end },
+    { GAMEPLAY .. "AbilityEventDelegateHandler:OnAbilityEnded", function(self, ability, cancelled)
+        local c = false
+        pcall(function() c = cancelled:get() == true end)
+        local name = abilityOf(ability)
+        -- only the abilities a player would care about being cancelled; passives and a dead unit's cleanup cancel all the time
+        if c and (name:find("Shot") or name:find("Melee") or name:find("Move") or name:find("Grenade") or name:find("Overwatch")) then logLine("ABILITY cancelled  " .. name) end
+    end },
+    { GAMEPLAY .. "AbilityEventDelegateHandler:OnTargetingStarted", function(self, ability, target) logLine("AIM     " .. abilityOf(ability) .. " at " .. who(target)) end },
+    { GAMEPLAY .. "AbilityEventDelegateHandler:OnSelectedTargetsChanged", function(self, targets)
+        local text = describeParam(targets)
+        if text ~= "?" and text ~= "[]" then logLine("AIM     targets " .. text) end      -- the array arrives unreadable at times
+    end },
+    { GAMEPLAY .. "PhaseEventDelegateHandler:OnSetGameSubPhase", function(self, old, new)
+        local a, b = describeParam(old), describeParam(new)
+        if (a .. b):find("AbilityBeat") then return end                     -- two of these per ability: not worth a line
+        logLine("PHASE   " .. a:gsub("^tag ", "") .. " -> " .. b:gsub("^tag ", ""))
+    end },
     { CHARACTER .. "ReceiveUnitDowned", function(self) logLine(string.format("DOWNED  %s", who(self))) end },
     { CHARACTER .. "ReceiveUnitHealed", function(self, source, ability) logLine(string.format("HEAL    %s <- %s  via %s", who(self), who(source), abilityOf(ability))) end },
 }
+
+-- Events that did not fire in an ordinary enemy phase (objectives, bonds, destroyed props, reinforcements, toasts ...): hooked all the same,
+-- since a hook costs nothing until its event happens. Each one logs "EVENT  <what>  <its arguments>".
+local function generic(label)
+    return function(self, ...)
+        local parts = {}
+        for i = 1, select("#", ...) do parts[#parts + 1] = describeParam((select(i, ...))) end
+        logLine("EVENT   " .. label .. (#parts > 0 and ("  " .. table.concat(parts, ", ")) or ""))
+    end
+end
+for _, e in ipairs({
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastTacticalObjectiveActivatedEvent", "tactical objective activated" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastTacticalObjectiveProgressUpdatedEvent", "tactical objective progress" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastTacticalObjectiveSucceededEvent", "tactical objective succeeded" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastTacticalObjectiveFailedEvent", "tactical objective failed" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastMissionObjectiveActivatedEvent", "mission objective activated" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastMissionObjectiveProgressUpdatedEvent", "mission objective progress" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastMissionObjectiveSucceededEvent", "mission objective succeeded" },
+    { GAMEPLAY .. "ObjectiveEventDispatcher:BroadcastMissionObjectiveFailedEvent", "mission objective failed" },
+    { GAMEPLAY .. "BondEventDelegateHandler:OnBondProgressed", "bond progressed" },
+    { GAMEPLAY .. "BondEventDelegateHandler:OnBondCreated", "bond created" },
+    { GAMEPLAY .. "DestructionEventDispatcher:BroadcastOnAnyDestructionEventOccurred", "prop destroyed" },
+    { GAMEPLAY .. "UIEventDispatcher:BroadcastReinforcementEvent", "reinforcements" },
+    { GAMEPLAY .. "UIEventDispatcher:BroadcastToastEvent", "toast" },
+    { GAMEPLAY .. "UnitEventDispatcher:BroadcastOnUnitVisualizedFatalDamage", "fatal damage shown" },
+    { "/Script/Bruno.ETSG_TacticalEncounterEventHandler:OnTacticalCombatStarted", "combat started" },
+    { "/Script/Bruno.ETSG_TacticalEncounterEventHandler:OnTacticalCombatEnded", "combat ended" },
+}) do events[#events + 1] = { e[1], generic(e[2]) } end
 
 local hooksState = nil          -- nil: not tried yet, otherwise "n of m event hooks installed"
 
@@ -751,14 +830,7 @@ function commands.trace(args)
         local parts = { "self=" .. who(self) }
         for i = 1, select("#", ...) do
             local p = select(i, ...)
-            local good, v = pcall(function()
-                if type(p) == "userdata" and p.get then
-                    local o = p:get()
-                    if type(o) == "userdata" and o.GetFName and o.IsValid and o:IsValid() then return who(o) end
-                    return fmt(o)
-                end
-                return fmt(p)
-            end)
+            local good, v = pcall(describeParam, p)
             parts[#parts + 1] = "p" .. i .. "=" .. (good and v or "?")
         end
         logLine("CALL    " .. short .. "(" .. table.concat(parts, ", ") .. ")")

@@ -314,3 +314,15 @@ touched). The originals are copied first to `ue4ss\zcdebug-signature-backup\<tim
 back; `--no-signatures` skips the step. Try it on a save you can lose, and prefer the author's own pack as soon as there is one. If a script
 then reports `no validated loaded function entry`, the function itself changed and needs a new pattern.
 Like `zc`, publish it as a single-file build (`dotnet publish src/ZeroCompany.DebugCli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zcdebug-win-x64`).
+
+**Driving a fight without anyone at the keyboard.** With the mod loaded the combat log shows what happened, and these calls make it happen:
+`call BP_BrunoGameplayMaster_C RequestEndTurn --write` ends the player turn and `zcdebug loadstatus` / the log's `== round N` lines say when the
+next one starts. A hero's action is started the way a radial-menu click does it, by calling `TryActivatingAbilityOfClass(<ability class>)` on the
+`B_AbilitySelectionVM` whose `RepresentedCharacter` is that hero, which opens aiming; `ConfirmTargeting` on the `BRG_PlayerTargetingViewModel`
+then fires it at the suggested target (the log shows `ABILITY`, `SHOT` and `HIT` for it; `AddSelectedTarget` picks another). Check each object with `IsValid()`
+before calling a method on it: a method call on a null object crashes the game.
+The game's own manual save can be called from the mod, which gives a save of any live state (for example right after a wave was announced):
+`FindFirstOf('BrunoSaveGameSubsystem'):SaveGame(subsystem, '<name>', 1, 0, 0, 0, 0)`, where 1 is ManualSave; the file appears in the save folder
+within a couple of seconds. Edit that save with `zc edit apply --copy`, put it in the slot the game is loaded from and `zcdebug load` it to see what the
+edit did. Loading only works within the level the game is already in: loading a save from another mission leaves the current level and mixes
+the two, so test an edit on a save from the same map, put in a slot file whose name belongs to that map (the game takes the level from the file name, and only loads names it listed at start-up, so overwrite an existing save of that map and keep a backup).
