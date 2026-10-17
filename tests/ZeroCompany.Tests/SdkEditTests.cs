@@ -175,6 +175,28 @@ public class SdkEditTests : IDisposable
     }
 
     [SkippableFact]
+    public void Black_Market_tables_can_be_changed_and_a_missing_tier_is_added()
+    {
+        var (ws, path) = Rig(Repo.SampleSave());
+        var ed = Open(ws, path);
+        var before = ZeroCompany.Core.Actions.MarketOps.Counts(ed.Save.Gvas);
+        Skip.If(before == null, "the sample save has no Black Market");
+        Assert.Throws<ZcException>(() => ed.Do("set-market", new[] { "mods", "4", "1" }));        // the game has no table above tier 3
+        const string Basic = "br.ShopTable.Mods.Tier1";
+        ed.Do("set-market", new[] { "mods", "1", "2" });
+        ed.Do("set-market", new[] { "mods", "3", "0" });
+        var res = ed.Apply(asCopy: true);
+
+        var after = ZeroCompany.Core.Actions.MarketOps.Counts(Open(ws, Copy(ed, res)).Save.Gvas)!;
+        Assert.Equal(2, after[Basic]);
+        Assert.Equal(0, after["br.ShopTable.Mods.Tier3"]);
+        var tiers = new[] { Basic, "br.ShopTable.Mods.Tier3" };
+        Assert.Equal(before!.Count + tiers.Count(t => !before.ContainsKey(t)), after.Count);       // tiers the save did not list were added
+        Assert.All(before.Where(kv => !tiers.Contains(kv.Key)), kv => Assert.Equal(kv.Value, after[kv.Key]));      // the others did not move
+        Assert.Equal(before.Count, ZeroCompany.Core.Actions.MarketOps.Counts(Open(ws, path).Save.Gvas)!.Count);   // the original is untouched
+    }
+
+    [SkippableFact]
     public void Editing_an_operators_focus_moves_their_total_focus_with_it()
     {
         var (ws, path) = Rig(Repo.SampleSave());

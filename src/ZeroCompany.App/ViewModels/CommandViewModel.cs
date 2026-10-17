@@ -82,6 +82,49 @@ public sealed class GearSlotRowViewModel : ViewModelBase, IDisposable
     }
 }
 
+/// <summary>One Black Market quality table on the Command screen: how many items it rolls per refresh.</summary>
+public sealed class MarketTableRowViewModel : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _pending;
+    readonly string _kind;
+    readonly int _tier;
+    readonly int _saved;
+    int _value;
+
+    public MarketTableRowViewModel(PendingChanges pending, string kind, int tier, int saved)
+    {
+        _pending = pending; _kind = kind; _tier = tier; _saved = saved;
+        Label = $"{MarketOps.Quality(tier)} {(kind == "mods" ? "weapon mods" : "utility items")}";
+        _value = pending.MarketTables.TryGetValue((kind, tier), out var queued) ? queued : saved;
+        _pending.Changed += Sync;
+    }
+
+    public string Label { get; }
+
+    void Sync()
+    {
+        int v = _pending.MarketTables.TryGetValue((_kind, _tier), out var queued) ? queued : _saved;
+        if (v == _value) return;
+        _value = v;
+        OnPropertyChanged(nameof(Value));
+    }
+
+    public decimal Value
+    {
+        get => _value;
+        set
+        {
+            int v = (int)Math.Clamp(value, 0, MarketOps.MaxCount);
+            if (v == _value) return;
+            _value = v;
+            _pending.SetMarketTable(_kind, _tier, v == _saved ? -1 : v);        // back at what the save has: nothing to write
+            OnPropertyChanged();
+        }
+    }
+
+    public void Dispose() => _pending.Changed -= Sync;
+}
+
 /// <summary>Command: campaign overview, progression, stockpile, save info and backups (the "hub" screen).</summary>
 public sealed class CommandViewModel : ScreenViewModel
 {
@@ -123,8 +166,10 @@ public sealed class CommandViewModel : ScreenViewModel
                                   : "Every operator gets the new slots, empty and ready to equip.", now, most)));
         }
         foreach (var (key, _, label, _, note) in SaveModel.DenFacts) Add(key, label, 0, note);
-        foreach (var (key, f) in open.Model.Prog.Where(kv => kv.Key.StartsWith("market_", StringComparison.Ordinal) && kv.Value != null).OrderBy(kv => kv.Key, StringComparer.Ordinal))
-            Add(key, f!.Label, 0, f.Note);
+        if (MarketOps.Counts(gvas) is { } market)
+            foreach (var marketKind in MarketOps.Kinds)
+                for (int tier = MarketOps.MinTier; tier <= MarketOps.MaxTier; tier++)
+                    MarketTables.Add(Own(new MarketTableRowViewModel(main.Session.Pending, marketKind, tier, market.GetValueOrDefault(MarketOps.Tag(marketKind, tier)))));
         foreach (var r in v.Header.Resources)
             Stockpile.Add(new FieldRowViewModel(r.Label, fields.Make(r, 0, r.Label)!, r.Description));
         foreach (var b in main.Session.Service.ListBackups(open.Name)) Backups.Add(new BackupRowViewModel(this, b));
@@ -140,6 +185,8 @@ public sealed class CommandViewModel : ScreenViewModel
     public List<FieldRowViewModel> Stockpile { get; } = new();
     public List<GearSlotRowViewModel> GearSlots { get; } = new();
     public bool HasGearSlots => GearSlots.Count > 0;
+    public List<MarketTableRowViewModel> MarketTables { get; } = new();
+    public bool HasMarketTables => MarketTables.Count > 0;
     public List<BackupRowViewModel> Backups { get; } = new();
 
     public Task RestoreAsync(string file) => _main.RestoreAsync(file, _main.PendingBar.Force);

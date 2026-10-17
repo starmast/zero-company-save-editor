@@ -19,6 +19,7 @@ public sealed class PendingChanges
     readonly Dictionary<string, double> _linkedDelta = new();         // field id -> how far its edits have moved the field that follows it
     readonly List<string> _starts = new(), _expedites = new(), _heals = new(), _treeFixes = new(), _revives = new();
     readonly Dictionary<string, string> _coil = new();
+    readonly Dictionary<(string Kind, int Tier), int> _market = new();                      // Den: (mods/utility, tier) -> items per Black Market refresh
     readonly Dictionary<string, int> _gearSlots = new();                                    // Den: "mod"/"utility" -> slots every operator should have
     readonly Dictionary<(string Guid, string Tag), int> _grants = new();                  // Personnel: (operator, ability tag) -> focus-tree level to give it at
     readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
@@ -62,6 +63,7 @@ public sealed class PendingChanges
     public IReadOnlyList<string> Revives => _revives;
     public IReadOnlyDictionary<(string Guid, string Tag), int> Grants => _grants;
     public IReadOnlyDictionary<string, int> GearSlots => _gearSlots;
+    public IReadOnlyDictionary<(string Kind, int Tier), int> MarketTables => _market;
     public IReadOnlyDictionary<string, string> CoilChanges => _coil;
     public IReadOnlyDictionary<int, bool> DeadChanges => _dead;
     public IReadOnlyDictionary<int, string> ObjectiveChanges => _objectives;
@@ -83,7 +85,7 @@ public sealed class PendingChanges
 
     public int Count => _edits.Count + ActionCount;
 
-    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count + _grants.Count + _gearSlots.Count
+    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count + _grants.Count + _gearSlots.Count + _market.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
                               + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _squadAdds.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
@@ -182,7 +184,7 @@ public sealed class PendingChanges
     public void Clear()
     {
         _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
-        _revives.Clear(); _treeFixes.Clear(); _grants.Clear(); _gearSlots.Clear(); _coil.Clear(); RosterOrderOverride = null;
+        _revives.Clear(); _treeFixes.Clear(); _grants.Clear(); _gearSlots.Clear(); _market.Clear(); _coil.Clear(); RosterOrderOverride = null;
         _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _squadAdds.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
@@ -196,6 +198,12 @@ public sealed class PendingChanges
     public void ToggleExpedite(string id, bool? on = null) { Toggle(_expedites, id, on); Raise(); }
     public void ToggleHeal(string guid, bool? on = null) { Toggle(_heals, guid, on); Raise(); }
     public void ToggleTreeFix(string guid, bool? on = null) { Toggle(_treeFixes, guid, on); Raise(); }
+    /// <summary>Queue making a Black Market quality table roll <paramref name="count"/> items per refresh; a negative count removes the request.</summary>
+    public void SetMarketTable(string kind, int tier, int count)
+    {
+        if (count < 0) _market.Remove((kind, tier)); else _market[(kind, tier)] = count;
+        Raise();
+    }
     /// <summary>Queue giving every operator <paramref name="total"/> gear slots of <paramref name="type"/> ("mod" or "utility"); a total below 1 removes the request.</summary>
     public void SetGearSlots(string type, int total)
     {
@@ -380,6 +388,8 @@ public sealed class PendingChanges
         @out.AddRange(_heals.Select(g => (SaveAction)new SaveAction.HealOperator(g)));
         @out.AddRange(_treeFixes.Select(g => (SaveAction)new SaveAction.CompleteFocusTree(g)));
         @out.AddRange(_revives.Select(g => (SaveAction)new SaveAction.ReviveOperator(g)));
+        @out.AddRange(_market.OrderBy(kv => kv.Key.Kind, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tier)
+                             .Select(kv => (SaveAction)new SaveAction.SetMarketTable(kv.Key.Kind, kv.Key.Tier, kv.Value)));
         @out.AddRange(_gearSlots.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetGearSlots(kv.Key, kv.Value)));
         @out.AddRange(_grants.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tag, StringComparer.Ordinal)
                              .Select(kv => (SaveAction)new SaveAction.GrantAbility(kv.Key.Guid, kv.Key.Tag, kv.Value)));
@@ -450,6 +460,8 @@ public sealed class PendingChanges
         foreach (var g in _heals) @out.Add(new PendingLine("Medbay", "", null, null, $"Heal {Op(g)} (free, instant)"));
         foreach (var g in _treeFixes) @out.Add(new PendingLine("Personnel", "", null, null, $"Complete focus tree: {Op(g)}"));
         foreach (var g in _revives) @out.Add(new PendingLine("Personnel", "", null, null, $"Bring back {Op(g)} from the Memorial"));
+        foreach (var ((kind, tier), n) in _market.OrderBy(kv => kv.Key.Kind, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tier))
+            @out.Add(new PendingLine("Den", "", null, null, $"Black Market rolls {n} {MarketOps.Quality(tier)} {(kind == "mods" ? "weapon mod" : "utility")} item{(n == 1 ? "" : "s")} per refresh"));
         foreach (var (type, n) in _gearSlots.OrderBy(kv => kv.Key, StringComparer.Ordinal))
             @out.Add(new PendingLine("Den", "", null, null, $"Every operator gets {n} {type} slots"));
         foreach (var ((g, tag), lvl) in _grants.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tag, StringComparer.Ordinal))

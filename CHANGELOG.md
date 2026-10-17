@@ -16,9 +16,10 @@ All notable changes to this project are documented here. The format follows
 - **Den numbers** on the Command tab: field tasks per turn (most and now), the Black Market's refresh cost, and its bonus items (`zc edit fields <save> progression`). Tried in the
   game: a third operation could be launched with the limit at 6, the refresh cost followed the saved number (and the discount and increment worked from it), and the
   Black Market stocked 12 items instead of 7 after a refresh. The shop price number in the same part of the save is not exposed because its effect was not confirmed.
-- **Black Market quality.** The Command tab lists how many items the Black Market rolls per refresh from each quality table (Basic, Superior, Exquisite, for weapon
-  mods and for utilities), for example Superior 1 and Exquisite 1 each. Tried in the game: with the Superior tables at 0 and the Exquisite ones at 3, a refresh stocked
-  only Exquisite items. Which table the bonus items come from is not editable yet.
+- **Black Market quality.** Command > Black Market restock sets how many items a refresh rolls from each quality table (Basic, Superior, Exquisite, for weapon mods
+  and for utilities); `zc edit do <save> set-market <mods|utility> <tier 1-3> <count>` does the same. A table the save does not list yet is added. Tried in the game:
+  Superior and Exquisite at 0 and Basic at 3 stocked only Basic items, and the reverse stocked only Exquisite ones. The bonus items still come from the Exquisite mods
+  table. The game has no table above Exquisite, so Exotic items and the unique ones come from Armory > Add items.
 - **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
 
 ## [0.7.0] - 2026-10-16

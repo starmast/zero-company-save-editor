@@ -17,6 +17,8 @@ public sealed class CutInfo
     public List<(string Guid, string Tag, byte[] Record)> Granted { get; } = new();
     /// <summary>Gear slots set for everyone: item type tag -> the slot count each operator must have at least.</summary>
     public Dictionary<string, int> GearSlots { get; } = new();
+    /// <summary>Black Market quality tables: table tag -> how many items it must roll.</summary>
+    public Dictionary<string, int> MarketTables { get; } = new();
     /// <summary>Expected roster order after a reorder.</summary>
     public List<string>? Roster { get; set; }
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>

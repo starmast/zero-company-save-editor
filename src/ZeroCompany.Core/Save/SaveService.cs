@@ -353,7 +353,7 @@ public sealed class SaveService
     GvasFile RunActions(OpenSave c, GvasFile g, IReadOnlyList<SaveAction> actions, HashSet<string> touched, CutInfo cut)
     {
         var seen = new HashSet<string>();
-        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>(); var gearDone = new HashSet<string>();
+        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>(); var gearDone = new HashSet<string>(); var marketDone = new HashSet<string>();
         bool rosterDone = false, coilDone = false;
 
         static string NormGuid(string raw)
@@ -404,6 +404,15 @@ public sealed class SaveService
                     if (!gearDone.Add(type)) throw new EditException("duplicate gear slot action");
                     try { g = GearOps.SetSlotCount(g, type, gs.Total, cut); }
                     catch (GvasException e) { throw new EditException($"Gear slots: {e.Message}", e); }
+                    break;
+                }
+                case SaveAction.SetMarketTable mt:
+                {
+                    if (!MarketOps.Kinds.Contains(mt.Kind) || mt.Tier < MarketOps.MinTier || mt.Tier > MarketOps.MaxTier || mt.Count < 0 || mt.Count > MarketOps.MaxCount)
+                        throw new EditException($"Black Market table: kind mods or utility, tier {MarketOps.MinTier} to {MarketOps.MaxTier}, count 0 to {MarketOps.MaxCount}");
+                    if (!marketDone.Add(mt.Kind + mt.Tier)) throw new EditException("duplicate Black Market table");
+                    try { g = MarketOps.Set(g, MarketOps.Tag(mt.Kind, mt.Tier), mt.Count, cut); }
+                    catch (GvasException e) { throw new EditException($"Black Market: {e.Message}", e); }
                     break;
                 }
                 case SaveAction.ReorderRoster ro:
@@ -755,6 +764,8 @@ public sealed class SaveService
                     throw new EditException("verification failed: a death effect is still present");
             }
         }
+        if (cut.MarketTables.Count > 0 && !MarketOps.Holds(g2, cut.MarketTables))
+            throw new EditException("verification failed: the Black Market tables are not what was intended");
         foreach (var (type, total) in cut.GearSlots)
             if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
         foreach (var (guid, tag, record) in cut.Granted)

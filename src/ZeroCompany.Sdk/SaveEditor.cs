@@ -150,6 +150,15 @@ public sealed class SaveEditor
             p.SetGrant(o.Guid, hit[0].Tag, level);
             return $"give {o.Name} {hit[0].Tag} at level {level}";
         });
+        Reg("set-market", "set-market <mods|utility> <tier 1-3> <count>", "how many items the Black Market rolls per refresh from one quality table (1 Basic, 2 Superior, 3 Exquisite)", a =>
+        {
+            string kind = a[0].ToLowerInvariant();
+            if (!MarketOps.Kinds.Contains(kind)) throw new ZcException("the kind must be mods or utility");
+            int tier = (int)Count(a[1], MarketOps.MinTier, MarketOps.MaxTier);
+            int n = a.Count > 2 ? (int)Count(a[2], 0, MarketOps.MaxCount) : throw new ZcException("usage: set-market <mods|utility> <tier 1-3> <count>");
+            p.SetMarketTable(kind, tier, n);
+            return $"Black Market rolls {n} {MarketOps.Quality(tier)} {kind} item(s) per refresh";
+        });
         Reg("set-slots", "set-slots <mod|utility> <total>", "give every operator this many gear slots (mod 1-4, utility 1-12)", a =>
         {
             string type = a[0].ToLowerInvariant();
