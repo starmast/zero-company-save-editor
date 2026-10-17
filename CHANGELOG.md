@@ -20,7 +20,7 @@ All notable changes to this project are documented here. The format follows
   and for utilities); `zc edit do <save> set-market <mods|utility> <tier 1-3> <count>` does the same. A table the save does not list yet is added. Tried in the game:
   Superior and Exquisite at 0 and Basic at 3 stocked only Basic items, and the reverse stocked only Exquisite ones. The bonus items still come from the Exquisite mods
   table. The game has no table above Exquisite, so Exotic items and the unique ones come from Armory > Add items.
-- **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
+- **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. It is also what the Recruitment screen checks (tried in the game: at 18 of 18 recruiting is blocked with "No open roster slots", at 18 of 19 it is allowed), so raising it lets you recruit past the Den's limit. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
 
 ## [0.7.0] - 2026-10-16
 
