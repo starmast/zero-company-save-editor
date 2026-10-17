@@ -140,7 +140,7 @@ public sealed class SaveModel
         foreach (var (key, fact, label, hi, note) in DenFacts)
             Prog[key] = Add(Facts.GetValueOrDefault(fact), "Progression", "Den", label, lo: 0, hi: hi, note: note);
         Prog["roster_cap"] = Add(Facts.GetValueOrDefault("Facts.Values.MaximumRosterCount"), "Progression", "Roster", "Roster capacity",
-                                 lo: 1, hi: 1000, note: "How many operators the roster holds. Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
+                                 lo: 1, hi: 1000, note: "How many operators the roster holds, and the limit the Recruitment screen checks (no recruiting at full). Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
     }
 
     /// <summary>Den numbers the save keeps as literal facts: (key, fact, label, highest value, note).</summary>

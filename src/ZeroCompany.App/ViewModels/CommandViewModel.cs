@@ -153,7 +153,7 @@ public sealed class CommandViewModel : ScreenViewModel
         }
         Add("turn", "Strategy turn", 0, "The save's info file keeps its own copy, which is not updated.");
         Add("roster_level", "Roster level (LV)", 1, "Shown as LV in the game; Den Level is the same scale.");
-        Add("roster_cap", "Roster capacity", 0, "How many operators the roster holds; roster upgrades raise it. Going past what the Den allows works, but the roster screens can look odd.");
+        Add("roster_cap", "Roster capacity", 0, "How many operators the roster holds, and the limit the Recruitment screen checks. Roster upgrades raise it. Going past what the Den allows works, but the roster screens can look odd.");
         Add("roster_xp", "Roster XP", 0, "");
         Add("base_focus", "Base total focus points", 0, "Raised by the Crew Focus upgrades.");
         var gvas = open.Gvas;

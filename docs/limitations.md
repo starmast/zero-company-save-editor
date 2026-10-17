@@ -7,6 +7,10 @@
 - **Roster capacity** can be set higher than the Den's upgrades allow, and a roster above its capacity loads without trimming (tried in the game), but the roster screens
   look odd when the numbers do not fit, for example 18/15.
 - **Gear slots** raise every operator at once, never lower them, and need the save to have a bonus slot record (any save that has had a slot upgrade does).
+- **Recruiting** cannot be steered from a save. The six candidates the Recruitment screen offers are generated each time the Den loads (the save keeps no list and
+  no seed for them: a candidate kept her name and talent but came back with a different specialization and weapon after a reload), so you cannot choose who
+  appears. What the editor can change is the room to recruit (Roster capacity) and, afterwards, the new operator: abilities (Personnel > Focus Tree > Give an
+  ability) and gear slots.
 - **Give an ability** can only copy an ability from an operator who has it in the same save, and it arrives at level 1.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.
 - **Bring back** works in the Personnel screens, the Den and on missions (tested in the game with the tutorial operator), but it
