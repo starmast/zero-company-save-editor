@@ -18,6 +18,7 @@ public class DebugBridgeTests : IDisposable
         public FakeMod(Bridge b, Func<string, string, (bool, string)> handler)
         {
             File.WriteAllText(b.HeartbeatPath, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}\tzcdebug-mod fake\n");
+            foreach (var stale in new[] { b.RequestPath, b.ReplyPath }) try { File.Delete(stale); } catch (IOException) { }      // a request left by an earlier fake must not be answered by this one
             _task = Task.Run(() =>
             {
                 string? last = null;
@@ -251,13 +252,18 @@ public class DebugBridgeTests : IDisposable
             Assert.Contains("now running 0.6", sw.ToString());
         }
 
-        using var stuck = new FakeMod(b, (cmd, _) => cmd == "reload" ? (true, "reloading 0.5 -> 0.7") : (true, "pong 1 zcdebug-mod 0.5"));
-        var sw2 = new StringWriter();
-        Assert.Equal(1, Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), sw2, TimeSpan.FromMilliseconds(900)));
-        Assert.Contains("did not answer as 0.7", sw2.ToString());
+        using (new FakeMod(b, (cmd, _) => cmd == "reload" ? (true, "reloading 0.5 -> 0.7") : (true, "pong 1 zcdebug-mod 0.5")))
+        {
+            var sw2 = new StringWriter();
+            var code = Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), sw2, TimeSpan.FromMilliseconds(900));
+            Assert.True(code == 1, "exit code " + code + "; output: " + sw2);
+            Assert.Contains("did not answer as 0.7", sw2.ToString());
+        }
 
         using var broken = new FakeMod(b, (_, _) => (false, "not reloaded, syntax error: x"));
-        Assert.Equal(1, Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), new StringWriter()));
+        var sw3 = new StringWriter();
+        var code3 = Investigate.Reload(b, null, null, write: true, TimeSpan.FromSeconds(3), sw3);
+        Assert.True(code3 == 1, "exit code " + code3 + "; output: " + sw3);
     }
 
     [Fact]
