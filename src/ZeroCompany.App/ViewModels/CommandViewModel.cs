@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Save;
 
 namespace ZeroCompany.App.ViewModels;
@@ -36,6 +37,50 @@ public sealed class BackupRowViewModel
     public IAsyncRelayCommand RestoreCommand { get; }
 }
 
+/// <summary>One kind of gear slot (weapon mod or utility) on the Command screen: the number every operator should have.</summary>
+public sealed class GearSlotRowViewModel : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _pending;
+    readonly string _type;
+    int _value;
+
+    public GearSlotRowViewModel(PendingChanges pending, string type, string label, string note, int current, int most)
+    {
+        _pending = pending; _type = type;
+        Label = label; Note = note; Minimum = current; Maximum = most;
+        _value = pending.GearSlots.TryGetValue(type, out var queued) ? queued : current;
+        _pending.Changed += Sync;
+    }
+
+    void Sync()
+    {
+        int v = _pending.GearSlots.TryGetValue(_type, out var queued) ? queued : Minimum;
+        if (v == _value) return;
+        _value = v;
+        OnPropertyChanged(nameof(Value));
+    }
+
+    public void Dispose() => _pending.Changed -= Sync;
+
+    public string Label { get; }
+    public string Note { get; }
+    public int Minimum { get; }
+    public int Maximum { get; }
+
+    public decimal Value
+    {
+        get => _value;
+        set
+        {
+            int v = (int)Math.Clamp(value, Minimum, Maximum);
+            if (v == _value) return;
+            _value = v;
+            _pending.SetGearSlots(_type, v > Minimum ? v : 0);        // back at what the save has: nothing to write
+            OnPropertyChanged();
+        }
+    }
+}
+
 /// <summary>Command: campaign overview, progression, stockpile, save info and backups (the "hub" screen).</summary>
 public sealed class CommandViewModel : ScreenViewModel
 {
@@ -67,6 +112,15 @@ public sealed class CommandViewModel : ScreenViewModel
         Add("roster_cap", "Roster capacity", 0, "How many operators the roster holds; roster upgrades raise it. Going past what the Den allows works, but the roster screens can look odd.");
         Add("roster_xp", "Roster XP", 0, "");
         Add("base_focus", "Base total focus points", 0, "Raised by the Crew Focus upgrades.");
+        var gvas = open.Gvas;
+        foreach (var (type, label, most) in new[] { ("utility", "Utility slots per operator", GearOps.MaxUtilitySlots), ("mod", "Weapon mod slots per operator", GearOps.MaxModSlots) })
+        {
+            int now = GearOps.Current(gvas, GearOps.TypeTag(type));
+            if (now > 0)
+                GearSlots.Add(Own(new GearSlotRowViewModel(main.Session.Pending, type, label,
+                    type == "mod" ? "A weapon takes one mod of each kind, so four is the most that can be used."
+                                  : "Every operator gets the new slots, empty and ready to equip.", now, most)));
+        }
         foreach (var r in v.Header.Resources)
             Stockpile.Add(new FieldRowViewModel(r.Label, fields.Make(r, 0, r.Label)!, r.Description));
         foreach (var b in main.Session.Service.ListBackups(open.Name)) Backups.Add(new BackupRowViewModel(this, b));
@@ -80,6 +134,8 @@ public sealed class CommandViewModel : ScreenViewModel
     public string Summary { get; }
     public List<FieldRowViewModel> Campaign { get; } = new();
     public List<FieldRowViewModel> Stockpile { get; } = new();
+    public List<GearSlotRowViewModel> GearSlots { get; } = new();
+    public bool HasGearSlots => GearSlots.Count > 0;
     public List<BackupRowViewModel> Backups { get; } = new();
 
     public Task RestoreAsync(string file) => _main.RestoreAsync(file, _main.PendingBar.Force);

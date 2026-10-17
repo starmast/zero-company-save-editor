@@ -15,6 +15,8 @@ public sealed class CutInfo
     public List<(string Guid, Dictionary<string, List<byte[]>> Expected)> Focus { get; } = new();
     /// <summary>Abilities given to an operator: (operator guid, ability tag, the tier record copied in).</summary>
     public List<(string Guid, string Tag, byte[] Record)> Granted { get; } = new();
+    /// <summary>Gear slots set for everyone: item type tag -> the slot count each operator must have at least.</summary>
+    public Dictionary<string, int> GearSlots { get; } = new();
     /// <summary>Expected roster order after a reorder.</summary>
     public List<string>? Roster { get; set; }
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>

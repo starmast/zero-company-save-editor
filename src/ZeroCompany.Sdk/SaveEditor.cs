@@ -150,6 +150,15 @@ public sealed class SaveEditor
             p.SetGrant(o.Guid, hit[0].Tag, level);
             return $"give {o.Name} {hit[0].Tag} at level {level}";
         });
+        Reg("set-slots", "set-slots <mod|utility> <total>", "give every operator this many gear slots (mod 1-4, utility 1-12)", a =>
+        {
+            string type = a[0].ToLowerInvariant();
+            if (type is not ("mod" or "utility")) throw new ZcException("the slot type must be mod or utility");
+            int top = type == "mod" ? GearOps.MaxModSlots : GearOps.MaxUtilitySlots;
+            int n = (int)Count(a[1], 1, top);
+            p.SetGearSlots(type, n);
+            return $"every operator gets {n} {type} slots";
+        });
         Reg("move-operator", "move-operator <operator> <position>", "put an operator at a place in the roster (1 = first)", a =>
         {
             var o = Op(a[0]); p.MoveOperatorTo(o.Guid, (int)Count(a[1], 1, 999) - 1, Save.View); return $"move {o.Name} to place {a[1]}";

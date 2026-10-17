@@ -18,7 +18,7 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,12,Auto,12,Auto">
+  <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto">
     <!-- save info -->
     <Border Grid.Row="0" Grid.Column="0" Classes="panel">
       <StackPanel>
@@ -50,8 +50,30 @@
       </StackPanel>
     </Border>
 
+    <!-- gear slots -->
+    <Border Grid.Row="4" Grid.ColumnSpan="3" Classes="panel" IsVisible="{Binding HasGearSlots}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="GEAR SLOTS" /></Border>
+        <ItemsControl ItemsSource="{Binding GearSlots}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:GearSlotRowViewModel">
+              <Border Classes="hairline" Padding="12,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" />
+                    <TextBlock Classes="mute small" Text="{Binding Note}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <NumericUpDown Grid.Column="1" Width="150" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" Increment="1" FormatString="0" Value="{Binding Value, Mode=TwoWay}" VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
     <!-- backups -->
-    <Border Grid.Row="4" Grid.ColumnSpan="3" Classes="panel">
+    <Border Grid.Row="6" Grid.ColumnSpan="3" Classes="panel">
       <StackPanel>
         <Border Classes="panelh"><TextBlock Classes="caps h2" Text="BACKUPS" /></Border>
         <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"

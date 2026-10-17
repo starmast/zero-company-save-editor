@@ -9,6 +9,10 @@ All notable changes to this project are documented here. The format follows
 - **Give an ability.** Personnel > Focus Tree has a "Give an ability" box that copies an ability another operator in the save holds (for example Cly's Combat
   Jump jetpack) onto the selected operator; `zc edit do <save> grant-ability <operator> <ability> [level]` does the same. The ability's tier records and its
   focus entry are copied from the operator who has it, so the save must contain someone who holds the ability. Confirmed in the game: Hawks used the jetpack.
+- **Gear slots.** Command > Gear slots gives every operator more utility slots (up to 12) or fills the weapon's four mod slots; `zc edit do <save> set-slots
+  <mod|utility> <total>` does the same. The game reads two things: each operator's list of slots (what the Armory draws) and the bonus slot count (what lets an
+  item be equipped), so the editor raises both. Tried in the game: the new utility slots can be equipped. Weapon mods stop at four because a weapon takes one mod
+  of each of its four kinds. The slot limit values in the save (the maximums) and the bonus alone do not unlock slots.
 - **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
 
 ## [0.7.0] - 2026-10-16

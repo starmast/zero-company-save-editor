@@ -353,7 +353,7 @@ public sealed class SaveService
     GvasFile RunActions(OpenSave c, GvasFile g, IReadOnlyList<SaveAction> actions, HashSet<string> touched, CutInfo cut)
     {
         var seen = new HashSet<string>();
-        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>();
+        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>(); var gearDone = new HashSet<string>();
         bool rosterDone = false, coilDone = false;
 
         static string NormGuid(string raw)
@@ -393,6 +393,17 @@ public sealed class SaveService
                     var guid = NormGuid(ga.Guid);
                     if (!granted.Add(guid + "|" + ga.Tag)) throw new EditException("bad ability reference");
                     g = Grant(c, g, guid, ga.Tag, ga.Level, cut);
+                    break;
+                }
+                case SaveAction.SetGearSlots gs:
+                {
+                    string type;
+                    try { type = GearOps.TypeTag(gs.Type); } catch (GvasException e) { throw new EditException(e.Message, e); }
+                    int top = gs.Type == "mod" ? GearOps.MaxModSlots : GearOps.MaxUtilitySlots;
+                    if (gs.Total < 1 || gs.Total > top) throw new EditException($"{gs.Type} slots must be 1 to {top}");
+                    if (!gearDone.Add(type)) throw new EditException("duplicate gear slot action");
+                    try { g = GearOps.SetSlotCount(g, type, gs.Total, cut); }
+                    catch (GvasException e) { throw new EditException($"Gear slots: {e.Message}", e); }
                     break;
                 }
                 case SaveAction.ReorderRoster ro:
@@ -744,6 +755,8 @@ public sealed class SaveService
                     throw new EditException("verification failed: a death effect is still present");
             }
         }
+        foreach (var (type, total) in cut.GearSlots)
+            if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
         foreach (var (guid, tag, record) in cut.Granted)
             if (!AbilityOps.Has(g2, guid, tag, record))
                 throw new EditException("verification failed: a granted ability is not on the operator as intended");
