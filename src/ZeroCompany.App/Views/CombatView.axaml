@@ -34,6 +34,7 @@
         </ItemsControl>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
           <Button Content="Heal allies to full" Command="{Binding SquadHeal}" IsVisible="{Binding ShowAllyActions}" />
+          <Button Content="Bring in everyone" Command="{Binding BringInEveryone}" IsVisible="{Binding ShowSquad}" />
           <Button Content="Enemies to 1 HP" Command="{Binding EnemiesTo1Hp}" IsVisible="{Binding ShowEnemyActions}" />
           <Button Content="Restore scenery" Command="{Binding RestoreScenery}" IsVisible="{Binding ShowDestructibles}" />
           <CheckBox Content="Show stats with no lasting effect" IsChecked="{Binding StatVisibility.ShowAll, Mode=TwoWay}" IsVisible="{Binding ShowUnits}"
@@ -176,6 +177,34 @@
               </ComboBox>
             </Grid>
           </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="panel" IsVisible="{Binding ShowSquad}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="ROSTER" /></Border>
+          <TextBlock Classes="mute small" Margin="14,8,14,4" TextWrapping="Wrap"
+                     Text="Bring more of your roster into this fight. The game spawns the operators you queue together with the squad when the save loads, with the health the roster records. It places them itself around the map's start point, so the first ones can land outside the playable area and the rest share one spot. To place them: apply this, load the save in the game, save it there, open that save here and set each new operator's Position X Y Z on the Allies tab, then load it again. Operators who have fallen cannot join." />
+          <CheckBox Margin="14,4,14,8" Content="Also heal injured operators as they join" IsChecked="{Binding HealOnJoin, Mode=TwoWay}"
+                    ToolTip.Tip="An operator joins with the health their roster entry records, so an injured one arrives hurt. This also queues the Medbay's free, instant heal for them, which removes their injury in the campaign too." />
+          <ItemsControl ItemsSource="{Binding Squad}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SquadRowViewModel">
+                <Border Classes="hairline" Padding="14,8">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock Classes="title" FontSize="18" Text="{Binding Title}" />
+                      <TextBlock Classes="mute small" Text="{Binding Detail}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Classes="caps amber" Text="{Binding Status}" VerticalAlignment="Center" Margin="12,0" />
+                    <Panel Grid.Column="2" IsVisible="{Binding CanAdd}" VerticalAlignment="Center">
+                      <ContentControl Content="{Binding Toggle}" />
+                    </Panel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
       </Border>
 

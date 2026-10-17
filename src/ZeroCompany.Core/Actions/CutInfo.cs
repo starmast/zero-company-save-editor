@@ -51,4 +51,7 @@ public sealed class CutInfo
     public string? TurnStructure { get; set; }
     /// <summary>Combat: expected round after a change.</summary>
     public int? CurrentRound { get; set; }
+    /// <summary>Combat: roster operators (GUID hex) added to the mission squad, in order, and whether the mission's own squad list was added to as well.</summary>
+    public List<string> SquadAdded { get; } = new();
+    public bool MissionSquadTouched { get; set; }
 }

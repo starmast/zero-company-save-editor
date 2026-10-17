@@ -326,6 +326,36 @@ public class CombatScreenTests
     }
 
     [SkippableFact]
+    public void The_roster_tab_queues_operators_into_the_fight_and_they_show_as_in_it_after_saving()
+    {
+        Skip.If(Repo.CombatSaveNamed("Combat_Rescue_before.sav") == null, "no rescue sample");
+        using var rig = new TestRig(combat: true, combatFile: "Combat_Rescue_before.sav");
+        rig.Start();
+        Headless.Run(() => rig.Main.Navigate("combat"));
+        var vm = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Skip.If(vm.Tabs.All(t => t.Key != "squad"), "every operator is already in this fight");
+
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "squad").Command.Execute(null));
+        Assert.True(vm.ShowSquad);
+        var row = vm.Squad.First(r => r.CanAdd);
+        Headless.Run(() => row.Toggle.Command.Execute(null));
+        Assert.Equal(1, rig.Main.Session.Pending.Count);
+        Assert.Contains(rig.Main.PendingBar.Lines, l => l.Label.Contains("into the fight"));
+        Headless.Run(() => row.Toggle.Command.Execute(null));                       // undo
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+        Headless.Run(() => vm.BringInEveryone!.Execute(null));
+        Assert.True(rig.Main.Session.Pending.Count >= 1);
+        Assert.Equal(vm.Squad.Count(r => r.CanAdd && r.Status == "Injured"), rig.Main.Session.Pending.Heals.Count);   // injured operators are healed as they join
+        rig.Shot("30-combat-roster");
+
+        rig.Main.Session.Apply(asCopy: false, force: true);
+        Headless.Run(() => rig.Main.ReloadScreen());
+        var vm2 = Assert.IsType<CombatViewModel>(rig.Main.Screen);
+        Assert.DoesNotContain(vm2.Tabs, t => t.Key == "squad");                     // nobody left to bring in
+        Assert.Equal("In this fight", vm2.Squad.First(r => r.Title == row.Title).Status);
+    }
+
+    [SkippableFact]
     public void Occupy_region_points_show_as_editable_counters_on_the_objectives_tab()
     {
         Skip.If(Repo.CombatSaveNamed("Combat_Rescue_late.sav") == null, "no late rescue sample");

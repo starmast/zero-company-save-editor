@@ -486,6 +486,9 @@ public sealed class SaveService
                 case SaveAction.SetTurnStructure ts:
                     if (!seen.Add("turn")) throw new EditException("duplicate turn structure change");
                     return CombatOps.SetTurnStructure(g, ts.Structure, cut);
+                case SaveAction.AddSquadMember sm:
+                    if (!GuidRx.IsMatch((sm.Guid ?? "").ToUpperInvariant())) throw new EditException("bad operator reference");
+                    return CombatOps.AddSquadMember(g, sm.Guid.ToUpperInvariant(), cut);
                 case SaveAction.SetCurrentRound cr:
                     if (!seen.Add("round")) throw new EditException("duplicate round change");
                     return CombatOps.SetCurrentRound(g, cr.Round, cut);
@@ -754,6 +757,20 @@ public sealed class SaveService
             throw new EditException("verification failed: the enemy spawn set is not what was intended");
         if (cut.TurnStructure != null && CombatOps.TurnStructureOf(g2) != cut.TurnStructure)
             throw new EditException("verification failed: the turn structure is not what was intended");
+        if (cut.SquadAdded.Count > 0)
+        {
+            var was = CombatOps.SquadGuids(old); var now = CombatOps.SquadGuids(g2);
+            if (!now.SequenceEqual(was.Concat(cut.SquadAdded))) throw new EditException("verification failed: the mission squad is not the old squad plus the operators added");
+            if (now.Distinct().Count() != now.Count) throw new EditException("verification failed: an operator is in the squad twice");
+            var rosterNow = MedbayOps.Characters(g2).Keys.ToHashSet();
+            if (cut.SquadAdded.Any(a => !rosterNow.Contains(a))) throw new EditException("verification failed: an added operator is not on the roster");
+            if (cut.MissionSquadTouched)
+            {
+                var ownWas = CombatOps.MissionSquadGuids(old) ?? new List<string>(); var ownNow = CombatOps.MissionSquadGuids(g2) ?? new List<string>();
+                if (!ownNow.Take(ownWas.Count).SequenceEqual(ownWas) || cut.SquadAdded.Any(a => !ownNow.Contains(a)))
+                    throw new EditException("verification failed: the mission's own squad list is not what was intended");
+            }
+        }
         if (cut.CurrentRound != null && CombatOps.CurrentRound(g2) != cut.CurrentRound)
             throw new EditException("verification failed: the round is not what was intended");
         foreach (var (logic, active) in cut.TriggerActive)

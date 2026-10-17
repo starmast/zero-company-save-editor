@@ -33,6 +33,7 @@ public sealed class PendingChanges
     readonly SortedSet<string> _sceneryDestroys = new(StringComparer.Ordinal);                // combat: intact or damaged props (full object paths) to wreck
     readonly Dictionary<int, bool> _triggers = new();                                   // combat: trigger logic index -> wanted active flag
     readonly Dictionary<int, string> _teams = new();                   // combat: unit -> wanted team (only when it differs)
+    readonly SortedSet<string> _squadAdds = new(StringComparer.Ordinal);                  // combat: roster operators (GUID hex) to bring into the fight
     readonly Dictionary<int, string> _objectives = new();              // combat: objective index -> wanted status (only when it differs)
     readonly HashSet<(int Unit, int Index)> _effectRemovals = new();
     readonly List<(int Unit, int FromUnit, int FromIndex)> _effectCopies = new();
@@ -80,7 +81,7 @@ public sealed class PendingChanges
 
     public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
-                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
+                              + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _squadAdds.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
     void Raise() => Changed?.Invoke();
 
@@ -178,7 +179,7 @@ public sealed class PendingChanges
     {
         _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
         _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
-        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
+        _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _squadAdds.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
     static void Toggle(List<string> set, string id, bool? on)
@@ -270,6 +271,11 @@ public sealed class PendingChanges
     public void QueueSceneryDestroys(IEnumerable<string> actors) { foreach (var a in actors) { _sceneryRestores.Remove(a); _sceneryDestroys.Add(a); } Raise(); }
     /// <summary>Drop every queued scenery restore and destroy.</summary>
     public void ClearScenery() { _sceneryRestores.Clear(); _sceneryDestroys.Clear(); Raise(); }
+
+    /// <summary>Queue or unqueue bringing a roster operator into the fight.</summary>
+    public void SetSquadAdd(string guid, bool wanted) { if (wanted) _squadAdds.Add(guid); else _squadAdds.Remove(guid); Raise(); }
+    public bool SquadAddWanted(string guid) => _squadAdds.Contains(guid);
+    public IReadOnlyCollection<string> SquadAdds => _squadAdds;
 
     public void SetTrigger(int logic, bool wanted, bool saved) { SetOrClear(_triggers, logic, wanted, saved); Raise(); }
     public bool TriggerWanted(int logic, bool saved) => _triggers.GetValueOrDefault(logic, saved);
@@ -380,6 +386,7 @@ public sealed class PendingChanges
         @out.AddRange(_teams.OrderBy(kv => kv.Key).Select(kv => new SaveAction.SetUnitTeam(kv.Key, kv.Value)));
         @out.AddRange(_groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Logic).ThenBy(kv => kv.Key.Index)
             .Select(kv => new SaveAction.SetSpawnGroup(kv.Key.Kind, kv.Key.Logic, kv.Key.Index, kv.Value)));
+        @out.AddRange(_squadAdds.Select(guid => new SaveAction.AddSquadMember(guid)));
         if (_sceneryRestores.Count > 0) @out.Add(new SaveAction.RestoreScenery(_sceneryRestores.ToList()));
         if (_sceneryDestroys.Count > 0) @out.Add(new SaveAction.DestroyScenery(_sceneryDestroys.ToList()));
         if (_spawnSet.TryGetValue(0, out var ss)) @out.Add(new SaveAction.SetEnemySpawnSet(ss));
@@ -431,6 +438,7 @@ public sealed class PendingChanges
             string E(int u, int i) => cb.Units[u].Effects[i].Title;
             void Add(string text) => @out.Add(new PendingLine("Combat", "", null, null, text));
             foreach (var (u, d) in _dead.OrderBy(kv => kv.Key)) Add(d ? $"Kill {U(u)}" : $"Revive {U(u)}");
+            foreach (var guid in _squadAdds) Add($"Bring {cb.Squad.FirstOrDefault(m => m.Guid == guid)?.Name ?? "an operator"} into the fight");
             foreach (var x in _effectCopies) Add($"Give {U(x.Unit)} the effect {E(x.FromUnit, x.FromIndex)}");
             foreach (var x in _effectRemovals.OrderBy(x => x.Unit).ThenBy(x => x.Index)) Add($"Remove effect {E(x.Unit, x.Index)} from {U(x.Unit)}");
             foreach (var (k, grp) in _groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Index))

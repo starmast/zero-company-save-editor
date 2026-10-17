@@ -112,6 +112,30 @@ public sealed class TriggerRowViewModel : ViewModelBase, IDisposable
     public void Dispose() { _p.Changed -= OnChanged; _toggle.Dispose(); }
 }
 
+/// <summary>A roster operator, with a switch that queues bringing them into the fight.</summary>
+public sealed class SquadRowViewModel : IDisposable
+{
+    public SquadRowViewModel(PendingChanges p, SquadMemberView m, Action<SquadMemberView, bool> join)
+    {
+        Title = m.Name;
+        var parts = m.Class.StartsWith("Char_Hero_", StringComparison.Ordinal) && m.Class.EndsWith("_C", StringComparison.Ordinal)
+            ? m.Class["Char_Hero_".Length..^2].Split('_') : Array.Empty<string>();
+        var role = parts.Length > 1 ? parts[^1] : "";
+        Status = m.InSquad ? "In this fight" : m.Dead ? "Fallen" : m.Injuries > 0 ? "Injured" : "";
+        Detail = role;
+        CanAdd = !m.InSquad && !m.Dead;
+        Toggle = new ToggleActionViewModel(p, () => p.SquadAddWanted(m.Guid), () => join(m, !p.SquadAddWanted(m.Guid)),
+            "Bring into the fight", "Queued - undo", "The game spawns this operator with the squad when the save loads");
+    }
+
+    public string Title { get; }
+    public string Detail { get; }
+    public string Status { get; }
+    public bool CanAdd { get; }
+    public ToggleActionViewModel Toggle { get; }
+    public void Dispose() => Toggle.Dispose();
+}
+
 /// <summary>A countdown timer with editable turns-left and total fields.</summary>
 public sealed class TimerRowViewModel
 {

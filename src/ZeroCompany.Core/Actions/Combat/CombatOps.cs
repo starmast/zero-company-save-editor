@@ -148,6 +148,7 @@ public static partial class CombatOps
         BuildReinforcements(g, view);
         BuildScenery(g, view);
         BuildSpawnSet(g, view);
+        BuildSquad(g, view);
         BuildTurnStructure(g, view);
         return view;
     }

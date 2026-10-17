@@ -80,5 +80,13 @@ against saves the game wrote and re-read after editing, but not played through (
   wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in
   the running game queued the wave at once). The save keeps only a reference to that condition, so its value cannot be edited here, and
   a short delay alone will not bring reinforcements while the enemy is at full strength. Other missions may use other conditions.
+- **Bringing more of the roster into a fight** (Combat, *Roster* tab): the editor adds the operator's roster GUID to the mission squad
+  (`MissionSquadCharacterIDs`, and the in-progress mission's own squad list), and the game spawns them with the squad when the save loads.
+  Tried on Brentaal 030 with the whole roster: all 19 operators spawned and the game's portrait bar showed them, and a round played. They arrive
+  with the health their roster entry records (injured operators arrive hurt, so the tab can heal them as they join). The game places them
+  itself around the map's single start point: the first slots are outside the playable area, so an operator can arrive where they cannot move, and
+  the rest share one spot. A position written into the save for an operator the game has not saved yet is ignored, so placing them takes a second
+  step: load the save in the game, save it there, open that save in the editor and set the new operators' Position (Allies tab). Tried: a position
+  set that way was kept on the next load. Whether the mission counts the extra operators when it ends (experience, bonds) is not tried.
 - **Restarting a fight:** the save's `SaveGameRestartDataCache` entry (used when a fight restarts) is left as it is. It holds no
   unit health, so a restart reloads the original encounter.

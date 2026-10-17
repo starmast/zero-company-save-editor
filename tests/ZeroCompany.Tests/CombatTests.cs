@@ -876,6 +876,46 @@ public class CombatTests : IDisposable
     }
 
     [SkippableFact]
+    public void A_roster_operator_can_be_brought_into_the_fight()
+    {
+        var (svc, _, path) = NewRig("Combat_Rescue_after.sav");
+        var squad = svc.Current!.Combat!.Squad;
+        Skip.If(squad.Count == 0, "this save has no mission squad");
+        var before = CombatOps.SquadGuids(Gvas(path));
+        var who = squad.First(m => !m.InSquad && !m.Dead);
+        Assert.DoesNotContain(who.Guid, before);
+
+        Act(svc, new SaveAction.AddSquadMember(who.Guid));
+        var after = CombatOps.SquadGuids(Gvas(path));
+        Assert.Equal(before.Concat(new[] { who.Guid }), after);                                 // appended, nothing else moved
+        Assert.True(svc.Current!.Combat!.Squad.First(m => m.Guid == who.Guid).InSquad);
+        if (CombatOps.MissionSquadGuids(Gvas(path)) is { } own) Assert.Contains(who.Guid, own);  // the in-progress mission's own list follows
+
+        var bytes = File.ReadAllBytes(path);
+        Assert.Throws<EditException>(() => Act(svc, new SaveAction.AddSquadMember(who.Guid)));   // already in the fight
+        Assert.Throws<EditException>(() => Act(svc, new SaveAction.AddSquadMember(new string('A', 32))));   // not on the roster
+        Assert.Equal(bytes, File.ReadAllBytes(path));
+    }
+
+    [SkippableFact]
+    public void Every_operator_on_the_roster_can_be_brought_into_one_fight_and_the_dead_cannot()
+    {
+        var (svc, _, path) = NewRig("Combat_Rescue_after.sav");
+        var squad = svc.Current!.Combat!.Squad;
+        Skip.If(squad.Count == 0, "this save has no mission squad");
+        var open = squad.Where(m => !m.InSquad && !m.Dead).Select(m => m.Guid).ToList();
+        var before = CombatOps.SquadGuids(Gvas(path));
+        Act(svc, open.Select(g => (SaveAction)new SaveAction.AddSquadMember(g)).ToArray());
+        var after = CombatOps.SquadGuids(Gvas(path));
+        Assert.Equal(before.Count + open.Count, after.Count);
+        Assert.Equal(after.Count, after.Distinct().Count());
+        Assert.DoesNotContain(svc.Current!.Combat!.Squad, m => !m.Dead && !m.InSquad);
+
+        foreach (var dead in squad.Where(m => m.Dead))
+            Assert.Throws<EditException>(() => Act(svc, new SaveAction.AddSquadMember(dead.Guid)));
+    }
+
+    [SkippableFact]
     public void A_reinforcement_trigger_can_be_switched_off_and_on_again()
     {
         var (svc, _, _) = NewRig("Combat_Rescue_after.sav");

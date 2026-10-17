@@ -15,6 +15,11 @@ All notable changes to this project are documented here. The format follows
 - Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
+- Combat, **Roster** tab: bring more of your roster into a combat save. The game builds a fight's heroes from the mission squad list, so adding an
+  operator's roster GUID there makes the game spawn them when the save loads (tried with the whole roster of 19: all spawned, and a round played);
+  operators arrive with the health their roster entry records, so the tab can also queue the Medbay heal for injured ones as they join, and `zc edit
+  do add-squad <operator>|all [heal]` does the same from the command line. The game places the new operators itself around the map's start point,
+  and some land outside the playable area, so the tab explains the second step (save in the game, then set their position here).
 - Combat, Reinforcements and Objectives, from trying the edits in the game: a wave definition's **Delay** field is gone from the screen (changing it did not change when a wave arrived, whether a trigger or the game's own condition started it; it is still available through `zc edit`), the **timers** now let you change the total turns as well as the turns left (both took effect on loading, and a timer set to 1 failed its objective at the next round), the automatic-wave line says the game's condition decides when it starts, and the objective notes say plainly that marking an objective Succeeded does not start what follows it.
 
 - Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
