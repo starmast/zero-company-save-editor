@@ -231,10 +231,6 @@
                       <TextBlock Classes="mute small" Text="{Binding Detail}" TextWrapping="Wrap" />
                       <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                          <TextBlock Classes="mute small" Text="Delay (rounds)" VerticalAlignment="Center" />
-                          <c:NumField DataContext="{Binding Delay}" Width="60" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
                           <TextBlock Classes="mute small" Text="May spawn (-1 = no limit)" VerticalAlignment="Center" />
                           <c:NumField DataContext="{Binding TimesToSpawn}" Width="60" />
                         </StackPanel>
@@ -368,14 +364,17 @@
                     <Panel Grid.Column="1" IsVisible="{Binding HasRemaining}" Margin="12,0,6,0" VerticalAlignment="Center">
                       <c:NumField DataContext="{Binding Remaining}" Width="80" />
                     </Panel>
-                    <TextBlock Grid.Column="2" Classes="mute" Text="{Binding Total}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasTotal}" VerticalAlignment="Center">
+                      <TextBlock Classes="mute" Text="of" VerticalAlignment="Center" />
+                      <c:NumField DataContext="{Binding TotalField}" Width="80" />
+                    </StackPanel>
                   </Grid>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Turns left on a countdown. Raise it to give yourself more turns before the objective it guards fails." />
+                     Text="Turns left on a countdown, and the total it started from. Raise the turns left to give yourself more turns before the objective it guards fails; set it to 1 and it runs out at the end of the next round." />
         </StackPanel>
       </Border>
 
@@ -415,7 +414,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status. Marking an interact objective Succeeded greys it out, but its counter and the next objective are not updated. Keep the backup. Objectives marked Not started have not begun yet and are left alone, because the game adds a lot of state when it starts one." />
+                     Text="Objectives only change the saved status. A normal completion also fires follow-on steps (cutscenes, the next objective, reinforcements); those are not triggered by flipping the status. Marking an objective Succeeded keeps it Succeeded, but the objectives that follow it do not start and its counter is not updated; a counter such as the interactions needed can be changed on its own. Keep the backup. Objectives marked Not started have not begun yet and are left alone, because the game adds a lot of state when it starts one." />
         </StackPanel>
       </Border>
     </StackPanel>

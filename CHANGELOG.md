@@ -15,6 +15,8 @@ All notable changes to this project are documented here. The format follows
 - Save as copy: a "Name for the copy" box next to the button. The game lists a save by a name stored in two places in the file, and a plain copy
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
+- Combat, Reinforcements and Objectives, from trying the edits in the game: a wave definition's **Delay** field is gone from the screen (changing it did not change when a wave arrived, whether a trigger or the game's own condition started it; it is still available through `zc edit`), the **timers** now let you change the total turns as well as the turns left (both took effect on loading, and a timer set to 1 failed its objective at the next round), the automatic-wave line says the game's condition decides when it starts, and the objective notes say plainly that marking an objective Succeeded does not start what follows it.
+
 - Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
   a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. Tried in the game since: a queued wave's round and group, a definition's group and its times triggered took effect; a definition's delay did not
   change when a wave arrived.

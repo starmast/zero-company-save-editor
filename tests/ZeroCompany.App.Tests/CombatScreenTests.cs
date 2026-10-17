@@ -239,6 +239,7 @@ public class CombatScreenTests
         Assert.True(vm.ShowTimers);
         var timer = Assert.Single(vm.Timers);
         Assert.Equal(1, timer.Remaining!.Value);
+        Assert.True(timer.HasTotal); Assert.Equal(3, timer.TotalField!.Value);
         Assert.Contains("Critical Interact 1", timer.Detail);
         rig.Shot("25-combat-timer");
         Headless.Run(() => timer.Remaining.SetTo(3));
@@ -307,7 +308,7 @@ public class CombatScreenTests
         Headless.Run(() => wave.Group.Selected = other);
         Assert.True(wave.Group.IsChanged); Assert.Equal(1, pending.Count);
         var cfg = vm.Configs[0];
-        Headless.Run(() => cfg.Delay!.SetTo(4));
+        Headless.Run(() => cfg.TimesToSpawn!.SetTo(4));
         var trig = vm.Triggers.First(t => t.HasFlag && t.StatusText == "On");
         Headless.Run(() => trig.Toggle.Command.Execute(null));
         Assert.Equal("Off", trig.StatusText);
@@ -320,7 +321,7 @@ public class CombatScreenTests
         var vm2 = Assert.IsType<CombatViewModel>(rig.Main.Screen);
         Assert.Equal("reinforcements", vm2.ActiveTab);
         Assert.Equal(other.Value, vm2.Waves[0].Group.Selected!.Value);
-        Assert.Equal(4, vm2.Configs[0].Delay!.Value);
+        Assert.Equal(4, vm2.Configs[0].TimesToSpawn!.Value);
         Assert.Equal("Off", vm2.Triggers.First(t => t.Title == trig.Title).StatusText);
     }
 
