@@ -13,6 +13,8 @@ public sealed class CutInfo
     /// <summary>GUIDs brought back from the fallen.</summary>
     public List<string> Revived { get; } = new();
     public List<(string Guid, Dictionary<string, List<byte[]>> Expected)> Focus { get; } = new();
+    /// <summary>Abilities given to an operator: (operator guid, ability tag, the tier record copied in).</summary>
+    public List<(string Guid, string Tag, byte[] Record)> Granted { get; } = new();
     /// <summary>Expected roster order after a reorder.</summary>
     public List<string>? Roster { get; set; }
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>

@@ -110,6 +110,43 @@ public class SdkEditTests : IDisposable
     }
 
     [SkippableFact]
+    public void The_roster_capacity_is_an_editable_progression_field()
+    {
+        var (ws, path) = Rig(Repo.SampleSave());
+        var ed = Open(ws, path);
+        var cap = ed.Fields.Resolve("progression.roster_cap");
+        ed.Set("progression.roster_cap", cap.Value + 6);
+        var res = ed.Apply(asCopy: true);
+        var copy = Copy(ed, res);
+        Assert.Equal(cap.Value + 6, Open(ws, copy).Fields.Resolve("progression.roster_cap").Value);
+        var c = Assert.Single(FieldDiff.Compare(ws, path, copy).Changes);
+        Assert.Equal(("progression.roster_cap", cap.Value, cap.Value + 6), (c.Path, c.From!.Value, c.To!.Value));
+    }
+
+    [SkippableFact]
+    public void Hawks_can_be_given_the_jetpack_Cly_holds()
+    {
+        var (ws, path) = Rig(Repo.CombatSaveNamed("Combat_ThreeWay.sav"));
+        var ed = Open(ws, path);
+        var hawks = ed.Save.View.Personnel.Roster.First(o => o.Name == "Hawks");
+        const string Tag = "br.AbilityID.Identity.CombatJump";
+        Assert.DoesNotContain(Tag, ZeroCompany.Core.Actions.AbilityOps.Held(ed.Save.Gvas, hawks.Guid));
+        Assert.Contains(Tag, ZeroCompany.Core.Actions.AbilityOps.Grantable(ed.Save.Gvas, hawks.Guid).Select(d => d.Tag));
+
+        var ex = Assert.Throws<ZcException>(() => ed.Do("grant-ability", new[] { "Hawks", "Nope" }));
+        Assert.Contains("CombatJump", ex.Message);
+        ed.Do("grant-ability", new[] { "Hawks", "CombatJump", "2" });
+        var res = ed.Apply(asCopy: true);
+
+        var after = Open(ws, Copy(ed, res));
+        var g = after.Save.Gvas;
+        Assert.Contains(Tag, ZeroCompany.Core.Actions.AbilityOps.Held(g, hawks.Guid));
+        var ab = after.Save.View.Personnel.Roster.First(o => o.Guid == hawks.Guid).Abilities.First(a => a.Tag == Tag);
+        Assert.Equal(2, ab.CurrentLevel);
+        Assert.Equal(0, Open(ws, path).Save.View.Personnel.Roster.First(o => o.Guid == hawks.Guid).Abilities.Count(a => a.Tag == Tag));   // the original is untouched
+    }
+
+    [SkippableFact]
     public void Editing_an_operators_focus_moves_their_total_focus_with_it()
     {
         var (ws, path) = Rig(Repo.SampleSave());

@@ -136,6 +136,20 @@ public sealed class SaveEditor
         Reg("heal", "heal <operator>", "heal an injured operator", a => { var o = Op(a[0]); p.ToggleHeal(o.Guid, true); return $"heal {o.Name}"; });
         Reg("revive", "revive <operator>", "bring a fallen operator back from the Memorial", a => { var o = Op(a[0]); p.ToggleRevive(o.Guid, true); return $"revive {o.Name}"; });
         Reg("complete-tree", "complete-tree <operator>", "finish an operator's focus tree", a => { var o = Op(a[0]); p.ToggleTreeFix(o.Guid, true); return $"complete focus tree of {o.Name}"; });
+        Reg("grant-ability", "grant-ability <operator> <ability> [level]", "give an operator an ability another operator holds (e.g. CombatJump, the jetpack)", a =>
+        {
+            var o = Op(a[0]);
+            var opts = AbilityOps.Grantable(Save.Gvas, o.Guid);
+            string key = NormName(a[1]);
+            var hit = opts.Where(d => NormName(d.Tag[(d.Tag.LastIndexOf('.') + 1)..]) == key || NormName(d.Tag) == key).ToList();
+            if (hit.Count != 1)
+                throw new ZcException(hit.Count == 0
+                    ? $"{o.Name} cannot be given '{a[1]}'. Options: {(opts.Count == 0 ? "none (no other operator in this save holds an ability that fits)" : string.Join(", ", opts.Select(d => d.Tag[(d.Tag.LastIndexOf('.') + 1)..])))}"
+                    : $"'{a[1]}' matches more than one ability: {string.Join(", ", hit.Select(d => d.Tag))}");
+            int level = a.Count > 2 ? (int)Count(a[2], 1, 6) : 1;
+            p.SetGrant(o.Guid, hit[0].Tag, level);
+            return $"give {o.Name} {hit[0].Tag} at level {level}";
+        });
         Reg("move-operator", "move-operator <operator> <position>", "put an operator at a place in the roster (1 = first)", a =>
         {
             var o = Op(a[0]); p.MoveOperatorTo(o.Guid, (int)Count(a[1], 1, 999) - 1, Save.View); return $"move {o.Name} to place {a[1]}";

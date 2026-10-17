@@ -23,6 +23,8 @@ public abstract record SaveAction
     public sealed record HealOperator(string Guid) : SaveAction;
     public sealed record CompleteFocusTree(string Guid) : SaveAction;
     public sealed record ReviveOperator(string Guid) : SaveAction;
+    /// <summary>Give an operator an ability another operator in the save holds, at the given focus-tree level.</summary>
+    public sealed record GrantAbility(string Guid, string Tag, int Level) : SaveAction;
     public sealed record ReorderRoster(IReadOnlyList<string> Order) : SaveAction;
     public sealed record RemoveCoilUpgrades(IReadOnlyList<CoilChange> Changes) : SaveAction;
     /// <summary>Give the squad <c>Copies</c> new copies of an item it may never have had (a utility item or weapon mod, by asset name).</summary>

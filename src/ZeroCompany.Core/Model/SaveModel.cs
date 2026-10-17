@@ -137,6 +137,8 @@ public sealed class SaveModel
         Bonds();
         LoadRegions();
         FactValues();
+        Prog["roster_cap"] = Add(Facts.GetValueOrDefault("Facts.Values.MaximumRosterCount"), "Progression", "Roster", "Roster capacity",
+                                 lo: 1, hi: 1000, note: "How many operators the roster holds. Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
     }
 
     // -- helpers -----------------------------------------------------------

@@ -25,6 +25,7 @@ public sealed class SaveService
     public const int KeepBackups = 20;
     static readonly Regex SafeName = new(@"^[A-Za-z0-9._ \-+()]+\.sav$", RegexOptions.Compiled);
     static readonly Regex GuidRx = new("^[0-9A-F]{32}$", RegexOptions.Compiled);
+    static readonly Regex AbilityTagRx = new(@"^br\.AbilityID\.[A-Za-z0-9_.]+$", RegexOptions.Compiled);
     static readonly Regex RecipeIdRx = new(@"^r\d+$", RegexOptions.Compiled);
 
     readonly string _backupRoot;
@@ -352,7 +353,7 @@ public sealed class SaveService
     GvasFile RunActions(OpenSave c, GvasFile g, IReadOnlyList<SaveAction> actions, HashSet<string> touched, CutInfo cut)
     {
         var seen = new HashSet<string>();
-        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>();
+        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>();
         bool rosterDone = false, coilDone = false;
 
         static string NormGuid(string raw)
@@ -385,6 +386,13 @@ public sealed class SaveService
                     var guid = NormGuid(r.Guid);
                     if (!revived.Add(guid)) throw new EditException("bad operator reference");
                     g = Revive(c, g, guid, touched, cut);
+                    break;
+                }
+                case SaveAction.GrantAbility ga:
+                {
+                    var guid = NormGuid(ga.Guid);
+                    if (!granted.Add(guid + "|" + ga.Tag)) throw new EditException("bad ability reference");
+                    g = Grant(c, g, guid, ga.Tag, ga.Level, cut);
                     break;
                 }
                 case SaveAction.ReorderRoster ro:
@@ -538,6 +546,18 @@ public sealed class SaveService
         try { g = CompleteFocus(c, g, guid, cut); }                    // a returning operator gets a complete focus tree too
         catch (EditException) { }
         return g;
+    }
+
+    GvasFile Grant(OpenSave c, GvasFile g, string guid, string tag, int level, CutInfo cut)
+    {
+        if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
+        if (!AbilityTagRx.IsMatch(tag ?? "")) throw new EditException("bad ability reference");
+        var thr = Db.Thresholds(tag!);
+        int max = thr is { Length: > 0 } ? thr.Length : 6;
+        if (level < 1 || level > max) throw new EditException($"level must be 1 to {max}");
+        int spent = thr is { Length: > 0 } ? thr[level - 1] : 0;
+        try { return AbilityOps.Grant(g, guid, tag!, level, spent, cut); }
+        catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
     }
 
     GvasFile CompleteFocus(OpenSave c, GvasFile g, string guid, CutInfo cut)
@@ -724,6 +744,9 @@ public sealed class SaveService
                     throw new EditException("verification failed: a death effect is still present");
             }
         }
+        foreach (var (guid, tag, record) in cut.Granted)
+            if (!AbilityOps.Has(g2, guid, tag, record))
+                throw new EditException("verification failed: a granted ability is not on the operator as intended");
         foreach (var (guid, expected) in cut.Focus)
         {
             var have = FocusOps.Records(g2, guid);

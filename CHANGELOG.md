@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Give an ability.** Personnel > Focus Tree has a "Give an ability" box that copies an ability another operator in the save holds (for example Cly's Combat
+  Jump jetpack) onto the selected operator; `zc edit do <save> grant-ability <operator> <ability> [level]` does the same. The ability's tier records and its
+  focus entry are copied from the operator who has it, so the save must contain someone who holds the ability. Confirmed in the game: Hawks used the jetpack.
+- **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
+
 ## [0.7.0] - 2026-10-16
 
 ### Added

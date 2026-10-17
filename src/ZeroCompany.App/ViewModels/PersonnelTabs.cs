@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ZeroCompany.Core.Model;
+using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Save;
 using ZeroCompany.Core.Views;
 
@@ -257,6 +259,19 @@ public sealed class AbilityGroupViewModel
     public List<AbilityRowViewModel> Rows { get; init; } = new();
 }
 
+/// <summary>An ability another operator in the save holds, which this operator could be given.</summary>
+public sealed record GrantOption(string Tag, string Name, string From)
+{
+    public override string ToString() => $"{Name} (as {From} has it)";
+}
+
+public sealed partial class QueuedGrantViewModel : ViewModelBase
+{
+    public QueuedGrantViewModel(string text, Action remove) { Text = text; RemoveCommand = new RelayCommand(remove); }
+    public string Text { get; }
+    public System.Windows.Input.ICommand RemoveCommand { get; }
+}
+
 public sealed partial class FocusTabViewModel : PersonnelTabViewModel
 {
     static readonly Dictionary<string, string> KindLabels = new()
@@ -283,11 +298,48 @@ public sealed partial class FocusTabViewModel : PersonnelTabViewModel
             g.Rows.Add(new AbilityRowViewModel(this, op, a, _pending, _fields));
         }
         Groups = groups.Values.ToList();
+        if (!op.Dead)
+        {
+            var open = main.Session.Current!;
+            var db = main.Session.Service.Db;
+            var names = open.View.Personnel.Roster.Concat(open.View.Personnel.Memorial).ToDictionary(o => o.Guid, o => o.Name);
+            _allOptions = AbilityOps.Grantable(open.Gvas, op.Guid)
+                .Select(d => new GrantOption(d.Tag, db.AbilityName(d.Tag) ?? Naming.Pretty(d.Tag[(d.Tag.LastIndexOf('.') + 1)..]), names.GetValueOrDefault(d.FromGuid, "another operator")))
+                .OrderBy(o => o.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        }
         _pending.Changed += Refresh;
         Refresh();
     }
 
     public List<AbilityGroupViewModel> Groups { get; }
+    readonly List<GrantOption> _allOptions = new();
+    public ObservableCollection<GrantOption> GrantOptions { get; } = new();
+    public ObservableCollection<QueuedGrantViewModel> QueuedGrants { get; } = new();
+    [ObservableProperty] GrantOption? _chosenGrant;
+    public bool CanGrant => _allOptions.Count > 0;
+    public bool HasQueuedGrants => QueuedGrants.Count > 0;
+    public bool HasChosenGrant => ChosenGrant != null;
+    partial void OnChosenGrantChanged(GrantOption? value) => OnPropertyChanged(nameof(HasChosenGrant));
+
+    [RelayCommand]
+    void AddGrant()
+    {
+        if (ChosenGrant is not { } o) return;
+        _pending.SetGrant(_op.Guid, o.Tag, 1);
+    }
+
+    void RefreshGrants()
+    {
+        var queued = _pending.Grants.Where(kv => kv.Key.Guid == _op.Guid).Select(kv => kv.Key.Tag).ToHashSet();
+        var keep = ChosenGrant;
+        GrantOptions.Clear();
+        foreach (var o in _allOptions.Where(o => !queued.Contains(o.Tag))) GrantOptions.Add(o);
+        ChosenGrant = keep != null && GrantOptions.Contains(keep) ? keep : null;
+        QueuedGrants.Clear();
+        foreach (var o in _allOptions.Where(o => queued.Contains(o.Tag)))
+            QueuedGrants.Add(new QueuedGrantViewModel($"{o.Name}, copied from {o.From}, at level 1 (raise it after saving)", () => _pending.SetGrant(_op.Guid, o.Tag, 0)));
+        OnPropertyChanged(nameof(HasQueuedGrants));
+    }
     public bool NoAbilities => Groups.Count == 0;
     [ObservableProperty] string _notice = "";
     [ObservableProperty] string _totals = "";
@@ -315,6 +367,7 @@ public sealed partial class FocusTabViewModel : PersonnelTabViewModel
 
     void Refresh()
     {
+        RefreshGrants();
         foreach (var g in Groups) foreach (var r in g.Rows) r.Refresh();
         double spent = Groups.SelectMany(g => g.Rows).Sum(r => r.SpentValue);
         string unspent = _op.Focus != null ? _pending.GetValue(_op.Focus).ToString("N0", CultureInfo.InvariantCulture) : "";

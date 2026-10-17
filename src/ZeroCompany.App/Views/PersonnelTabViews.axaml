@@ -227,6 +227,29 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      <Border Classes="panel" IsVisible="{Binding CanGrant}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Give an ability" /></Border>
+          <StackPanel Margin="14,10" Spacing="8">
+            <TextBlock Classes="mute" TextWrapping="Wrap"
+                       Text="Copies an ability that another operator in this save has, such as a signature ability, onto this operator. It arrives at level 1; level it up once the save is written." />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <ComboBox ItemsSource="{Binding GrantOptions}" SelectedItem="{Binding ChosenGrant}" HorizontalAlignment="Stretch" PlaceholderText="Choose an ability" />
+              <Button Grid.Column="1" Content="Add" Command="{Binding AddGrantCommand}" IsEnabled="{Binding HasChosenGrant}" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding QueuedGrants}" IsVisible="{Binding HasQueuedGrants}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:QueuedGrantViewModel">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,2">
+                    <TextBlock Classes="amber" Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Undo" Command="{Binding RemoveCommand}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </Border>
     </StackPanel>
   </DataTemplate>
 </ResourceDictionary>

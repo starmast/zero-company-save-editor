@@ -2,8 +2,11 @@
 
 - Built against the 2026 releases of the game. A game update can change the save format.
 - You can add utility items and weapon mods you never had (Armory -> Add items; confirmed working in the game), but not other items
-  or abilities, and combat stats (health, damage) aren't computed. Those need data this project hasn't been
+  or gear, and combat stats (health, damage) aren't computed. Those need data this project hasn't been
   able to verify.
+- **Roster capacity** can be set higher than the Den's upgrades allow, and a roster above its capacity loads without trimming (tried in the game), but the roster screens
+  look odd when the numbers do not fit, for example 18/15.
+- **Give an ability** can only copy an ability from an operator who has it in the same save, and it arrives at level 1.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.
 - **Bring back** works in the Personnel screens, the Den and on missions (tested in the game with the tutorial operator), but it
   was built by comparing a fallen operator with the living roster, not from a save the game wrote itself. A returning operator

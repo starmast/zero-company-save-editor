@@ -19,6 +19,7 @@ public sealed class PendingChanges
     readonly Dictionary<string, double> _linkedDelta = new();         // field id -> how far its edits have moved the field that follows it
     readonly List<string> _starts = new(), _expedites = new(), _heals = new(), _treeFixes = new(), _revives = new();
     readonly Dictionary<string, string> _coil = new();
+    readonly Dictionary<(string Guid, string Tag), int> _grants = new();                  // Personnel: (operator, ability tag) -> focus-tree level to give it at
     readonly Dictionary<int, bool> _dead = new();                       // combat: unit -> wanted dead flag (only when it differs from the save)
     readonly Dictionary<(string Kind, int Logic, int Index), string> _groups = new();   // combat: wave / definition -> wanted spawn group
     readonly Dictionary<int, string> _spawnSet = new();                                    // combat: wanted enemy spawn set (key 0)
@@ -58,6 +59,7 @@ public sealed class PendingChanges
     public IReadOnlyList<string> Heals => _heals;
     public IReadOnlyList<string> TreeFixes => _treeFixes;
     public IReadOnlyList<string> Revives => _revives;
+    public IReadOnlyDictionary<(string Guid, string Tag), int> Grants => _grants;
     public IReadOnlyDictionary<string, string> CoilChanges => _coil;
     public IReadOnlyDictionary<int, bool> DeadChanges => _dead;
     public IReadOnlyDictionary<int, string> ObjectiveChanges => _objectives;
@@ -79,7 +81,7 @@ public sealed class PendingChanges
 
     public int Count => _edits.Count + ActionCount;
 
-    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count
+    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count + _grants.Count
                               + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
                               + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _squadAdds.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
@@ -178,7 +180,7 @@ public sealed class PendingChanges
     public void Clear()
     {
         _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
-        _revives.Clear(); _treeFixes.Clear(); _coil.Clear(); RosterOrderOverride = null;
+        _revives.Clear(); _treeFixes.Clear(); _grants.Clear(); _coil.Clear(); RosterOrderOverride = null;
         _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _squadAdds.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
@@ -192,6 +194,12 @@ public sealed class PendingChanges
     public void ToggleExpedite(string id, bool? on = null) { Toggle(_expedites, id, on); Raise(); }
     public void ToggleHeal(string guid, bool? on = null) { Toggle(_heals, guid, on); Raise(); }
     public void ToggleTreeFix(string guid, bool? on = null) { Toggle(_treeFixes, guid, on); Raise(); }
+    /// <summary>Queue giving <paramref name="guid"/> the ability <paramref name="tag"/> at <paramref name="level"/>; a level below 1 takes it back out of the queue.</summary>
+    public void SetGrant(string guid, string tag, int level)
+    {
+        if (level < 1) _grants.Remove((guid, tag)); else _grants[(guid, tag)] = level;
+        Raise();
+    }
     public void ToggleRevive(string guid, bool? on = null)
     {
         Toggle(_revives, guid, on);
@@ -364,6 +372,8 @@ public sealed class PendingChanges
         @out.AddRange(_heals.Select(g => (SaveAction)new SaveAction.HealOperator(g)));
         @out.AddRange(_treeFixes.Select(g => (SaveAction)new SaveAction.CompleteFocusTree(g)));
         @out.AddRange(_revives.Select(g => (SaveAction)new SaveAction.ReviveOperator(g)));
+        @out.AddRange(_grants.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tag, StringComparer.Ordinal)
+                             .Select(kv => (SaveAction)new SaveAction.GrantAbility(kv.Key.Guid, kv.Key.Tag, kv.Value)));
         @out.AddRange(_itemAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.AddInventoryItem(kv.Key, kv.Value)));
         @out.AddRange(_operationAges.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetOperationAge(kv.Key, kv.Value)));
         @out.AddRange(_missionTurns.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetMissionTurnAdded(kv.Key, kv.Value)));
@@ -411,6 +421,7 @@ public sealed class PendingChanges
         }
         var v = save.View;
         string Op(string guid) => v.Personnel.Roster.Concat(v.Personnel.Memorial).FirstOrDefault(o => o.Guid == guid)?.Name ?? "operator";
+        static string AbilityLabel(string tag) => Naming.Pretty(tag[(tag.LastIndexOf('.') + 1)..]);
         foreach (var id in _starts)
         {
             var row = save.Upgrades.Items.FirstOrDefault(x => x.Id == id);
@@ -430,6 +441,8 @@ public sealed class PendingChanges
         foreach (var g in _heals) @out.Add(new PendingLine("Medbay", "", null, null, $"Heal {Op(g)} (free, instant)"));
         foreach (var g in _treeFixes) @out.Add(new PendingLine("Personnel", "", null, null, $"Complete focus tree: {Op(g)}"));
         foreach (var g in _revives) @out.Add(new PendingLine("Personnel", "", null, null, $"Bring back {Op(g)} from the Memorial"));
+        foreach (var ((g, tag), lvl) in _grants.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tag, StringComparer.Ordinal))
+            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} {AbilityLabel(tag)} (level {lvl})"));
         if (FullOverride() is { } order)
             @out.Add(new PendingLine("Personnel", "", null, null, "Roster order: " + string.Join(", ", order.Select(Op))));
         if (save.Combat is { } cb)
