@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using ZeroCompany.Core.Actions;
+using ZeroCompany.Core.Model;
 using ZeroCompany.Core.Save;
 
 namespace ZeroCompany.App.ViewModels;
@@ -121,6 +122,7 @@ public sealed class CommandViewModel : ScreenViewModel
                     type == "mod" ? "A weapon takes one mod of each kind, so four is the most that can be used."
                                   : "Every operator gets the new slots, empty and ready to equip.", now, most)));
         }
+        foreach (var (key, _, label, _, note) in SaveModel.DenFacts) Add(key, label, 0, note);
         foreach (var r in v.Header.Resources)
             Stockpile.Add(new FieldRowViewModel(r.Label, fields.Make(r, 0, r.Label)!, r.Description));
         foreach (var b in main.Session.Service.ListBackups(open.Name)) Backups.Add(new BackupRowViewModel(this, b));

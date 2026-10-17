@@ -38,7 +38,7 @@ public class SaveParityTests : IDisposable
     }
 
     /// <summary>Fields the Python editor never had: portraits are checked elsewhere, and "addable" is the C# Armory's add-items list and "missions" the Galaxy screen's Den missions.</summary>
-    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions", "operations", "roster_cap" };
+    static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions", "operations", "roster_cap", "field_tasks_max", "field_tasks_now", "shop_refresh_cost", "shop_bonus_items" };
 
     [SkippableFact]
     public void Fields_match_the_python_model()
@@ -46,7 +46,7 @@ public class SaveParityTests : IDisposable
         var svc = NewService(out var name);
         var open = svc.Open("t", name);
         var golden = JsonNode.Parse(File.ReadAllText(Path.Combine(GoldenDir, "state.json")))!;
-        var actual = new JsonArray(open.Model.Fields.Where(f => f.Label != "Roster capacity").Select(f =>
+        var actual = new JsonArray(open.Model.Fields.Where(f => f.Label != "Roster capacity" && f.Section != "Den").Select(f =>
         {
             var o = new JsonObject
             {
