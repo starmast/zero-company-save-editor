@@ -63,11 +63,18 @@ against saves the game wrote and re-read after editing, but not played through (
   out in the objective list, but its counter stayed at 0 of 1 and the objective that normally follows did not start. A real completion
   also records the interaction count, removes the objective's waypoint and starts the next one with about two dozen runtime fields, so
   objectives that have not started cannot be edited.
+  Played through in the game on Brentaal 035: completing the interact objective the game's own way started the next one (hold the zone for 3
+  points), finishing that started the evacuation, and getting all four operators into the evacuation region ended the mission.
 - **Countdown timers** can be raised or lowered while the game still saves them. Once a timer has finished it is no longer saved. Lowering
   one from 6 to 2 was confirmed in the game (the countdown showed 2 on loading).
+  Tried on Brentaal 030 (rescue with a 6-turn timer): with 1 turn left the timer ran out at the next round and failed the rescue objective; with 10 turns left it counted
+  down to 8 over two rounds without failing; the total can be changed too and takes effect on loading.
 - **Reinforcements:** the game does save which round the fight is on (one number in the tactical game state, shown and editable as **Current
-  round**; a copy set to round 8 loaded as round 8), so a wave's round can be compared with it. How changing the round affects waves, delays or
-  anything else that counts rounds has not been tried in the game. Cancel
+  round**; a copy set to round 8 loaded as round 8, and the next round after loading a copy set to 12 was 13), so a wave's round can be
+  compared with it. Tried in the game on Brentaal 035: a queued wave's **round** and **group** and a wave definition's **group** and
+  **times triggered** all took effect (a wave moved from round 7 to 9 arrived two rounds later; a definition whose times triggered equalled its
+  times to spawn did not spawn when its trigger fired). A definition's **delay** did not change when a wave arrived, for a wave started by
+  its trigger or by the strength condition below (0 and 3 gave the same round), so treat that field as unproven. Cancel
   just pushes a wave to round 999. A wave's group can only be swapped for one the encounter already uses. A trigger can be
   switched off only once it has fired. An automatic wave may also be held back by a condition that is not in the save: in Brentaal 035 the
   wave only queued once the enemy force's combined strength (each unit counts 100) was below a threshold of 150 (raising that threshold in

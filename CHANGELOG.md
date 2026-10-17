@@ -16,8 +16,8 @@ All notable changes to this project are documented here. The format follows
   keeps the original's, so two saves looked identical in the load menu; with a name set, both are rewritten and checked before the file is written.
 
 - Combat, Reinforcements: a **Current round** number. The game saves the round the fight is on (an earlier note said it did not), and loading
-  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. How a change affects
-  waves is not tried in the game yet.
+  a copy with the round set to 8 gave round 8 in the game. The editor shows it and changes it as one number in place. Tried in the game since: a queued wave's round and group, a definition's group and its times triggered took effect; a definition's delay did not
+  change when a wave arrived.
 
 - Developer notes on getting `zcdebug` running again after a game update (the UE4SS signature pack needs the new build listed); checked on game 1.2
   (build 199049). See [docs/development.md](docs/development.md).
@@ -35,7 +35,10 @@ All notable changes to this project are documented here. The format follows
 - `zcdebug log on|off|clear|snap|show`: a combat log built only from the game's own events, with no polling (so it costs nothing between events): ABILITY
   (which unit used which ability), MOVE (where), SHOT (who fired at whom), HIT and KILLED (target, attacker, the exact damage, CRIT and the ability, for
   example GA_StandardShot_Longarm_C or a teamwork assist shot), DOWNED, HEAL, each team's turn and each round. One snapshot of every unit's health, armor,
-  shields, action points and position is written at the start of a round (and on `log snap`). A shot with no HIT after it missed.
+  shields, action points and position is written at the start of a round (and on `log snap`). A shot with no HIT after it missed. It also hooks the game's
+  other event broadcasters, each costing nothing until its event happens: game sub-phase changes (PHASE), a player starting to aim (AIM), cancelled shots,
+  melee, moves and grenades, and EVENT lines for objectives activated, progressing, succeeded or failed, bonds, destroyed props, reinforcements, toasts and
+  combat start and end (bond progress, combat start and fatal damage were seen firing in play; the objective, destroyed-prop, reinforcement and toast hooks never fired, even while an objective was completed and reinforcements arrived).
 
 - Combat, All stats: stats with no lasting effect are hidden until a "Show stats with no lasting effect" box is ticked (the header says how many are
   hidden). Besides the ones the game puts back or rebuilds (below), Accuracy, Aim, Attack and Defense are hidden because changing them did not change the
