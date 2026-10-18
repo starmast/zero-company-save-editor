@@ -58,7 +58,8 @@ See [docs/platforms.md](docs/platforms.md).
 | [Changelog](CHANGELOG.md) | what changed in each version |
 
 Found a problem or have an idea? [Open an issue](https://github.com/starmast/zero-company-save-editor/issues/new/choose).
-Please do **not** attach save files, game files or extracted game data.
+For a bug, **Copy debug report** (on the error banner, or **Game data > Report a problem**) gives the details to paste; when the save itself is
+needed, **Save debug bundle…** zips the report with the save. Please do **not** attach game files, extracted game data or `.usmap` files.
 
 ## License
 Source code: [MIT](LICENSE). The license covers this repository's code only; see [DISCLAIMER.md](DISCLAIMER.md) for

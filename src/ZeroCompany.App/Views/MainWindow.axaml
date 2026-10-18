@@ -82,7 +82,13 @@
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Text="{Binding BannerText}" TextWrapping="Wrap" VerticalAlignment="Center"
                    Classes.bad="{Binding BannerIsError}" Classes.ok="{Binding BannerIsOk}" Classes.ice="{Binding BannerIsInfo}" />
-        <Button Grid.Column="1" Classes="link" Content="✕" Command="{Binding DismissBannerCommand}" ToolTip.Tip="Dismiss" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Classes="link" Content="Copy debug report" Command="{Binding CopyDebugReportCommand}" IsVisible="{Binding BannerIsError}"
+                  ToolTip.Tip="Copies details about this error and your setup, to paste into a bug report" />
+          <Button Classes="link" Content="Save debug bundle…" Command="{Binding SaveDebugBundleCommand}" IsVisible="{Binding BannerIsError}"
+                  ToolTip.Tip="Saves the debug report, the open save file and the crash log in one zip, to attach to a bug report" />
+          <Button Classes="link" Content="✕" Command="{Binding DismissBannerCommand}" ToolTip.Tip="Dismiss" />
+        </StackPanel>
       </Grid>
     </Border>
 

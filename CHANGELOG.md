@@ -21,6 +21,10 @@ All notable changes to this project are documented here. The format follows
   Superior and Exquisite at 0 and Basic at 3 stocked only Basic items, and the reverse stocked only Exquisite ones. The bonus items still come from the Exquisite mods
   table. The game has no table above Exquisite, so Exotic items and the unique ones come from Armory > Add items.
 - **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. It is also what the Recruitment screen checks (tried in the game: at 18 of 18 recruiting is blocked with "No open roster slots", at 18 of 19 it is allowed), so raising it lets you recruit past the Den's limit. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
+- **Debug report.** An error banner now has **Copy debug report** and **Save debug bundle…** (also under Game data > Report a problem). The
+  report is text to paste into a bug report: the editor and game versions, the error with its details, the pending changes, counts from the
+  open save (no names) and the setup checks. The bundle zips it with the save file and the crash log. `zc doctor --report [--save S]
+  [--bundle FILE.zip]` does the same from the command line. The issue templates ask for the report and now accept the bundle.
 
 ### Fixed
 - Armory, **Add items**: adding an item failed with "the save has no utility item to copy; add one in the game first" when every utility

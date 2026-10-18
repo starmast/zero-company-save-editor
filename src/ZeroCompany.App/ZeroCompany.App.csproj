@@ -34,6 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ZeroCompany.Core\ZeroCompany.Core.csproj" />
     <ProjectReference Include="..\ZeroCompany.GameData\ZeroCompany.GameData.csproj" />
+    <ProjectReference Include="..\ZeroCompany.Sdk\ZeroCompany.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

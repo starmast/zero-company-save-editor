@@ -6,6 +6,39 @@ namespace ZeroCompany.App.Tests;
 
 public class ShellTests
 {
+    [SkippableFact]
+    public void An_error_banner_offers_a_debug_report_and_a_bundle_with_the_save()
+    {
+        Skip.If(Repo.SampleSave() == null, "no sample save");
+        using var rig = new TestRig();
+        rig.Start();
+        bool shown = Headless.Run(() =>
+        {
+            try { throw new InvalidOperationException("the save has no utility item to copy"); }
+            catch (Exception e) { rig.Main.ReportUnexpected("Applying failed", e); }
+            rig.Pump();
+            return rig.Window.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Copy debug report" && b.IsEffectivelyVisible)
+                && rig.Window.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Save debug bundle…" && b.IsEffectivelyVisible);
+        });
+        Assert.True(shown);
+        rig.Shot("debug-report-banner");
+
+        Headless.RunAsync(() => ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)rig.Main.CopyDebugReportCommand).ExecuteAsync(null)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        var text = rig.Ui.Clipboard!;
+        Assert.Contains("Applying failed: the save has no utility item to copy", text);
+        Assert.Contains("System.InvalidOperationException", text);
+        Assert.Contains("ZeroCompanyEditor", text);
+        Assert.Contains(rig.SaveName, text);
+
+        rig.Ui.PickedSaveFile = Path.Combine(rig.Tmp, "bundle.zip");
+        Headless.RunAsync(() => ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)rig.Main.SaveDebugBundleCommand).ExecuteAsync(null)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        using var zip = System.IO.Compression.ZipFile.OpenRead(rig.Ui.PickedSaveFile);
+        Assert.Contains(zip.Entries, e => e.FullName == rig.SaveName);
+        Assert.Contains(zip.Entries, e => e.FullName == "crash.log");
+    }
+
 
     [SkippableFact]
     public void Saves_screen_lists_the_sample_save()

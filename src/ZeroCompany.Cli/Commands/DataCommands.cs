@@ -42,6 +42,17 @@ static class DataCommands
 
     public static int Doctor(CliArgs a)
     {
+        bool report = a.Flag("--report");
+        var save = a.Opt("--save"); var bundle = a.Opt("--bundle");
+        if (report || bundle != null)
+        {
+            var path = save == null ? null : SaveCatalog.Resolve(a.Workspace, save).Path;
+            var text = DebugReport.Build(a.Workspace, DebugReport.ToolName(), path);
+            if (bundle == null) { Console.Write(text); return 0; }
+            var holds = DebugReport.WriteBundle(a.Workspace, bundle, text, path);
+            Console.WriteLine($"wrote {Path.GetFullPath(bundle)} ({holds})");
+            return 0;
+        }
         var checks = ZcDoctor.Run(a.Workspace);
         if (a.Json) CliApp.WriteJson(checks);
         else foreach (var c in checks) Report.Print(c);
