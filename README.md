@@ -27,8 +27,8 @@ Optional but nice: open the **Game data** tab once to show real item names and u
 free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
 
 ## What you can do
-- **Command** - turn, level, XP, credits and other resources; restore any backup.
-- **Personnel** - focus points, bonds, ability levels, roster order, bring back fallen operators.
+- **Command** - turn, level, XP, credits and other resources, roster capacity, gear slots, field tasks and the Black Market; restore any backup.
+- **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has, roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory** (including adding items you never had), **Galaxy** (influence, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission

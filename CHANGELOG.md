@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-17
+
 ### Added
 - **Give an ability.** Personnel > Focus Tree has a "Give an ability" box that copies an ability another operator in the save holds (for example Cly's Combat
   Jump jetpack) onto the selected operator; `zc edit do <save> grant-ability <operator> <ability> [level]` does the same. The ability's tier records and its
