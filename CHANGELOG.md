@@ -5,6 +5,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Give an ability.** Personnel > Focus Tree has a "Give an ability" box that copies an ability another operator in the save holds (for example Cly's Combat
+  Jump jetpack) onto the selected operator; `zc edit do <save> grant-ability <operator> <ability> [level]` does the same. The ability's tier records and its
+  focus entry are copied from the operator who has it, so the save must contain someone who holds the ability. Confirmed in the game: Hawks used the jetpack.
+- **Gear slots.** Command > Gear slots gives every operator more utility slots (up to 12) or fills the weapon's four mod slots; `zc edit do <save> set-slots
+  <mod|utility> <total>` does the same. The game reads two things: each operator's list of slots (what the Armory draws) and the bonus slot count (what lets an
+  item be equipped), so the editor raises both. Tried in the game: the new utility slots can be equipped. Weapon mods stop at four because a weapon takes one mod
+  of each of its four kinds. The slot limit values in the save (the maximums) and the bonus alone do not unlock slots.
+- **Den numbers** on the Command tab: field tasks per turn (most and now), the Black Market's refresh cost, and its bonus items (`zc edit fields <save> progression`). Tried in the
+  game: a third operation could be launched with the limit at 6, the refresh cost followed the saved number (and the discount and increment worked from it), and the
+  Black Market stocked 12 items instead of 7 after a refresh. The shop price number in the same part of the save is not exposed because its effect was not confirmed.
+- **Black Market quality.** Command > Black Market restock sets how many items a refresh rolls from each quality table (Basic, Superior, Exquisite, for weapon mods
+  and for utilities); `zc edit do <save> set-market <mods|utility> <tier 1-3> <count>` does the same. A table the save does not list yet is added. Tried in the game:
+  Superior and Exquisite at 0 and Basic at 3 stocked only Basic items, and the reverse stocked only Exquisite ones. The bonus items still come from the Exquisite mods
+  table. The game has no table above Exquisite, so Exotic items and the unique ones come from Armory > Add items.
+- **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. It is also what the Recruitment screen checks (tried in the game: at 18 of 18 recruiting is blocked with "No open roster slots", at 18 of 19 it is allowed), so raising it lets you recruit past the Den's limit. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
+
+### Fixed
+- Armory, **Add items**: adding an item failed with "the save has no utility item to copy; add one in the game first" when every utility
+  item in the save was equipped, or when the save had no weapon mod yet (common early in a campaign). The new entry is now copied from any
+  inventory entry, a resource if need be, and always starts with a count of 1 and nobody equipping it.
+
 ## [0.7.0] - 2026-10-16
 
 ### Added

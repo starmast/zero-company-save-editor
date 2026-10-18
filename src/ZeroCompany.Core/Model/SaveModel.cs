@@ -137,7 +137,20 @@ public sealed class SaveModel
         Bonds();
         LoadRegions();
         FactValues();
+        foreach (var (key, fact, label, hi, note) in DenFacts)
+            Prog[key] = Add(Facts.GetValueOrDefault(fact), "Progression", "Den", label, lo: 0, hi: hi, note: note);
+        Prog["roster_cap"] = Add(Facts.GetValueOrDefault("Facts.Values.MaximumRosterCount"), "Progression", "Roster", "Roster capacity",
+                                 lo: 1, hi: 1000, note: "How many operators the roster holds, and the limit the Recruitment screen checks (no recruiting at full). Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
     }
+
+    /// <summary>Den numbers the save keeps as literal facts: (key, fact, label, highest value, note).</summary>
+    public static readonly (string Key, string Fact, string Label, double Hi, string Note)[] DenFacts =
+    {
+        ("field_tasks_max", "Facts.Values.MaximumFieldTaskPerTurn", "Field tasks per turn (most)", 20, "Operations you can send out each turn."),
+        ("field_tasks_now", "Facts.Values.CurrentFieldTaskPerTurn", "Field tasks per turn (now)", 20, "Operations you can still send out this turn."),
+        ("shop_refresh_cost", "Facts.Values.ShopRefreshBaseCost", "Shop refresh cost", 100000, "What the first refresh of the Black Market costs; each refresh after it costs more."),
+        ("shop_bonus_items", "Facts.Values.BonusShopItems", "Black Market bonus items", 20, "Extra items the Black Market stocks on its next refresh."),
+    };
 
     // -- helpers -----------------------------------------------------------
     Field? Add(GvasNode? node, string group, string section, string label, double lo = 0, double hi = Field.IntMax,

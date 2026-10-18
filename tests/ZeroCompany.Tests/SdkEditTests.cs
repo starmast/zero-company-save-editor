@@ -110,6 +110,93 @@ public class SdkEditTests : IDisposable
     }
 
     [SkippableFact]
+    public void The_roster_capacity_is_an_editable_progression_field()
+    {
+        var (ws, path) = Rig(Repo.SampleSave());
+        var ed = Open(ws, path);
+        var cap = ed.Fields.Resolve("progression.roster_cap");
+        ed.Set("progression.roster_cap", cap.Value + 6);
+        var res = ed.Apply(asCopy: true);
+        var copy = Copy(ed, res);
+        Assert.Equal(cap.Value + 6, Open(ws, copy).Fields.Resolve("progression.roster_cap").Value);
+        var c = Assert.Single(FieldDiff.Compare(ws, path, copy).Changes);
+        Assert.Equal(("progression.roster_cap", cap.Value, cap.Value + 6), (c.Path, c.From!.Value, c.To!.Value));
+    }
+
+    [SkippableFact]
+    public void Hawks_can_be_given_the_jetpack_Cly_holds()
+    {
+        var (ws, path) = Rig(Repo.CombatSaveNamed("Combat_ThreeWay.sav"));
+        var ed = Open(ws, path);
+        var hawks = ed.Save.View.Personnel.Roster.First(o => o.Name == "Hawks");
+        const string Tag = "br.AbilityID.Identity.CombatJump";
+        Assert.DoesNotContain(Tag, ZeroCompany.Core.Actions.AbilityOps.Held(ed.Save.Gvas, hawks.Guid));
+        Assert.Contains(Tag, ZeroCompany.Core.Actions.AbilityOps.Grantable(ed.Save.Gvas, hawks.Guid).Select(d => d.Tag));
+
+        var ex = Assert.Throws<ZcException>(() => ed.Do("grant-ability", new[] { "Hawks", "Nope" }));
+        Assert.Contains("CombatJump", ex.Message);
+        ed.Do("grant-ability", new[] { "Hawks", "CombatJump", "2" });
+        var res = ed.Apply(asCopy: true);
+
+        var after = Open(ws, Copy(ed, res));
+        var g = after.Save.Gvas;
+        Assert.Contains(Tag, ZeroCompany.Core.Actions.AbilityOps.Held(g, hawks.Guid));
+        var ab = after.Save.View.Personnel.Roster.First(o => o.Guid == hawks.Guid).Abilities.First(a => a.Tag == Tag);
+        Assert.Equal(2, ab.CurrentLevel);
+        Assert.Equal(0, Open(ws, path).Save.View.Personnel.Roster.First(o => o.Guid == hawks.Guid).Abilities.Count(a => a.Tag == Tag));   // the original is untouched
+    }
+
+    [SkippableFact]
+    public void Gear_slots_are_raised_for_everyone_in_both_places_the_game_reads()
+    {
+        var (ws, path) = Rig(Repo.SampleSave());
+        var ed = Open(ws, path);
+        var g0 = ed.Save.Gvas;
+        int utilityBefore = ZeroCompany.Core.Actions.GearOps.Current(g0, ZeroCompany.Core.Actions.GearOps.Utility);
+        if (utilityBefore == 0)
+        {
+            // this save never had a slot upgrade, so it has no bonus slot record to raise: the edit is refused with a clear message, the panel is hidden
+            ed.Do("set-slots", new[] { "utility", "5" });
+            var ex = Assert.ThrowsAny<Exception>(() => ed.Apply(asCopy: true));
+            Assert.Contains("bonus slot record", ex.Message);
+            Skip.If(true, "the sample save has no bonus slot record, so the raise itself is not exercised here");
+        }
+        Assert.Throws<ZcException>(() => ed.Do("set-slots", new[] { "mod", "5" }));          // a weapon takes four mods at most
+        ed.Do("set-slots", new[] { "utility", (utilityBefore + 4).ToString() });
+        var res = ed.Apply(asCopy: true);
+
+        var after = Open(ws, Copy(ed, res)).Save.Gvas;
+        const string U = ZeroCompany.Core.Actions.GearOps.Utility;
+        Assert.Equal(utilityBefore + 4, ZeroCompany.Core.Actions.GearOps.Current(after, U));
+        var ops = ZeroCompany.Core.Actions.GearOps.Operators(after, U);
+        Assert.NotEmpty(ops);
+        Assert.All(ops, gid => Assert.True(ZeroCompany.Core.Actions.GearOps.SlotCount(after, gid, U) >= utilityBefore + 4));
+        Assert.Equal(utilityBefore, ZeroCompany.Core.Actions.GearOps.Current(Open(ws, path).Save.Gvas, U));   // the original is untouched
+    }
+
+    [SkippableFact]
+    public void Black_Market_tables_can_be_changed_and_a_missing_tier_is_added()
+    {
+        var (ws, path) = Rig(Repo.SampleSave());
+        var ed = Open(ws, path);
+        var before = ZeroCompany.Core.Actions.MarketOps.Counts(ed.Save.Gvas);
+        Skip.If(before == null, "the sample save has no Black Market");
+        Assert.Throws<ZcException>(() => ed.Do("set-market", new[] { "mods", "4", "1" }));        // the game has no table above tier 3
+        const string Basic = "br.ShopTable.Mods.Tier1";
+        ed.Do("set-market", new[] { "mods", "1", "2" });
+        ed.Do("set-market", new[] { "mods", "3", "0" });
+        var res = ed.Apply(asCopy: true);
+
+        var after = ZeroCompany.Core.Actions.MarketOps.Counts(Open(ws, Copy(ed, res)).Save.Gvas)!;
+        Assert.Equal(2, after[Basic]);
+        Assert.Equal(0, after["br.ShopTable.Mods.Tier3"]);
+        var tiers = new[] { Basic, "br.ShopTable.Mods.Tier3" };
+        Assert.Equal(before!.Count + tiers.Count(t => !before.ContainsKey(t)), after.Count);       // tiers the save did not list were added
+        Assert.All(before.Where(kv => !tiers.Contains(kv.Key)), kv => Assert.Equal(kv.Value, after[kv.Key]));      // the others did not move
+        Assert.Equal(before.Count, ZeroCompany.Core.Actions.MarketOps.Counts(Open(ws, path).Save.Gvas)!.Count);   // the original is untouched
+    }
+
+    [SkippableFact]
     public void Editing_an_operators_focus_moves_their_total_focus_with_it()
     {
         var (ws, path) = Rig(Repo.SampleSave());

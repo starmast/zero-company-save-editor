@@ -25,6 +25,7 @@ public sealed class SaveService
     public const int KeepBackups = 20;
     static readonly Regex SafeName = new(@"^[A-Za-z0-9._ \-+()]+\.sav$", RegexOptions.Compiled);
     static readonly Regex GuidRx = new("^[0-9A-F]{32}$", RegexOptions.Compiled);
+    static readonly Regex AbilityTagRx = new(@"^br\.AbilityID\.[A-Za-z0-9_.]+$", RegexOptions.Compiled);
     static readonly Regex RecipeIdRx = new(@"^r\d+$", RegexOptions.Compiled);
 
     readonly string _backupRoot;
@@ -352,7 +353,7 @@ public sealed class SaveService
     GvasFile RunActions(OpenSave c, GvasFile g, IReadOnlyList<SaveAction> actions, HashSet<string> touched, CutInfo cut)
     {
         var seen = new HashSet<string>();
-        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>();
+        var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>(); var gearDone = new HashSet<string>(); var marketDone = new HashSet<string>();
         bool rosterDone = false, coilDone = false;
 
         static string NormGuid(string raw)
@@ -385,6 +386,33 @@ public sealed class SaveService
                     var guid = NormGuid(r.Guid);
                     if (!revived.Add(guid)) throw new EditException("bad operator reference");
                     g = Revive(c, g, guid, touched, cut);
+                    break;
+                }
+                case SaveAction.GrantAbility ga:
+                {
+                    var guid = NormGuid(ga.Guid);
+                    if (!granted.Add(guid + "|" + ga.Tag)) throw new EditException("bad ability reference");
+                    g = Grant(c, g, guid, ga.Tag, ga.Level, cut);
+                    break;
+                }
+                case SaveAction.SetGearSlots gs:
+                {
+                    string type;
+                    try { type = GearOps.TypeTag(gs.Type); } catch (GvasException e) { throw new EditException(e.Message, e); }
+                    int top = gs.Type == "mod" ? GearOps.MaxModSlots : GearOps.MaxUtilitySlots;
+                    if (gs.Total < 1 || gs.Total > top) throw new EditException($"{gs.Type} slots must be 1 to {top}");
+                    if (!gearDone.Add(type)) throw new EditException("duplicate gear slot action");
+                    try { g = GearOps.SetSlotCount(g, type, gs.Total, cut); }
+                    catch (GvasException e) { throw new EditException($"Gear slots: {e.Message}", e); }
+                    break;
+                }
+                case SaveAction.SetMarketTable mt:
+                {
+                    if (!MarketOps.Kinds.Contains(mt.Kind) || mt.Tier < MarketOps.MinTier || mt.Tier > MarketOps.MaxTier || mt.Count < 0 || mt.Count > MarketOps.MaxCount)
+                        throw new EditException($"Black Market table: kind mods or utility, tier {MarketOps.MinTier} to {MarketOps.MaxTier}, count 0 to {MarketOps.MaxCount}");
+                    if (!marketDone.Add(mt.Kind + mt.Tier)) throw new EditException("duplicate Black Market table");
+                    try { g = MarketOps.Set(g, MarketOps.Tag(mt.Kind, mt.Tier), mt.Count, cut); }
+                    catch (GvasException e) { throw new EditException($"Black Market: {e.Message}", e); }
                     break;
                 }
                 case SaveAction.ReorderRoster ro:
@@ -538,6 +566,18 @@ public sealed class SaveService
         try { g = CompleteFocus(c, g, guid, cut); }                    // a returning operator gets a complete focus tree too
         catch (EditException) { }
         return g;
+    }
+
+    GvasFile Grant(OpenSave c, GvasFile g, string guid, string tag, int level, CutInfo cut)
+    {
+        if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
+        if (!AbilityTagRx.IsMatch(tag ?? "")) throw new EditException("bad ability reference");
+        var thr = Db.Thresholds(tag!);
+        int max = thr is { Length: > 0 } ? thr.Length : 6;
+        if (level < 1 || level > max) throw new EditException($"level must be 1 to {max}");
+        int spent = thr is { Length: > 0 } ? thr[level - 1] : 0;
+        try { return AbilityOps.Grant(g, guid, tag!, level, spent, cut); }
+        catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
     }
 
     GvasFile CompleteFocus(OpenSave c, GvasFile g, string guid, CutInfo cut)
@@ -724,6 +764,13 @@ public sealed class SaveService
                     throw new EditException("verification failed: a death effect is still present");
             }
         }
+        if (cut.MarketTables.Count > 0 && !MarketOps.Holds(g2, cut.MarketTables))
+            throw new EditException("verification failed: the Black Market tables are not what was intended");
+        foreach (var (type, total) in cut.GearSlots)
+            if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
+        foreach (var (guid, tag, record) in cut.Granted)
+            if (!AbilityOps.Has(g2, guid, tag, record))
+                throw new EditException("verification failed: a granted ability is not on the operator as intended");
         foreach (var (guid, expected) in cut.Focus)
         {
             var have = FocusOps.Records(g2, guid);

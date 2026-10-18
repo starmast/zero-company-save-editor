@@ -8,7 +8,7 @@ namespace ZeroCompany.Core.Actions;
 /// Giving the squad an item it never had (for example the reward of a Tel meditation you did not choose). Utility items and weapon
 /// mods are each their own entry in StrategyData.InventoryItemData (a map from a GUID to a small struct: the same GUID again, the
 /// item asset as an object path and a soft path, a count of 1, when the count last changed, who has it equipped and a recipe id),
-/// and two of the same item are two entries. So adding an item appends one entry: a copy of an existing entry of the same kind,
+/// and two of the same item are two entries. So adding an item appends one entry: a copy of an existing entry (see Template),
 /// with a fresh GUID and the new item's asset paths. Resources are one stack each and already have an editable count.
 /// </summary>
 public static class ArmoryOps
@@ -54,20 +54,27 @@ public static class ArmoryOps
         return list;
     }
 
-    /// <summary>An existing entry to copy: same kind, count 1, nobody has it equipped.</summary>
+    /// <summary>
+    /// An existing entry to copy the layout from. Every entry has the same fields (resources too: Credits is one), so any will do once
+    /// <see cref="AddItem"/> resets its count and equipped set; the closest match is preferred (same kind, count 1, nobody has it
+    /// equipped), then any item, then a resource. An early save can have every item equipped, or no weapon mod at all.
+    /// </summary>
     static GvasNode? Template(GvasFile g, string kind)
     {
         var folder = kind == "UtilityItem" ? "/UtilityItems/" : "/Modifications/";
+        GvasNode? best = null; int bestScore = -1;
         foreach (var e in InventoryMap(g).Children ?? new List<GvasNode>())
         {
             var v = Value(g, e);
-            if (v == null || g.Child(v, "ItemAsset") is not { } a || !g.GetStr(a).Contains(folder, StringComparison.Ordinal)) continue;
-            if (g.Child(v, "ItemCount") is not { } c || g.GetInt(c) != 1) continue;
-            if (g.Child(v, "EquippedCharacterIDs") is not { Size: 8 }) continue;          // an empty set: a count of 0 and nothing in it
+            if (v == null || g.Child(v, "ItemAsset") is not { } a || g.Child(v, "ItemCount") is not { } c) continue;
             if (g.Child(v, "ItemId") == null || g.Child(v, "SoftItemAsset") == null) continue;
-            return e;
+            if (g.Child(v, "EquippedCharacterIDs") is not { TName: "SetProperty" } eq || eq.Size < 8) continue;
+            var path = g.GetStr(a);
+            int score = (path.Contains(folder, StringComparison.Ordinal) ? 4 : KindOf(Naming.AssetName(path)) != null ? 2 : 0)
+                      + (g.GetInt(c) == 1 && eq.Size == 8 ? 1 : 0);
+            if (score > bestScore) { best = e; bestScore = score; }
         }
-        return null;
+        return best;
     }
 
     static void SetGuid(GvasFile g, GvasNode s, int[] parts)
@@ -82,7 +89,7 @@ public static class ArmoryOps
     {
         var kind = KindOf(name) ?? throw new GvasException($"'{name}' is not an item that can be added (only utility items and weapon mods)");
         var (objectPath, softPath) = ItemPaths(name);
-        var tmpl = Template(g, kind) ?? throw new GvasException($"the save has no {(kind == "UtilityItem" ? "utility item" : "weapon mod")} to copy; add one in the game first");
+        var tmpl = Template(g, kind) ?? throw new GvasException("the save's inventory has no entry to copy the layout from");
         var raw = g.Slice(tmpl.Start, tmpl.End);
         cut.OpaqueRemoved -= g.Walk(new[] { tmpl }).Count(n => n.Opaque);          // the copy brings its own unparsed parts (timestamp, equipped set); the verifier counts them
 
@@ -101,6 +108,9 @@ public static class ArmoryOps
         SetGuid(g, g.Child(Last(), "key") ?? Last().Children![0], parts);
         var value = Value(g, Last())!;
         SetGuid(g, g.Child(value, "ItemId")!, parts);
+        g.Set(g.Child(value, "ItemCount")!, 1);
+        if (g.Child(value, "EquippedCharacterIDs") is { Size: > 8 } eq)
+            g = g.ReplaceValue(eq, new byte[8]);                                     // an empty set: nothing removed, nothing in it
         g = g.SetString(g.Child(Value(g, Last())!, "ItemAsset")!, objectPath);
         g = SetSoftPath(g, g.Child(Value(g, Last())!, "SoftItemAsset")!, softPath, name);
         cut.AddedItems.Add((name, GuidHexOf(g, Last())));
