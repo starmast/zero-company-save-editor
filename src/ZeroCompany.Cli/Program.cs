@@ -6,6 +6,9 @@ const string Usage = """
     zc - tools for Star Wars Zero Company saves and game data
 
       zc doctor                what is set up and what is missing, with the fix for each
+      zc doctor --report [--save S] [--bundle OUT.zip]
+                               a debug report to paste into a bug report (counts only, no names); --bundle zips it
+                               with the save file and crash.log for bugs that need the real file
       zc save   <command>      look inside saves (read-only): list, profile, diff, find, dump, check
       zc edit   <command>      change a save from the command line (nothing is written without --write)
       zc assets <command>      browse the game's own packages (read-only)

@@ -41,6 +41,19 @@
       </StackPanel>
     </Border>
 
+    <Border Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="REPORT A PROBLEM" /></Border>
+        <TextBlock Classes="mute small" Margin="14,10,14,8" TextWrapping="Wrap"
+                   Text="The debug report lists the editor and game versions, the last error, your pending changes, counts from the open save (no names) and how your setup looks. Paste it into a bug report. If the problem needs the save itself, the debug bundle zips the report with the open save file and the crash log." />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="14,0,14,14">
+          <Button Content="Copy debug report" Command="{Binding CopyDebugReportCommand}" />
+          <Button Content="Save debug bundle…" Command="{Binding SaveDebugBundleCommand}" />
+          <Button Content="Open a bug report" Command="{Binding OpenIssuesCommand}" ToolTip.Tip="Opens the project's issue page on GitHub" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
     <Border Classes="panel" IsVisible="{Binding HasLog}">
       <StackPanel>
         <Border Classes="panelh"><TextBlock Classes="caps h2" Text="LOG" /></Border>

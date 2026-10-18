@@ -99,6 +99,7 @@ at another settings/backups/game-data folder, which is how to try things without
 
 ```
 zc doctor                                   what is set up and what is missing, with the fix for each (exit 1 on a failure)
+zc doctor --report [--save S] [--bundle Z]  the debug report users paste into a bug report; --bundle zips it with the save and crash.log
 zc save list | profile <save> | diff <a> <b> | find <save> <text> | dump <save> [path] | check <save>...
 zc edit fields|get|set|do|actions|apply|diff|backups|restore ...
 zc assets find|dump|scan|missions|operations|rewards ...
@@ -175,7 +176,10 @@ On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`
 
 ### zc doctor and zc data
 `zc doctor` lists the save folders, game folder, mappings file, Oodle library, game database (and whether the game files are newer than it), backups
-and whether the game is running, with a fix for each problem. `zc data extract` builds the game database the way the editor's Game data screen does
+and whether the game is running, with a fix for each problem. `zc doctor --report` prints the debug report (`DebugReport` in the SDK, the same text as the editor's *Copy debug
+report*): tool and OS, the last error with its stack trace (editor only), pending changes, the save as counts (game build, mode, inventory per
+kind with how many are equipped), the save checks and the doctor checks, with the home folder shown as `~`. `--bundle FILE.zip` adds the save
+file and the end of `crash.log`. `zc data extract` builds the game database the way the editor's Game data screen does
 (same defaults, same file); `zc data items|upgrades|effects|coil|spawn-sets` list the names `zc edit do` accepts.
 
 The published tool is a self-contained single file (`dotnet publish src/ZeroCompany.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/publish/zc-win-x64`);

@@ -35,6 +35,16 @@ public partial class MainWindow : Window, IUiServices
         return r.Count > 0 ? r[0].TryGetLocalPath() : null;
     }
 
+    public async Task<string?> PickSaveFileAsync(string title, string suggestedName, string label, string extension)
+    {
+        var r = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = title, SuggestedFileName = suggestedName, DefaultExtension = extension, ShowOverwritePrompt = true,
+            FileTypeChoices = new[] { new FilePickerFileType(label) { Patterns = new[] { "*." + extension } } },
+        });
+        return r?.TryGetLocalPath();
+    }
+
     public async Task CopyToClipboardAsync(string text)
     {
         if (Clipboard != null) await Clipboard.SetTextAsync(text);

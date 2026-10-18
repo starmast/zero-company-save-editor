@@ -8,7 +8,8 @@ body:
         **First, restore your backup.** Open **Command** in the editor and press *Restore* on the `original` entry (or
         the snapshot from just before the edit). Backups live in the `backups/` folder next to the app.
 
-        **Please do not attach save files or game files.** Describe the situation instead; that is enough to start.
+        If you can, press **Save debug bundle…** in the editor (**Game data > Report a problem**) with the save open and attach the
+        zip: it holds the save and the details we need. Please do **not** attach game files, extracted game data or `.usmap` files.
   - type: textarea
     id: edits
     attributes:
@@ -43,7 +44,7 @@ body:
     id: version
     attributes:
       label: Editor version
-      placeholder: "0.3.0"
+      placeholder: "0.7.0"
   - type: input
     id: game
     attributes:

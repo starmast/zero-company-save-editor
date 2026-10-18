@@ -5,9 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. **Please do not attach save files, game files, extracted game data (`gamedata/`) or
-        `.usmap` mapping files.** They can contain copyrighted game content. Describe what you see instead, and paste
-        the error message shown in the app (it appears in a banner at the top).
+        Thanks for reporting. The quickest way to send the details: press **Copy debug report** on the red error banner (or
+        **Game data > Report a problem**) and paste it below. From the command line, `zc doctor --report --save <save>` prints the same.
+
+        If the problem needs your save itself, use **Save debug bundle…** and attach the zip it makes (the report, the save and the
+        crash log). Please do **not** attach game files, extracted game data (`gamedata/`) or `.usmap` mapping files.
   - type: textarea
     id: what
     attributes:
@@ -20,35 +22,30 @@ body:
     attributes:
       label: Where in the app?
       options:
-        - Save picker / opening a save
-        - Command (backups, restore, stockpile)
-        - Personnel (overview, bonds, focus tree)
+        - Saves / opening a save
+        - Command
+        - Personnel
+        - Armory
         - Upgrades
-        - Armory / Galaxy
-        - Advanced / Raw
-        - Game-data extractor (tools/extract)
-        - Installing / run.bat
+        - Medbay
+        - Galaxy
+        - Combat
+        - Advanced
+        - Game data / extraction
+        - zc (command line)
+        - Installing / starting the app
         - Other
     validations:
       required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Debug report
+      description: Paste the text from Copy debug report (it has the editor and game versions, the error and its details).
+      render: text
   - type: input
     id: version
     attributes:
       label: Editor version
-      description: Shown in the console when the app starts, and in CHANGELOG.md.
-      placeholder: "0.3.0"
-  - type: input
-    id: python
-    attributes:
-      label: Python version
-      placeholder: "3.14"
-  - type: input
-    id: game
-    attributes:
-      label: Game version / build
-      description: If you know it (the save's info shows a changelist number). A game patch can change the save format.
-  - type: textarea
-    id: logs
-    attributes:
-      label: Error text or console output
-      render: text
+      description: Only if you could not paste a debug report. Shown in the debug report and in the release you downloaded.
+      placeholder: "0.7.0"

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using ZeroCompany.App.Services;
 using ZeroCompany.Core;
 using ZeroCompany.Core.Save;
+using ZeroCompany.Sdk;
 
 namespace ZeroCompany.App.ViewModels;
 
@@ -91,7 +92,56 @@ public sealed partial class MainViewModel : ViewModelBase
 
     partial void OnHasSaveChanged(bool value) => OnPropertyChanged(nameof(ChangeSaveLabel));
 
-    public void SetBanner(string? text, string kind = "info") { BannerKind = kind; BannerText = text; }
+    public void SetBanner(string? text, string kind = "info")
+    {
+        BannerKind = kind; BannerText = text;
+        if (kind == "err" && text != null) LastIncident = new DebugIncident(text, null, DateTime.Now);
+    }
+
+    /// <summary>The last error shown, for the debug report.</summary>
+    public DebugIncident? LastIncident { get; private set; }
+
+    public const string IssuesUrl = "https://github.com/starmast/zero-company-save-editor/issues/new/choose";
+
+    /// <summary>The debug report for the current state. The pending list is read here, on the UI thread that owns it; the checks run in the background.</summary>
+    public Task<string> BuildDebugReportAsync()
+    {
+        var open = Session.Current;
+        var pending = open != null ? Session.Pending.Describe(open) : null;
+        var incident = LastIncident;
+        return Task.Run(() => DebugReport.Build(Session.Workspace, DebugReport.ToolName(typeof(MainViewModel).Assembly), open?.Path, pending, incident));
+    }
+
+    [RelayCommand]
+    async Task CopyDebugReport()
+    {
+        try
+        {
+            await Ui.CopyToClipboardAsync(await BuildDebugReportAsync());
+            SetBanner("Debug report copied. Paste it into a bug report; it holds counts and settings, not your save. " +
+                      "If the problem needs the save itself, use Save debug bundle (Game data screen).", "ok");
+        }
+        catch (Exception e) { ReportUnexpected("Could not make the debug report", e); }
+    }
+
+    [RelayCommand]
+    async Task SaveDebugBundle()
+    {
+        try
+        {
+            var stem = Session.Current is { } o ? System.IO.Path.GetFileNameWithoutExtension(o.Name) : "editor";
+            var path = await Ui.PickSaveFileAsync("Save debug bundle", $"zc-debug-{stem}-{DateTime.Now:yyyyMMdd-HHmm}.zip", "Zip archive", "zip");
+            if (path == null) return;
+            var report = await BuildDebugReportAsync();
+            var save = Session.Current?.Path;
+            var holds = await Task.Run(() => DebugReport.WriteBundle(Session.Workspace, path, report, save));
+            SetBanner($"Saved {path} ({holds}" + (save != null ? "; the save is the file on disk, without pending edits" : "") +
+                      "). Attach it to a bug report.", "ok");
+        }
+        catch (Exception e) { ReportUnexpected("Could not save the debug bundle", e); }
+    }
+
+    [RelayCommand] Task OpenIssues() => Ui.OpenUrlAsync(IssuesUrl);
 
     /// <summary>
     /// An error nothing expected: log it with its stack trace and say so in the banner. The save is safe either way, because it is only
@@ -102,6 +152,7 @@ public sealed partial class MainViewModel : ViewModelBase
         var log = CrashLog.Write(Session.Env.DataDir, e);
         SetBanner($"{what}: {e.Message} (an unexpected error; the save on disk is unchanged unless a success message said otherwise." +
                   (log != null ? $" Details: {log})" : ")"), "err");
+        LastIncident = new DebugIncident($"{what}: {e.Message}", e, DateTime.Now);
     }
 
     [RelayCommand] void DismissBanner() => SetBanner(null);

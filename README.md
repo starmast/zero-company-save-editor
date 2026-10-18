@@ -27,8 +27,8 @@ Optional but nice: open the **Game data** tab once to show real item names and u
 free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
 
 ## What you can do
-- **Command** - turn, level, XP, credits and other resources; restore any backup.
-- **Personnel** - focus points, bonds, ability levels, roster order, bring back fallen operators.
+- **Command** - turn, level, XP, credits and other resources, roster capacity, gear slots, field tasks and the Black Market; restore any backup.
+- **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has, roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory** (including adding items you never had), **Galaxy** (influence, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
@@ -58,7 +58,8 @@ See [docs/platforms.md](docs/platforms.md).
 | [Changelog](CHANGELOG.md) | what changed in each version |
 
 Found a problem or have an idea? [Open an issue](https://github.com/starmast/zero-company-save-editor/issues/new/choose).
-Please do **not** attach save files, game files or extracted game data.
+For a bug, **Copy debug report** (on the error banner, or **Game data > Report a problem**) gives the details to paste; when the save itself is
+needed, **Save debug bundle…** zips the report with the save. Please do **not** attach game files, extracted game data or `.usmap` files.
 
 ## License
 Source code: [MIT](LICENSE). The license covers this repository's code only; see [DISCLAIMER.md](DISCLAIMER.md) for

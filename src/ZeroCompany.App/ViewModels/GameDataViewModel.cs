@@ -17,6 +17,10 @@ public sealed partial class GameDataViewModel : ScreenViewModel
     CancellationTokenSource? _cts;
     readonly StringBuilder _log = new();
 
+    public System.Windows.Input.ICommand CopyDebugReportCommand => _main.CopyDebugReportCommand;
+    public System.Windows.Input.ICommand SaveDebugBundleCommand => _main.SaveDebugBundleCommand;
+    public System.Windows.Input.ICommand OpenIssuesCommand => _main.OpenIssuesCommand;
+
     public GameDataViewModel(MainViewModel main)
     {
         _main = main;
