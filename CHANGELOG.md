@@ -22,6 +22,11 @@ All notable changes to this project are documented here. The format follows
   table. The game has no table above Exquisite, so Exotic items and the unique ones come from Armory > Add items.
 - **Roster capacity** on the Command tab (`progression.roster_cap` in `zc edit`): the number of operators the roster holds, which roster upgrades normally raise. It is also what the Recruitment screen checks (tried in the game: at 18 of 18 recruiting is blocked with "No open roster slots", at 18 of 19 it is allowed), so raising it lets you recruit past the Den's limit. Tried in the game: a capacity above what the Den allows works, and a roster over its capacity loads untouched, though the roster screens look odd.
 
+### Fixed
+- Armory, **Add items**: adding an item failed with "the save has no utility item to copy; add one in the game first" when every utility
+  item in the save was equipped, or when the save had no weapon mod yet (common early in a campaign). The new entry is now copied from any
+  inventory entry, a resource if need be, and always starts with a count of 1 and nobody equipping it.
+
 ## [0.7.0] - 2026-10-16
 
 ### Added
