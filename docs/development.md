@@ -241,6 +241,13 @@ test assemblies). The CLI also runs under WSL, where that policy does not apply,
 (where `shot` looks), and pass `--game "/mnt/c/Program Files/EA Games/Star Wars Zero Company"` to commands that touch the game folder (`reload --from`, `api`).
 `zcdebug status` cannot see the Windows game process from WSL, but every command that talks to the mod works.
 
+**When the mod never answers although `status` says it is.** A packaged Windows app (an MSIX app such as the Claude desktop app, and
+anything it starts) gets a private copy of `%LOCALAPPDATA%`: its writes there can land in
+`%LOCALAPPDATA%\Packages\<app>\LocalCache\Local\...` instead, which it reads back merged with the real folder, so to it everything looks
+right, while the game (not packaged) never sees the request. The mod's heartbeat then shows `stage=idle` with an old `last=` id. Fix: delete
+that private `ZeroCompanyEditor\debug` folder (it only holds `request.txt`), and writes go to the real one again; or run `zcdebug` from an
+ordinary terminal. Save files written into the game's own save folder were not affected.
+
 **Testing what a stat does.** `attr` and `set` write the attribute directly, which is right for health, action points and the HUD, but the
 game's hit-chance and damage calculations read stats through an aggregator that only its own setter updates, so a stat changed that way
 shows no effect there (Accuracy 20 and enemy Defense 10 changed nothing in the aim preview until the same values were loaded from a

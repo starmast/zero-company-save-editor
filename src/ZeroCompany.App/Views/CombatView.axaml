@@ -328,7 +328,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Turns a fire keeps burning. They start near 9999, so they effectively never go out." />
+                     Text="Turns a fire keeps burning; at 0 it goes out. Fires placed with the map start near 9999, fires started in the fight last a few turns." />
         </StackPanel>
       </Border>
 

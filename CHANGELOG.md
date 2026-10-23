@@ -17,11 +17,20 @@ Den visit to the epilogue: all of them open, rebuild byte for byte and pass `zc 
   and `zc edit do <save> set-option <option> <choice>` does the same. A save keeps each choice in four places (the campaign's options, its
   permanent facts and both header entries), and the editor changes and verifies all four. Campaigns started before 1.2 have no options.
 
+### Checked in the game
+- **Campaign options**: after loading edited copies (a fight and a Den save), the running game held exactly the edited options and not the
+  old ones.
+- **Galaxy**: a Den mission's and an operation's time on offer work both ways: after one cycle a mission moved earlier and an operation aged
+  by one were gone, and a mission given full time and an operation set back to 0 were still offered.
+- **Fire zones**: a fire set from 2 turns left to 1 went out after the next round. The fire-zone note in the app says so.
+
 ### Changed
 - One version number for the editor, `zc` and `zcdebug` (`zc` and `zcdebug` used to report 1.0.0 while the editor said 0.8.0).
 - Combat: switching a unit's team is no longer labelled experimental (every direction was confirmed in the game). The stat notes say what
   the game does with each value instead of describing how it was tried.
 - Dependabot no longer opens update pull requests.
+- `zcdebug`: the mod (0.19) takes requests again if the game never runs one, and its heartbeat says what its request loop is doing. The
+  developer notes explain why it hears nothing when `zcdebug` runs inside a packaged Windows app.
 
 ### Fixed
 - Permadeath was never shown for saves made with game 1.2, which replaced the save's permadeath flag with the campaign option; the Command

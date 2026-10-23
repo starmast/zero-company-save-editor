@@ -4,7 +4,9 @@
   epilogue. A later game update can change the save format: run `zc save check` on a new save, and keep the backups.
 - **Campaign options** (game 1.2) exist only in campaigns started in 1.2 or later; a campaign started earlier has none, even when it
   is saved again in 1.2, and the editor cannot add them. Changing one rewrites it everywhere the save keeps it (the campaign's options,
-  its permanent facts and both header entries).
+  its permanent facts and both header entries). Tried in the game: after loading edited copies, the game held exactly the edited options
+  (permadeath off, two strikes, locked talents and weapon respec, enemy crits, no perfect shots, assist shots can miss) and not the old ones.
+  Whether every option changes play the way it does when picked at the start was not played through.
 - You can add utility items and weapon mods you never had (Armory > Add items; confirmed working in the game), but not other items
   or gear, and combat stats (health, damage) aren't computed. Those need data this project hasn't been
   able to verify.
@@ -15,6 +17,9 @@
   no seed for them: a candidate kept her name and talent but came back with a different specialization and weapon after a reload), so you cannot choose who
   appears. What the editor can change is the room to recruit (Roster capacity) and, afterwards, the new operator: abilities (Personnel > Focus Tree > Give an
   ability) and gear slots.
+- **Galaxy:** a Den mission's and an operation's time on offer were tried in the game: after one cycle, a mission moved earlier and an
+  operation aged by one were gone, while a mission given full time and an operation set back to 0 were still on offer. The crisis
+  mission's **Coil upgrade** drop-down has not been tried (no save so far had a crisis mission on offer).
 - **Give an ability** can only copy an ability from an operator who has it in the same save, and it arrives at level 1.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.
 - **Bring back** works in the Personnel screens, the Den and on missions (tested in the game with the tutorial operator), but it
@@ -63,8 +68,8 @@ Everything was also checked against saves the game wrote and re-read after editi
   edit the units or the groups on the Reinforcements tab. The setting is also missing from saves made after loading a save and playing
   on (the game seems to drop it). Every tier the game ships is offered (read from its own assets), and other factions' tiers would
   bring that faction's units into a later encounter; what the game does with that has not been tried.
-- **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place; whether a low turns-left value puts a
-  fire out is not known. A prop that is already **destroyed** does not come back by restoring its health: the first attempt (health
+- **Scenery:** a fire zone's turns left and a prop's health are plain numbers and are edited in place. A fire goes out when its turns left
+  reach 0: tried on a fire set from 2 to 1, whose flames were out after the next round (the fire's actor stays in the level, empty). A prop that is already **destroyed** does not come back by restoring its health: the first attempt (health
   only) left the wreck in the game, and the game then dropped the prop's health entry on loading. What keeps a prop wrecked is a state
   tag in its actor record (Pristine, Damaged or Destroyed), so **Restore** rewrites that tag as well as the health. That was built
   from the game's own before/after saves and passes the verifier, and it works: the destroyed props came back in the game.
