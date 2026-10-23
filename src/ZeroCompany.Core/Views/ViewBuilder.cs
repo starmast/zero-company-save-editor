@@ -74,7 +74,7 @@ public static class ViewBuilder
         {
             Title = Info(info, "comment"), World = Info(info, "worldName"), Created = Info(info, "creationTime"),
             Mode = Info(info, "gameMode"), Type = Info(info, "saveGameType"), Autosave = Info(info, "autoSaveType"),
-            Difficulty = Info(info, "currentDifficultyLevel"), Permadeath = Info(info, "bPermaDeath"),
+            Difficulty = Info(info, "currentDifficultyLevel"), Permadeath = CampaignOptionOps.Permadeath(info) is { } pd ? JsonValue.Create(pd) : null,
         },
         Progression = m.Prog.ToDictionary(kv => kv.Key, kv => FieldRef.From(kv.Value)),
     };
@@ -154,11 +154,12 @@ public static class ViewBuilder
         var treating = new List<TreatingView>();
         foreach (var e in g.Child(m.Sd, "ActiveRecipes")?.Children ?? new List<GvasNode>())
         {
-            var val = e.Children![1];
+            if (e.Children is not { Count: 2 }) continue;
+            var val = e.Children[1];
             var cls = g.Child(val, "SoftRecipeClass");
             var name = (cls != null ? g.GetStr(cls) : "");
             name = name[(name.LastIndexOf('/') + 1)..];
-            if (!name.Contains("InjuryRecover") || g.GetStr(g.Child(val, "Status")!).EndsWith("Available", StringComparison.Ordinal)) continue;
+            if (!name.Contains("InjuryRecover") || g.Child(val, "Status") is not { } st || g.GetStr(st).EndsWith("Available", StringComparison.Ordinal)) continue;
             var ids = g.Child(g.Child(val, "InProgressRecipeContext"), "AssignedCharacterIDs");
             var who = (ids?.Children ?? new List<GvasNode>()).Select(x => m.NameOf(g.GuidHex(x))).ToList();
             var slot = MedbaySlots.FirstOrDefault(s => name.Contains($"_{s.Key}_")).Label ?? name;

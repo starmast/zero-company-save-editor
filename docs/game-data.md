@@ -21,7 +21,7 @@ Open the **Game data** tab and press **Extract game data**. You need:
 It takes a few seconds, shows a log, and then every screen picks up the real names. If the game updates, extract again.
 
 ## Where it is kept
-One small file called `gamedata.db.json` in the editor's data folder (see [platforms](platforms.md)). Delete it to go back to
+One small file, `gamedata/gamedata.db.json` inside the editor's data folder (see [platforms](platforms.md)). Delete it to go back to
 internal names. **Where is my database?** copies its path.
 
 ## Import (for macOS, or to share between your own machines)
@@ -31,7 +31,8 @@ The extractor can't run on macOS. Extract on a Windows or Linux machine, copy `g
 ## If it fails
 The mappings box checks your file as soon as you pick it and tells you what it found:
 
-- *Green: "Mappings for Unreal Engine 5.6.1 (game build ...)"* - good to go.
+- *Green: "Mappings for Unreal Engine 5.6.1 (game build ...)"* - good to go. The build in the name does not have to match your
+  game's: mappings made for build 196320 still read game 1.2 (build 199049). Only get new ones if an extraction comes out empty.
 - *Amber: "This file is for Unreal Engine X, but the game uses 5.6"* - it's for a different Unreal version and probably won't work.
 - *Red: "That doesn't look like a .usmap..."* - you picked something else, often an archive that still needs unzipping.
 
@@ -40,8 +41,8 @@ Other messages you may see:
 - *Could not find the game's Paks folder* - pick the folder that contains `SWZeroCompany` (or `SWZeroCompany/Content/Paks`).
 - *The mappings file couldn't be read* or *no upgrade data could be read* - the mappings file is damaged or made for another
   version of the game (this is the usual result after a game update). Get the newest `.usmap` for your game version.
-- Failures during the Oodle download usually mean no internet or a blocked connection; try again, or copy the library next
-  to the editor's data folder.
+- Failures during the Oodle download usually mean no internet or a blocked connection; try again, or copy the library into
+  the editor's data folder.
 - *The Oodle library that was downloaded ... is not the build this version of the editor was checked against* - the download
   did not match, so it was deleted and not loaded. Put your own copy of `oodle-data-shared.dll` (Windows) or
-  `liboodle-data-shared.so` (Linux) next to the editor's data folder and extract again. A copy you place yourself is not checked.
+  `liboodle-data-shared.so` (Linux) into the editor's data folder and extract again. A copy you place yourself is not checked.

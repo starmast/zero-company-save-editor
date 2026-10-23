@@ -17,7 +17,7 @@
             <TextBlock Classes="caps h2" Text="{Binding Summary}" VerticalAlignment="Center" />
           </Border>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Edit every unit on the map and the mission objectives, one tab at a time. Health and the other numbers are each unit's saved base values. The game caps Health at the unit's real maximum when it loads the save, so a high Health value is a full heal (it will not stay at, say, 999). Changes are queued; apply them from the bar below." />
+                     Text="Edit the units on the map, the objectives and timers, who is in the fight, the reinforcements and the scenery, one tab at a time. Health and the other numbers are each unit's saved base values. The game caps Health at the unit's real maximum when it loads the save, so a high Health value is a full heal (it will not stay at, say, 999). Changes are queued; apply them from the bar below." />
         </StackPanel>
       </Border>
 
@@ -38,7 +38,7 @@
           <Button Content="Enemies to 1 HP" Command="{Binding EnemiesTo1Hp}" IsVisible="{Binding ShowEnemyActions}" />
           <Button Content="Restore scenery" Command="{Binding RestoreScenery}" IsVisible="{Binding ShowDestructibles}" />
           <CheckBox Content="Show stats with no lasting effect" IsChecked="{Binding StatVisibility.ShowAll, Mode=TwoWay}" IsVisible="{Binding ShowUnits}"
-                    ToolTip.Tip="Some stats are put back by the game when it loads the save, rebuilt from the unit's gear, or changed nothing a shot showed, so an edit does nothing lasting. They are hidden unless you tick this." />
+                    ToolTip.Tip="Some stats are put back by the game when it loads the save, rebuilt from the unit's gear, or not used for hit chance or damage, so an edit does nothing lasting. They are hidden unless you tick this." />
         </StackPanel>
       </Grid>
 
@@ -61,8 +61,10 @@
                 </Border>
                 <StackPanel Margin="12,8" Spacing="6">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Team (experimental)" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding TeamChoices}" SelectedItem="{Binding SelectedTeam, Mode=TwoWay}" Width="130" />
+                    <TextBlock Text="Team" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding TeamChoices}" SelectedItem="{Binding SelectedTeam, Mode=TwoWay}" Width="130" IsVisible="{Binding CanChangeTeam}" />
+                    <TextBlock Grid.Column="1" Classes="mute" Text="{Binding Team}" VerticalAlignment="Center" IsVisible="{Binding CannotChangeTeam}"
+                               ToolTip.Tip="This unit is on no side the game fights for (a story or scenery unit), so its team cannot be changed." />
                   </Grid>
                   <TextBlock Classes="amber small" TextWrapping="Wrap" IsVisible="{Binding TeamChanged}"
                              Text="Ally = you control it. Friendly AI = friendly to you but moved by the game (rescued VIPs, allied fighters); the safest way to turn an enemy to your side. Switches team tag, friendly flag, the tag inside the unit and its behaviour, as the game does. A unit turned Enemy also copies the AI area and faction tags and the action-point refresh values of the nearest enemy. It moves to the other tab after you apply." />
@@ -326,7 +328,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Classes="mute small" Margin="14,8,14,12" TextWrapping="Wrap"
-                     Text="Turns a fire keeps burning. They start near 9999, so they effectively never go out; set a low number to let one burn out." />
+                     Text="Turns a fire keeps burning; at 0 it goes out. Fires placed with the map start near 9999, fires started in the fight last a few turns." />
         </StackPanel>
       </Border>
 

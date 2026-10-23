@@ -99,7 +99,12 @@ public class GameDataParityTests
         foreach (var p in g.GetProperty("thresholds").EnumerateObject())
             Assert.Equal(p.Value.EnumerateArray().Select(x => x.GetInt32()), db.Thresholds(p.Name));
         foreach (var p in g.GetProperty("abilities").EnumerateObject())
-            Assert.Equal(p.Value.ValueKind == JsonValueKind.Null ? null : p.Value.GetString(), db.AbilityName(p.Name));
+        {
+            // the Python editor found no name for a second specialization's copy ('...Ambush.2nd'); this one names it after the original
+            if (p.Name.EndsWith(".2nd", StringComparison.Ordinal) && p.Value.ValueKind == JsonValueKind.Null && db.AbilityName(p.Name[..^4]) is { } first)
+                Assert.Equal(first + " (2nd)", db.AbilityName(p.Name));
+            else Assert.Equal(p.Value.ValueKind == JsonValueKind.Null ? null : p.Value.GetString(), db.AbilityName(p.Name));
+        }
         foreach (var p in g.GetProperty("coil").EnumerateObject())
         {
             var c = db.CoilEffect(p.Name);
@@ -141,5 +146,8 @@ public class GameDataParityTests
         Assert.True(GameDatabase.Empty.IsEmpty);
         Assert.Null(GameDatabase.Empty.ItemLabel("x"));
         Assert.Null(GameDatabase.Empty.AbilityName("a.b"));
+        Assert.Equal("Ambush (2nd)", ZeroCompany.Core.Model.Naming.Ability(GameDatabase.Empty, "br.AbilityID.Class.Ambush.2nd"));
+        Assert.Equal("Precision Shot", ZeroCompany.Core.Model.Naming.Ability(null, "br.AbilityID.Class.PrecisionShot"));
+        Assert.Equal(("Ambush", true), GameDatabase.AbilitySegment("br.AbilityID.Class.Ambush.2nd"));
     }
 }

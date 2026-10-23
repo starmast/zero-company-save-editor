@@ -20,9 +20,9 @@ public sealed class CombatView
     public List<SquadMemberView> Squad { get; } = new();
     public List<HazardView> Hazards { get; } = new();
     public List<DestructibleView> Destructibles { get; } = new();
-    /// <summary>Full object paths of every prop the save marks as destroyed (with or without a health entry).</summary>
     /// <summary>Every prop the save tracks with a state tag, whatever its condition.</summary>
     public List<PropView> Props { get; } = new();
+    /// <summary>Full object paths of every prop the save marks as destroyed (with or without a health entry).</summary>
     public List<string> DestroyedProps { get; } = new();
     /// <summary>Full object paths of every prop that is destroyed or damaged: what the "Restore scenery" button brings back.</summary>
     public List<string> WreckedProps { get; } = new();
@@ -48,6 +48,16 @@ public sealed class ReinforcementsView
     public List<TriggerView> Triggers { get; } = new();
     /// <summary>Spawn groups (full object paths) that appear in this save's reinforcement waves, for swapping a wave's group.</summary>
     public List<string> Groups { get; } = new();
+
+    /// <summary>
+    /// "Encounter 2 · " for a wave or definition of the second encounter actor, when the mission has more than one (each numbers its
+    /// waves and definitions from 1); empty otherwise.
+    /// </summary>
+    public string EncounterPrefix(int logic)
+    {
+        var logics = Waves.Select(w => w.Logic).Concat(Configs.Select(c => c.Logic)).Distinct().Order().ToList();
+        return logics.Count > 1 ? $"Encounter {logics.IndexOf(logic) + 1} · " : "";
+    }
 }
 
 /// <summary>A wave that is queued to arrive at a given round.</summary>
@@ -105,6 +115,8 @@ public sealed class TimerView
     public string CountsOn { get; init; } = "";
     /// <summary>Objectives that fail when the timer reaches zero.</summary>
     public List<string> Fails { get; } = new();
+    /// <summary>Other encounter actors (objectives, triggers) the timer starts when it reaches zero.</summary>
+    public List<string> Starts { get; } = new();
 }
 
 /// <summary>One mission or tactical objective (an encounter-logic actor with an ObjectiveStatus).</summary>

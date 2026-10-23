@@ -116,6 +116,17 @@ public class SdkTests : IDisposable
     }
 
     [Fact]
+    public void Checking_a_settings_file_passes_without_trying_to_open_it_as_a_save()
+    {
+        var dir = Path.Combine(_tmp, "saves"); Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "SharedGameSettings.sav");
+        File.WriteAllBytes(path, Synth.Gvas(Synth.Cat(Synth.IntProp("Volume", 7))));
+        var checks = SaveCheck.Run(Ws(dir), path);
+        Assert.False(checks.HasFailure());
+        Assert.Contains(checks, c => c.Name == "screens" && c.Detail.Contains("not a game save"));
+    }
+
+    [Fact]
     public void A_save_outside_the_known_folders_gets_its_own_folder_id_and_stays_openable()
     {
         var elsewhere = MakeSave(Path.Combine(_tmp, "elsewhere"), "Loose", "Loose one", DateTime.Now);

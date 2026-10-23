@@ -125,6 +125,13 @@ public sealed class SaveEditor
         return a.Run(args);
     }
 
+    /// <summary>An ability tag without its 'br.AbilityID.&lt;kind&gt;.' start: 'CombatJump', or 'Ambush.2nd' for a second specialization's copy.</summary>
+    static string ShortAbility(string tag)
+    {
+        var parts = tag.Split('.');
+        return parts.Length > 3 ? string.Join('.', parts.Skip(3)) : tag;
+    }
+
     static string NormName(string s) => Regex.Replace(s.ToLowerInvariant(), @"[^\p{L}\p{N}]", "");
 
     void Reg(string name, string usage, string summary, Func<IReadOnlyList<string>, string> run, bool combat = false) =>
@@ -141,10 +148,10 @@ public sealed class SaveEditor
             var o = Op(a[0]);
             var opts = AbilityOps.Grantable(Save.Gvas, o.Guid);
             string key = NormName(a[1]);
-            var hit = opts.Where(d => NormName(d.Tag[(d.Tag.LastIndexOf('.') + 1)..]) == key || NormName(d.Tag) == key).ToList();
+            var hit = opts.Where(d => NormName(ShortAbility(d.Tag)) == key || NormName(d.Tag) == key).ToList();
             if (hit.Count != 1)
                 throw new ZcException(hit.Count == 0
-                    ? $"{o.Name} cannot be given '{a[1]}'. Options: {(opts.Count == 0 ? "none (no other operator in this save holds an ability that fits)" : string.Join(", ", opts.Select(d => d.Tag[(d.Tag.LastIndexOf('.') + 1)..])))}"
+                    ? $"{o.Name} cannot be given '{a[1]}'. Options: {(opts.Count == 0 ? "none (no other operator in this save holds an ability that fits)" : string.Join(", ", opts.Select(d => ShortAbility(d.Tag))))}"
                     : $"'{a[1]}' matches more than one ability: {string.Join(", ", hit.Select(d => d.Tag))}");
             int level = a.Count > 2 ? (int)Count(a[2], 1, 6) : 1;
             p.SetGrant(o.Guid, hit[0].Tag, level);
@@ -158,6 +165,20 @@ public sealed class SaveEditor
             int n = a.Count > 2 ? (int)Count(a[2], 0, MarketOps.MaxCount) : throw new ZcException("usage: set-market <mods|utility> <tier 1-3> <count>");
             p.SetMarketTable(kind, tier, n);
             return $"Black Market rolls {n} {MarketOps.Quality(tier)} {kind} item(s) per refresh";
+        });
+        Reg("set-option", "set-option <option> <choice>", "change a campaign option picked when the campaign started (game 1.2), e.g. set-option EnemyCrits On", a =>
+        {
+            var held = CampaignOptionOps.Read(Save.Gvas) ?? throw new ZcException("this campaign has no campaign options (it was started before game 1.2)");
+            var known = CampaignOptionOps.Settings.Where(s => held.ContainsKey(s.Key)).ToList();
+            string key = NormName(a[0]);
+            var hit = known.Where(s => NormName(s.Key) == key || NormName(s.Key[(s.Key.IndexOf('_', 3) + 1)..]) == key || NormName(s.Label) == key).ToList();
+            if (hit.Count != 1)
+                throw new ZcException($"unknown option '{a[0]}'. Options: {string.Join(", ", known.Select(s => $"{s.Key[(s.Key.IndexOf('_', 3) + 1)..]} ({s.Label})"))}");
+            var opt = hit[0];
+            var choice = opt.Choices.FirstOrDefault(c => NormName(c.Label) == NormName(a[1]) || c.Tag == a[1])
+                         ?? throw new ZcException($"{opt.Label}: choose one of {string.Join(", ", opt.Choices.Select(c => c.Label))}");
+            p.SetCampaignOption(opt.Key, choice.Tag == held[opt.Key] ? null : choice.Tag);
+            return choice.Tag == held[opt.Key] ? $"{opt.Label} is already {choice.Label}" : $"campaign option {opt.Label}: {choice.Label}";
         });
         Reg("set-slots", "set-slots <mod|utility> <total>", "give every operator this many gear slots (mod 1-4, utility 1-12)", a =>
         {
@@ -213,9 +234,13 @@ public sealed class SaveEditor
         {
             var u = Unit(a[0]); bool d = Bool(a[1]); p.SetDead(u.Index, d, u.Dead); return $"unit {u.Index} {u.Name}: {(d ? "dead" : "alive")}";
         }, combat: true);
-        Reg("unit-team", "unit-team <unit> <Player|Enemy|Enemy2|Civilian>", "move a unit to another team (experimental)", a =>
+        Reg("unit-team", "unit-team <unit> <Player|Enemy|Enemy2|Civilian>", "move a unit to another team", a =>
         {
-            var u = Unit(a[0]); p.SetTeam(u.Index, a[1], u.Team); return $"unit {u.Index} {u.Name}: team {a[1]}";
+            var u = Unit(a[0]);
+            var team = CombatOps.Teams.FirstOrDefault(t => string.Equals(t, a[1], StringComparison.OrdinalIgnoreCase))
+                       ?? throw new ZcException($"the team must be one of {string.Join(", ", CombatOps.Teams)}");
+            if (!CombatOps.Teams.Contains(u.Team)) throw new ZcException($"unit {u.Index} {u.Name} is on no side the game fights for ({u.Team}), so its team cannot be changed");
+            p.SetTeam(u.Index, team, u.Team); return $"unit {u.Index} {u.Name}: team {team}";
         }, combat: true);
         Reg("remove-effect", "remove-effect <unit> <effect-index>", "remove one active effect from a unit", a =>
         {

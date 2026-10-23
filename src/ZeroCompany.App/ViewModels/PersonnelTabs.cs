@@ -304,7 +304,7 @@ public sealed partial class FocusTabViewModel : PersonnelTabViewModel
             var db = main.Session.Service.Db;
             var names = open.View.Personnel.Roster.Concat(open.View.Personnel.Memorial).ToDictionary(o => o.Guid, o => o.Name);
             _allOptions = AbilityOps.Grantable(open.Gvas, op.Guid)
-                .Select(d => new GrantOption(d.Tag, db.AbilityName(d.Tag) ?? Naming.Pretty(d.Tag[(d.Tag.LastIndexOf('.') + 1)..]), names.GetValueOrDefault(d.FromGuid, "another operator")))
+                .Select(d => new GrantOption(d.Tag, Naming.Ability(db, d.Tag), names.GetValueOrDefault(d.FromGuid, "another operator")))
                 .OrderBy(o => o.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
         _pending.Changed += Refresh;

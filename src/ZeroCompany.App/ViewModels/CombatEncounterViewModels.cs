@@ -46,7 +46,7 @@ public sealed class WaveRowViewModel : IDisposable
 
     public WaveRowViewModel(PendingChanges p, FieldSet fields, ReinforcementsView rv, WaveView w)
     {
-        Title = $"Wave {w.Index + 1}";
+        Title = $"{rv.EncounterPrefix(w.Logic)}Wave {w.Index + 1}";
         Detail = $"Arrives at {CombatOps.SpawnerLabel(w.EntryPoint)}" + (w.ConfigIndex is { } c ? $" · from wave definition {c + 1}" : "");
         Round = fields.Make(w.Round, 0, "Arrives at round");
         _group = new GroupPicker(p, "wave", w.Logic, w.Index, w.Group, rv.Groups);
@@ -71,7 +71,7 @@ public sealed class WaveConfigRowViewModel : IDisposable
 
     public WaveConfigRowViewModel(PendingChanges p, FieldSet fields, ReinforcementsView rv, WaveConfigView c)
     {
-        Title = $"Definition {c.Index + 1}";
+        Title = $"{rv.EncounterPrefix(c.Logic)}Definition {c.Index + 1}";
         Detail = $"{CombatOps.SpawnerLabel(c.EntryPoint)} · " + (c.Automatic ? "starts by itself when the game's condition for it is met" : "started by a trigger");
         TimesToSpawn = fields.Make(c.TimesToSpawn, 0, "Times it may spawn (-1 = no limit)");
         TimesTriggered = fields.Make(c.TimesTriggered, 0, "Times it has been triggered");
@@ -144,9 +144,15 @@ public sealed class TimerRowViewModel
         Title = t.Title;
         Remaining = fields.Make(t.Remaining, 0, "Turns left");
         TotalField = fields.Make(t.Total, 0, "Total turns");
-        var counts = t.CountsOn == "TeamTurnEnd" ? "Counts down at the end of each of the team's turns" : "Counts down: " + t.CountsOn;
+        var counts = t.CountsOn switch
+        {
+            "TeamTurnEnd" => "Counts down at the end of each of the team's turns",
+            "TeamTurnStart" => "Counts down at the start of each of the team's turns",
+            _ => "Counts down: " + t.CountsOn,
+        };
         var fails = t.Fails.Count > 0 ? ". When it reaches zero it fails: " + string.Join(", ", t.Fails) : "";
-        Detail = t.Remaining == null ? "Finished: the game no longer saves this timer." : counts + fails + ".";
+        var starts = t.Starts.Count > 0 ? (t.Fails.Count > 0 ? " and starts: " : ". When it reaches zero it starts: ") + string.Join(", ", t.Starts) : "";
+        Detail = t.Remaining == null ? "Finished: the game no longer saves this timer." : counts + fails + starts + ".";
     }
 
     public string Title { get; }

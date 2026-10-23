@@ -5,6 +5,50 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+The final planned release. Checked against game 1.2 (build 199049) with every save the game wrote in a full campaign, from the first
+Den visit to the epilogue: all of them open, rebuild byte for byte and pass `zc save check`.
+
+### Added
+- **Campaign options.** Game 1.2 lets you pick additional campaign options when a campaign starts (permadeath, operator injuries, risk of
+  death, Advantage rules, assist shots, enemy critical hits, perfect shots, operator health gain, cross training from low bonds and the
+  specialization and recruitment locks) and never lets you change them afterwards. Command > Campaign options shows them as drop-downs,
+  and `zc edit do <save> set-option <option> <choice>` does the same. A save keeps each choice in four places (the campaign's options, its
+  permanent facts and both header entries), and the editor changes and verifies all four. Campaigns started before 1.2 have no options.
+
+### Checked in the game
+- **Campaign options**: after loading edited copies (a fight and a Den save), the running game held exactly the edited options and not the
+  old ones.
+- **Galaxy**: a Den mission's and an operation's time on offer work both ways: after one cycle a mission moved earlier and an operation aged
+  by one were gone, and a mission given full time and an operation set back to 0 were still offered.
+- **Fire zones**: a fire set from 2 turns left to 1 went out after the next round. The fire-zone note in the app says so.
+
+### Changed
+- One version number for the editor, `zc` and `zcdebug` (`zc` and `zcdebug` used to report 1.0.0 while the editor said 0.8.0).
+- Combat: switching a unit's team is no longer labelled experimental (every direction was confirmed in the game). The stat notes say what
+  the game does with each value instead of describing how it was tried.
+- Dependabot no longer opens update pull requests.
+- `zcdebug`: the mod (0.19) takes requests again if the game never runs one, and its heartbeat says what its request loop is doing. The
+  developer notes explain why it hears nothing when `zcdebug` runs inside a packaged Windows app.
+
+### Fixed
+- Permadeath was never shown for saves made with game 1.2, which replaced the save's permadeath flag with the campaign option; the Command
+  tab, `zc save profile` and the debug report read it again (and still read the old flag in older saves).
+- A second specialization's copy of an ability (21 abilities, for example `br.AbilityID.Class.Ambush.2nd`) was named just "2nd" on the
+  Focus Tree, in Give an ability and in `zc`; it is now "Ambush (2nd)", and `zc edit do grant-ability` accepts `Ambush.2nd`.
+- The campaign finale's fight: units on no team (story holograms) can no longer be given a team (the editor shows it read-only and
+  refuses the change), timers that start other objectives or waves when they run out say so, timers that count at the start of a turn
+  say that, and the waves and definitions of a mission with several encounters are numbered per encounter.
+- `zc save profile` printed "turn structure ?" for every standard mission, and counted destroyed props by health instead of by the mark
+  the Combat tab uses.
+- `zc save check` failed on the game's settings and character-pool files (and so exited 1 for `zc save check *.sav`); it now passes them.
+- A save with a recipe, effect or bond record missing a field, or with fact tags in an unexpected layout, no longer fails to open.
+- Opening a save with a large roster is faster (the focus-tree check no longer rebuilds its donor list once per operator).
+- Docs: the user guide covers the Command tab's roster capacity, Den numbers, gear slots, Black Market and campaign options, Give an
+  ability, the upgrade queue buttons and the Combat *Other* tab; the issue template gives the right backups folder; the disclaimer
+  separates the editor from the developer-only `zcdebug`; `zc edit --help` examples use real names.
+
 ## [0.8.0] - 2026-10-17
 
 ### Added
@@ -114,9 +158,8 @@ All notable changes to this project are documented here. The format follows
 - Galaxy: the Operations tab lists the Holotable's operations by name, with their description, options and how many cycles each has
   left before it expires. Shorter, Longer and Full time change that (the save counts the cycles an operation has been on offer; the
   game removes it at its limit). Not yet tried in the game. Re-extract the game data for names and limits; `zcassets operations` prints them.
-- Galaxy: split into Influence, Operations, Missions and Coil upgrades tabs (Operations only explains that they are not editable yet). The
-  Missions tab now shows each mission's in-game name, place, difficulty, the faction it normally fights, how long it lasts, its summary
-  and objective. These come from the game's mission assets, so re-extract the game data (it adds a `Missions` list; without it the list
+- Galaxy: split into Influence, Operations, Missions and Coil upgrades tabs. The Missions tab shows each mission's in-game name, place,
+  difficulty, the faction it normally fights and how long it lasts. These come from the game's mission assets, so re-extract the game data (it adds a `Missions` list; without it the list
   falls back to name strings and readable asset names). `zcassets missions [--json]` prints them.
 - Galaxy: a "Missions in the Den" list for saves taken at the Den. Each available mission has a drop-down for the enemy faction and threat
   tier it will spawn (its SelectedSpawnSet), which is the one place that choice can be made before a mission starts; the threat tier inside
@@ -272,3 +315,14 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
+
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.8.0...v1.0.0
+[0.8.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/starmast/zero-company-save-editor/releases/tag/v0.1.0

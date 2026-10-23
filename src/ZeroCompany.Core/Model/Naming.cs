@@ -18,6 +18,14 @@ public static class Naming
         ["ClyKullervo"] = "Cly Kullervo",
     };
 
+    /// <summary>An ability's display name: the game's own when the database has it, else the tag's last part made readable ("Ambush (2nd)").</summary>
+    public static string Ability(ZeroCompany.GameData.Models.GameDatabase? db, string tag)
+    {
+        if (db?.AbilityName(tag) is { } name) return name;
+        var (seg, second) = ZeroCompany.GameData.Models.GameDatabase.AbilitySegment(tag);
+        return Pretty(seg) + (second ? " (2nd)" : "");
+    }
+
     /// <summary>"SomeAssetName_Foo" -> "Some Asset Name Foo".</summary>
     public static string Pretty(string s) => CamelBreak.Replace(s.Replace("_", " "), "$1 $2").Trim();
 

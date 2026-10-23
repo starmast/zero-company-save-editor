@@ -7,8 +7,16 @@ public class VersionTests
 {
     static string Version()
     {
-        var csproj = Path.Combine(Repo.Root, "src", "ZeroCompany.App", "ZeroCompany.App.csproj");
-        return XDocument.Load(csproj).Descendants("Version").Select(e => e.Value.Trim()).First();
+        var props = Path.Combine(Repo.Root, "Directory.Build.props");
+        return XDocument.Load(props).Descendants("Version").Select(e => e.Value.Trim()).First();
+    }
+
+    [Fact]
+    public void No_project_sets_its_own_version()
+    {
+        // the editor, zc and zcdebug must report the same version: only Directory.Build.props sets it
+        foreach (var csproj in Directory.EnumerateFiles(Path.Combine(Repo.Root, "src"), "*.csproj", SearchOption.AllDirectories))
+            Assert.Empty(XDocument.Load(csproj).Descendants("Version"));
     }
 
     [Fact]

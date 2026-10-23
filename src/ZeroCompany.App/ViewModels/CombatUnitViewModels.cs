@@ -113,7 +113,7 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     static string TeamLabel(string team) => team switch { "Player" => "Ally", "Civilian" => "Friendly AI", _ => team };
     static string TeamKey(string label) => label switch { "Ally" => "Player", "Friendly AI" => "Civilian", _ => label };
 
-    /// <summary>The team as shown in the dropdown (saved, or queued). Changing it queues an experimental team change.</summary>
+    /// <summary>The team as shown in the dropdown (saved, or queued). Changing it queues a team change.</summary>
     public string SelectedTeam
     {
         get => TeamLabel(_pending.TeamWanted(_unit.Index, _unit.Team));
@@ -121,6 +121,10 @@ public sealed partial class UnitCardViewModel : ViewModelBase, IDisposable
     }
 
     public bool TeamChanged => _pending.TeamChanges.ContainsKey(_unit.Index);
+
+    /// <summary>Only units on one of the four sides can switch; a unit with no team (story props such as holograms) keeps it.</summary>
+    public bool CanChangeTeam => CombatOps.Teams.Contains(_unit.Team);
+    public bool CannotChangeTeam => !CanChangeTeam;
 
     /// <summary>A player-class unit moved to Enemy / Friendly AI: in testing it skipped its turn (the AI has no abilities for it).</summary>
     public bool TeamWarning => TeamChanged && _unit.PlayerBehavior && _pending.TeamWanted(_unit.Index, _unit.Team) != "Player";

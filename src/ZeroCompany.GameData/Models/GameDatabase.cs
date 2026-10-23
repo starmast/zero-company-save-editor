@@ -90,15 +90,26 @@ public sealed class GameDatabase
         return (e.Title, desc);
     }
 
-    /// <summary>Display name for an ability tag like 'br.AbilityID.Class.PrecisionShot', or null.</summary>
+    /// <summary>
+    /// Display name for an ability tag like 'br.AbilityID.Class.PrecisionShot', or null. A second specialization's copy of an
+    /// ability ('br.AbilityID.Class.Ambush.2nd') has the same name, marked "(2nd)".
+    /// </summary>
     public string? AbilityName(string tag)
     {
         if (NameStrings.Count == 0) return null;
-        var seg = tag[(tag.LastIndexOf('.') + 1)..];
+        var (seg, second) = AbilitySegment(tag);
         foreach (var key in new[] { $"GA_{seg}_T1_Name", $"GA_{seg}_Name", $"{seg}_Name", $"GA_{seg}_T2_Name",
                                     $"Passive_{seg}_Name", $"Aspect_{seg}_Name" })
-            if (NameStrings.TryGetValue(key, out var v)) return v;
+            if (NameStrings.TryGetValue(key, out var v)) return second ? v + " (2nd)" : v;
         return null;
+    }
+
+    /// <summary>The part of an ability tag that names it ('PrecisionShot'), and whether it is a second specialization's copy ('.2nd').</summary>
+    public static (string Name, bool Second) AbilitySegment(string tag)
+    {
+        var parts = tag.Split('.');
+        bool second = parts.Length > 1 && parts[^1] == "2nd";
+        return (second ? parts[^2] : parts[^1], second);
     }
 
     public CoilEffectInfo? CoilEffect(string id) => CoilEffects.GetValueOrDefault(id);

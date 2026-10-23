@@ -136,12 +136,15 @@ zc edit apply script.json --write                                            a b
 zc edit diff original.sav edited.sav                                         what changed, as field paths
 zc edit backups latest / zc edit restore latest 20261015-181624.sav --write
 ```
-Paths are dotted names: `resource.<key>`, `level`, `xp`, `turn`, `operator.<name>.focus|total_focus|ability.<tag>.level|spent|effect.<asset>.stacks|bond.<partner>.level`,
-`item.<asset>`, `region.<tag>.influence`, and for combat saves `unit.<n>.attr.<Stat>`, `unit.<n>.x`, `wave.<logic>.<n>.round`, `objective.<n>.counter.<label>`,
-`timer.<n>.remaining`, `hazard.<n>.turns`, `prop.<n>.health`. They ignore case and punctuation; a raw field id such as `o2897` always works.
+Paths are dotted names: `resource.<key>`, `level`, `xp`, `turn`, `progression.<key>` (roster capacity, base focus, field tasks, Black Market
+numbers), `operator.<name>.focus|total_focus`, `operator.<name>.ability.<tag>.level|spent`, `operator.<name>.effect.<asset>.stacks|magnitude.<i>`,
+`operator.<name>.bond.<partner>.level|progress|cross|highest`, `item.<asset>`, `region.<tag>.influence|contacts|reward`, and for combat saves
+`unit.<n>.attr.<Stat>`, `unit.<n>.x|y|z|advantage`, `unit.<n>.effect.<i>.stacks`, `wave.<logic>.<n>.round`, `config.<logic>.<n>.delay|spawns|triggered`,
+`objective.<n>.counter.<label>`, `timer.<n>.remaining|total`, `hazard.<n>.turns`, `prop.<n>.health|max_health`. They ignore case and punctuation; a
+raw field id such as `o2897` always works. Campaign options are an action, not a field: `zc edit do latest set-option EnemyCrits On`.
 A script is `{ "save": "latest", "set": { "resource.Intelligence": 300 }, "actions": [ { "do": "heal", "args": ["Neiya"] } ] }`.
 Exit codes: 0 done or previewed, 1 error (nothing written), 2 refused (the game is running, or the file changed on disk). With `--json` an error is
-`{ "error": ..., "exitCode": ... }` on stdout. Whether the game loads a file written this way is the same open question as for the UI's edits.
+`{ "error": ..., "exitCode": ... }` on stdout. A file written this way is the same as one the editor writes: both go through `SaveService`.
 
 ### zc assets: browsing the game's own assets
 `zc assets` is a read-only browser for the game's packages. It uses the same install folder,
@@ -237,6 +240,13 @@ test assemblies). The CLI also runs under WSL, where that policy does not apply,
 `ZCDEBUG_DIR=/mnt/c/Users/<you>/AppData/Local/ZeroCompanyEditor/debug` (the channel folder) and `ZCDEBUG_SHOTS=/mnt/c/Users/<you>/AppData/Local/SWZeroCompany/Saved/Screenshots/Windows`
 (where `shot` looks), and pass `--game "/mnt/c/Program Files/EA Games/Star Wars Zero Company"` to commands that touch the game folder (`reload --from`, `api`).
 `zcdebug status` cannot see the Windows game process from WSL, but every command that talks to the mod works.
+
+**When the mod never answers although `status` says it is.** A packaged Windows app (an MSIX app such as the Claude desktop app, and
+anything it starts) gets a private copy of `%LOCALAPPDATA%`: its writes there can land in
+`%LOCALAPPDATA%\Packages\<app>\LocalCache\Local\...` instead, which it reads back merged with the real folder, so to it everything looks
+right, while the game (not packaged) never sees the request. The mod's heartbeat then shows `stage=idle` with an old `last=` id. Fix: delete
+that private `ZeroCompanyEditor\debug` folder (it only holds `request.txt`), and writes go to the real one again; or run `zcdebug` from an
+ordinary terminal. Save files written into the game's own save folder were not affected.
 
 **Testing what a stat does.** `attr` and `set` write the attribute directly, which is right for health, action points and the HUD, but the
 game's hit-chance and damage calculations read stats through an aggregator that only its own setter updates, so a stat changed that way

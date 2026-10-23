@@ -27,7 +27,8 @@ Optional but nice: open the **Game data** tab once to show real item names and u
 free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
 
 ## What you can do
-- **Command** - turn, level, XP, credits and other resources, roster capacity, gear slots, field tasks and the Black Market; restore any backup.
+- **Command** - turn, level, XP, credits and other resources, roster capacity, gear slots, field tasks, the Black Market and the
+  campaign options a game 1.2 campaign was started with (permadeath, injuries, risk of death ...); restore any backup.
 - **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has, roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory** (including adding items you never had), **Galaxy** (influence, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
@@ -41,6 +42,9 @@ See the [user guide](docs/user-guide.md) for each screen in detail.
 Before anything is written the editor keeps an untouched copy of your save, snapshots the current file, and checks the
 result. It won't write while the game is running or if the save changed since you opened it. "Save as copy" never touches
 the original. Details are in [docs/safety.md](docs/safety.md).
+
+Checked against game 1.2 (build 199049). If a later game update changes the save format, the editor refuses to write
+what it cannot verify; keep your backups.
 
 ## Windows, Linux and macOS
 Windows is the main platform. Linux and macOS builds exist but are less tested, and macOS can't extract game data itself.

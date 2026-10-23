@@ -11,7 +11,7 @@
 -- An <object|Class> is a full object path (contains "/" or ".") or a short class name (its first live instance).
 -- Nothing here changes the game on its own: set/exec/eval run only when zcdebug sends them (it asks for --write first).
 
-local VERSION = "0.17"
+local VERSION = "0.19"
 local DIR = (os.getenv("LOCALAPPDATA") or ".") .. "\\ZeroCompanyEditor\\debug\\"
 local REQUEST, RESPONSE, HEARTBEAT = DIR .. "request.txt", DIR .. "response.txt", DIR .. "heartbeat.txt"
 
@@ -34,6 +34,7 @@ end
 
 local lastId = nil
 local busy = false
+local busySince = 0          -- when the request now on the game thread was handed over
 
 -- ---- escaping ----------------------------------------------------------------------------
 local function esc(s)
@@ -895,21 +896,36 @@ local function handle(id, command, args)
 end
 
 local lastBeat = 0
+-- what the request loop last did, written into the heartbeat so a stuck channel can be diagnosed without the log
+local stage, handled = "start", 0
 local function tick()
     local now = os.time()
     if now ~= lastBeat then
         lastBeat = now
-        writeAtomic(HEARTBEAT, now .. "\t" .. esc("zcdebug-mod " .. VERSION) .. "\n")
+        writeAtomic(HEARTBEAT, now .. "\t" .. esc("zcdebug-mod " .. VERSION) .. "\t" .. esc(string.format("busy=%s last=%s handled=%d stage=%s",
+            tostring(busy), tostring(lastId), handled, stage)) .. "\n")
     end
-    if busy then return false end
+    if busy then
+        -- a callback the game thread never ran (handed over while the engine was still starting, say) must not deafen the mod for good
+        if now - busySince < 30 then return false end
+        print("[ZcDebug] a request was not run by the game thread within 30s; taking requests again\n")
+        busy = false
+    end
     local text = readAll(REQUEST)
-    if not text or text:sub(-1) ~= "\n" then return false end
+    if not text then stage = "no request file"; return false end
+    if text:sub(-1) ~= "\n" then stage = "request incomplete"; return false end
     local id, command, args = text:gsub("[\r\n]+$", ""):match("^([^\t]*)\t([^\t]*)\t?(.*)$")
-    if not id or id == "" or id == lastId then return false end
+    if not id or id == "" then stage = "request unreadable"; return false end
+    if id == lastId then stage = "idle"; return false end
     lastId = id
     busy = true
+    busySince = now
+    stage = "queued " .. command
     ExecuteInGameThread(function()          -- reflection must run on the game thread
+        stage = "running " .. command
         handle(id, command, unesc(args or ""))
+        handled = handled + 1
+        stage = "done " .. command
         busy = false
     end)
     return false

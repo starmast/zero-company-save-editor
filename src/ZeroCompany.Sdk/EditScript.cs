@@ -7,7 +7,7 @@ public sealed record ScriptAction(string Do, IReadOnlyList<string> Args);
 
 /// <summary>
 /// A batch of edits as JSON, applied as one verified write:
-/// <code>{ "save": "latest", "set": { "resource.Intel": 100 }, "actions": [ { "do": "heal", "args": ["Neiya"] } ] }</code>
+/// <code>{ "save": "latest", "set": { "resource.Intelligence": 100 }, "actions": [ { "do": "heal", "args": ["Neiya"] } ] }</code>
 /// <c>save</c> is optional (the command line can name the save instead). Values may be numbers or strings; args are strings or numbers.
 /// </summary>
 public sealed record EditScript(string? Save, IReadOnlyList<(string Path, double Value)> Set, IReadOnlyList<ScriptAction> Actions)

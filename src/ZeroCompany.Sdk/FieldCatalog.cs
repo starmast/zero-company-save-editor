@@ -5,7 +5,7 @@ using ZeroCompany.Core.Views;
 
 namespace ZeroCompany.Sdk;
 
-/// <summary>One editable number with a stable dotted path, e.g. <c>resource.Intel</c> or <c>operator.neiya.ability.Kick.level</c>.</summary>
+/// <summary>One editable number with a stable dotted path, e.g. <c>resource.Intelligence</c> or <c>operator.neiya.ability.Kick.level</c>.</summary>
 public sealed record FieldEntry(string Path, string Id, string Label, double Value, double Min, double Max, string Kind)
 {
     internal FieldRef Ref => new() { Id = Id, Value = Value, Min = Min, Max = Max, Kind = Kind };
@@ -14,7 +14,7 @@ public sealed record FieldEntry(string Path, string Id, string Label, double Val
 
 /// <summary>
 /// Every value the editor's screens can change, under names that do not depend on byte offsets, so a script or an agent can say
-/// <c>resource.Intel</c> instead of <c>o2897</c>. Paths are matched ignoring case, spaces and punctuation other than the dots.
+/// <c>resource.Intelligence</c> instead of <c>o2897</c>. Paths are matched ignoring case, spaces and punctuation other than the dots.
 /// The raw field id (<c>o2897</c>) is always accepted too.
 /// </summary>
 public sealed class FieldCatalog

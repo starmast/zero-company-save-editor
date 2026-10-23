@@ -16,7 +16,7 @@ static class EditCommands
           zc edit fields <save> [filter]            every editable value: path, value, range
           zc edit get <save> <path>...              current values
           zc edit set <save> <path>=<value>...      change values (linked fields follow, as in the editor)
-          zc edit do <save> <action> [args...]      one structural edit, e.g.  heal Neiya   add-item Medkit 3   unit-dead 4 false
+          zc edit do <save> <action> [args...]      one structural edit, e.g.  heal Neiya   add-item Medpac 3   unit-dead 4 false
           zc edit actions <save>                    the actions that save accepts, with their arguments
           zc edit apply <script.json | -> [<save>]  a batch ({"set": {...}, "actions": [...]}) written in one go
           zc edit diff <a> <b>                      what changed between two saves, as field paths
@@ -29,7 +29,7 @@ static class EditCommands
           --force        write even though the game appears to be running
         --json prints machine-readable results. Exit codes: 0 done or previewed, 1 error (nothing written), 2 refused (game running, file changed).
 
-        <path> is a dotted name from `zc edit fields`, e.g. resource.Intel, operator.neiya.focus, unit.3.attr.Health (a raw id such as o2897 works too).
+        <path> is a dotted name from `zc edit fields`, e.g. resource.Intelligence, operator.neiya.focus, unit.3.attr.Health (a raw id such as o2897 works too).
         <save> is a file path, a name fragment, a save name, or "latest".
         """;
 
