@@ -18,7 +18,7 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto,12,Auto">
+  <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto,12,Auto,12,Auto">
     <!-- save info -->
     <Border Grid.Row="0" Grid.Column="0" Classes="panel">
       <StackPanel>
@@ -93,8 +93,36 @@
       </StackPanel>
     </Border>
 
+    <!-- campaign options -->
+    <Border Grid.Row="8" Grid.ColumnSpan="3" Classes="panel" IsVisible="{Binding HasCampaignOptions}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="CAMPAIGN OPTIONS" /></Border>
+        <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"
+                   Text="The additional campaign options picked when this campaign was started. The game does not let you change them afterwards; this does. Apply to a copy first." />
+        <ItemsControl ItemsSource="{Binding CampaignOptions}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CampaignOptionRowViewModel">
+              <Border Classes="hairline" Padding="12,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" />
+                    <TextBlock Classes="mute small" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" MinWidth="180" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
     <!-- backups -->
-    <Border Grid.Row="8" Grid.ColumnSpan="3" Classes="panel">
+    <Border Grid.Row="10" Grid.ColumnSpan="3" Classes="panel">
       <StackPanel>
         <Border Classes="panelh"><TextBlock Classes="caps h2" Text="BACKUPS" /></Border>
         <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"

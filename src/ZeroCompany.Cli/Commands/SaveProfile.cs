@@ -16,7 +16,9 @@ static class SaveProfile
         Console.WriteLine($"  comment      {I("comment")}");
         Console.WriteLine($"  mode         {I("gameMode")} / {I("saveGameType")}  autosave={I("autoSaveType")}");
         Console.WriteLine($"  world        {I("worldName")}  mission={Path.GetFileName(I("missionDataPath"))}");
-        Console.WriteLine($"  campaign     strategy turn {I("strategyTurn")}, difficulty {I("currentDifficultyLevel")}, permadeath {I("bPermaDeath")}, region {Last(info?["regionTag"]?["tagName"])} / {Last(info?["mapLocationTag"]?["tagName"])}");
+        Console.WriteLine($"  campaign     strategy turn {I("strategyTurn")}, difficulty {I("currentDifficultyLevel")}, permadeath {CampaignOptionOps.Permadeath(info)?.ToString().ToLowerInvariant() ?? "?"}, region {Last(info?["regionTag"]?["tagName"])} / {Last(info?["mapLocationTag"]?["tagName"])}");
+        if (CampaignOptionOps.Read(s.Gvas) is { } opts)
+            Console.WriteLine($"  options      {string.Join(", ", CampaignOptionOps.Describe(opts).Select(o => $"{o.Setting.Label} {o.Label}"))}");
         Console.WriteLine($"  entries      {string.Join(", ", s.Container.Blobs.Select(b => $"{b.Key} ({b.Value.Length / 1024:N0} KB)"))}");
         Console.WriteLine($"  gvas roots   {string.Join(", ", s.Gvas.Root.Select(r => $"{r.Name} ({r.Size / 1024:N0} KB)"))}");
 
@@ -26,7 +28,7 @@ static class SaveProfile
         Console.WriteLine();
         Console.WriteLine("COMBAT");
         Console.WriteLine($"  round           {(cb.Round?.ToString() ?? "?")}");
-        Console.WriteLine($"  turn structure  {cb.TurnStructure?.Current ?? "?"}");
+        Console.WriteLine($"  turn structure  {CombatOps.TurnStructureOf(s.Gvas) switch { null => "no mission actor", CombatOps.TurnThreeWay => "three-way battle", CombatOps.TurnStandard => "standard", var other => other }}");
         Console.WriteLine($"  enemy spawn set {(cb.SpawnSet == null ? "-" : CombatOps.SpawnSetLabel(cb.SpawnSet.Current))}");
 
         Console.WriteLine();

@@ -159,6 +159,20 @@ public sealed class SaveEditor
             p.SetMarketTable(kind, tier, n);
             return $"Black Market rolls {n} {MarketOps.Quality(tier)} {kind} item(s) per refresh";
         });
+        Reg("set-option", "set-option <option> <choice>", "change a campaign option picked when the campaign started (game 1.2), e.g. set-option EnemyCrits On", a =>
+        {
+            var held = CampaignOptionOps.Read(Save.Gvas) ?? throw new ZcException("this campaign has no campaign options (it was started before game 1.2)");
+            var known = CampaignOptionOps.Settings.Where(s => held.ContainsKey(s.Key)).ToList();
+            string key = NormName(a[0]);
+            var hit = known.Where(s => NormName(s.Key) == key || NormName(s.Key[(s.Key.IndexOf('_', 3) + 1)..]) == key || NormName(s.Label) == key).ToList();
+            if (hit.Count != 1)
+                throw new ZcException($"unknown option '{a[0]}'. Options: {string.Join(", ", known.Select(s => $"{s.Key[(s.Key.IndexOf('_', 3) + 1)..]} ({s.Label})"))}");
+            var opt = hit[0];
+            var choice = opt.Choices.FirstOrDefault(c => NormName(c.Label) == NormName(a[1]) || c.Tag == a[1])
+                         ?? throw new ZcException($"{opt.Label}: choose one of {string.Join(", ", opt.Choices.Select(c => c.Label))}");
+            p.SetCampaignOption(opt.Key, choice.Tag == held[opt.Key] ? null : choice.Tag);
+            return choice.Tag == held[opt.Key] ? $"{opt.Label} is already {choice.Label}" : $"campaign option {opt.Label}: {choice.Label}";
+        });
         Reg("set-slots", "set-slots <mod|utility> <total>", "give every operator this many gear slots (mod 1-4, utility 1-12)", a =>
         {
             string type = a[0].ToLowerInvariant();

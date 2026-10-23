@@ -29,6 +29,8 @@ public abstract record SaveAction
     public sealed record SetMarketTable(string Kind, int Tier, int Count) : SaveAction;
     /// <summary>Give an operator an ability another operator in the save holds, at the given focus-tree level.</summary>
     public sealed record GrantAbility(string Guid, string Tag, int Level) : SaveAction;
+    /// <summary>Change one of the campaign's options (setting key such as <c>US_Gameplay_EnemyCrits</c>) to the choice with fact tag <c>Tag</c>.</summary>
+    public sealed record SetCampaignOption(string Key, string Tag) : SaveAction;
     public sealed record ReorderRoster(IReadOnlyList<string> Order) : SaveAction;
     public sealed record RemoveCoilUpgrades(IReadOnlyList<CoilChange> Changes) : SaveAction;
     /// <summary>Give the squad <c>Copies</c> new copies of an item it may never have had (a utility item or weapon mod, by asset name).</summary>

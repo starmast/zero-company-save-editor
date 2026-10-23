@@ -302,17 +302,24 @@ public sealed class SaveService
             if (meta != null) replace["SaveGameMetaData.json"] = meta;
         }
         if (cut.SpawnedActorTeams.Count > 0) replace["SaveGameSpawnedActors"] = cut.SpawnedActors!.ToBytes();
-        Dictionary<string, byte[]>? headerRename = null;
+        Dictionary<string, byte[]>? headerRename = null;           // the header entries as prepared (a new name, campaign options)
         if (!string.IsNullOrEmpty(copyName))
         {
-            try { headerRename = new(c.Container.WithComment(copyName)); foreach (var (entry, bytes) in headerRename) replace[entry] = bytes; }
+            try { headerRename = new(c.Container.WithComment(copyName)); }
             catch (SaveFormatException e) { throw new EditException("Cannot rename this save: " + e.Message, e); }
         }
+        if (cut.CampaignOptions.Count > 0)
+        {
+            try { headerRename = new(c.Container.WithCampaignOptions(cut.CampaignOptions, headerRename)); }
+            catch (SaveFormatException e) { throw new EditException("Campaign options: " + e.Message, e); }
+        }
+        if (headerRename != null) foreach (var (entry, bytes) in headerRename) replace[entry] = bytes;
         var newFile = c.Container.Rebuild(newGvas, replace);
 
         // 4) verify before touching the disk
-        if (structural || actions.Count > 0) VerifySemantic(c, newFile, expected, cut, headerRename);
-        else Verify(c, newFile, newGvas, edited, headerRename);
+        bool named = !string.IsNullOrEmpty(copyName);
+        if (structural || actions.Count > 0) VerifySemantic(c, newFile, expected, cut, headerRename, named);
+        else Verify(c, newFile, newGvas, edited, headerRename, named);
 
         int count = writes.Count + actions.Count;
         if (asCopy)
@@ -355,6 +362,7 @@ public sealed class SaveService
         var seen = new HashSet<string>();
         var healed = new HashSet<string>(); var revived = new HashSet<string>(); var completed = new HashSet<string>(); var granted = new HashSet<string>(); var gearDone = new HashSet<string>(); var marketDone = new HashSet<string>();
         bool rosterDone = false, coilDone = false;
+        var options = new HashSet<string>();
 
         static string NormGuid(string raw)
         {
@@ -415,6 +423,11 @@ public sealed class SaveService
                     catch (GvasException e) { throw new EditException($"Black Market: {e.Message}", e); }
                     break;
                 }
+                case SaveAction.SetCampaignOption co:
+                    if (!options.Add(co.Key ?? "")) throw new EditException("duplicate campaign option");
+                    try { g = CampaignOptionOps.Set(g, co.Key ?? "", co.Tag ?? "", cut); }
+                    catch (GvasException e) { throw new EditException($"Campaign options: {e.Message}", e); }
+                    break;
                 case SaveAction.ReorderRoster ro:
                     if (rosterDone) throw new EditException("duplicate roster action");
                     rosterDone = true;
@@ -650,17 +663,17 @@ public sealed class SaveService
     };
 
     /// <summary>For structural edits: reparse, then prove the ONLY differences are the intended ones.</summary>
-    /// <summary>A renamed copy's two header entries must be exactly the bytes that were prepared, and still parse with a name.</summary>
-    static void CheckRenamed(SaveContainer re, IReadOnlyDictionary<string, byte[]>? renamed)
+    /// <summary>Rewritten header entries must be exactly the bytes that were prepared; a renamed copy must still parse with a name.</summary>
+    static void CheckRenamed(SaveContainer re, IReadOnlyDictionary<string, byte[]>? renamed, bool named)
     {
         if (renamed == null) return;
         foreach (var (entry, bytes) in renamed)
             if (!(re.Blobs.TryGetValue(entry, out var got) && got.AsSpan().SequenceEqual(bytes)))
-                throw new EditException($"verification failed: entry {entry} is not what was prepared for the new name");
-        if (string.IsNullOrEmpty(re.Comment)) throw new EditException("verification failed: the renamed save has no readable name");
+                throw new EditException($"verification failed: entry {entry} is not what was prepared for it");
+        if (named && string.IsNullOrEmpty(re.Comment)) throw new EditException("verification failed: the renamed save has no readable name");
     }
 
-    static void VerifySemantic(OpenSave c, byte[] newFile, HashSet<string> allowed, CutInfo cut, IReadOnlyDictionary<string, byte[]>? renamed = null)
+    static void VerifySemantic(OpenSave c, byte[] newFile, HashSet<string> allowed, CutInfo cut, IReadOnlyDictionary<string, byte[]>? renamed = null, bool named = false)
     {
         SaveContainer re; GvasFile g2;
         try { re = SaveContainer.Load(newFile); g2 = new GvasFile(re.Gvas); }
@@ -677,7 +690,7 @@ public sealed class SaveService
                     && !(renamed != null && renamed.ContainsKey(k))
                     && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
-            CheckRenamed(re, renamed);
+            CheckRenamed(re, renamed, named);
             var txt = re.Blobs.TryGetValue("SaveGameMetaData.json", out var metaBytes) ? Encoding.Unicode.GetString(metaBytes) : "";
             foreach (var (key, size) in BlobSizes(g2))
             {
@@ -831,6 +844,23 @@ public sealed class SaveService
                 throw new EditException("verification failed: a unit's effect list is not what was intended");
         if (cut.Roster != null && !RosterOps.Order(g2).SequenceEqual(cut.Roster)) throw new EditException("verification failed: roster order is not what was intended");
         if (cut.FactTags != null && !CoilOps.Tags(g2).SequenceEqual(cut.FactTags)) throw new EditException("verification failed: fact tags are not what was intended");
+        if (cut.CampaignOptions.Count > 0)
+        {
+            // every option must read as intended in the save body, its permanent facts and the header; the rest as they were
+            var was = CampaignOptionOps.Read(old) ?? new Dictionary<string, string>();
+            var now = CampaignOptionOps.Read(g2);
+            var head = CampaignOptionOps.ReadHeader(re.SaveInfo());
+            if (now == null || now.Count != was.Count) throw new EditException("verification failed: the campaign options changed in number");
+            foreach (var (key, tag) in was)
+            {
+                var want = cut.CampaignOptions.TryGetValue(key, out var ch) ? ch.To : tag;
+                if (!now.TryGetValue(key, out var have) || have != want) throw new EditException("verification failed: a campaign option is not what was intended");
+                if (cut.CampaignOptions.ContainsKey(key) && (head == null || !head.TryGetValue(key, out var h) || h != want))
+                    throw new EditException("verification failed: the header does not show the new campaign option");
+            }
+            if (cut.PermanentFactTags == null || !(CampaignOptionOps.PermanentTags(g2) ?? new List<string>()).SequenceEqual(cut.PermanentFactTags))
+                throw new EditException("verification failed: the campaign's permanent facts are not what was intended");
+        }
 
         var a = Flatten(old); var b = Flatten(g2);
         string? stray = null;
@@ -863,7 +893,7 @@ public sealed class SaveService
     }
 
     /// <summary>For scalar-only edits: same size, only the edited bytes differ, every edited value reads back.</summary>
-    static void Verify(OpenSave c, byte[] newFile, byte[] newGvas, List<(int Off, int Size, string Type, double Value)> edited, IReadOnlyDictionary<string, byte[]>? renamed = null)
+    static void Verify(OpenSave c, byte[] newFile, byte[] newGvas, List<(int Off, int Size, string Type, double Value)> edited, IReadOnlyDictionary<string, byte[]>? renamed = null, bool named = false)
     {
         SaveContainer re; GvasFile g2;
         try { re = SaveContainer.Load(newFile); g2 = new GvasFile(re.Gvas); }
@@ -875,7 +905,7 @@ public sealed class SaveService
             foreach (var (k, v) in c.Container.Blobs)
                 if (k != SaveContainer.MainEntry && !(renamed != null && renamed.ContainsKey(k)) && !(re.Blobs.TryGetValue(k, out var nb) && nb.AsSpan().SequenceEqual(v)))
                     throw new EditException($"verification failed: entry {k} altered");
-            CheckRenamed(re, renamed);
+            CheckRenamed(re, renamed, named);
             if (!re.Infos.Select(i => i.Name).SequenceEqual(c.Container.Infos.Select(i => i.Name)))
                 throw new EditException("verification failed: entry list changed");
         }

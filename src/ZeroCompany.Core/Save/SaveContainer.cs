@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using ZeroCompany.Core.Actions;
 
 namespace ZeroCompany.Core.Save;
 
@@ -189,6 +190,35 @@ public sealed class SaveContainer
         var newInfo = info.Take(at).Concat(UnrealString(comment)).Concat(info.Skip(at + oldBytes.Length)).ToArray();
 
         return new Dictionary<string, byte[]> { ["SaveGameInfoJSON.txt"] = newJson, ["SaveGameInfo"] = newInfo };
+    }
+
+    /// <summary>
+    /// The two header entries with campaign options changed (setting key -> (old tag, new tag)), starting from <paramref name="start"/>
+    /// (for example a rename prepared by <see cref="WithComment"/>) or the save's own entries. The JSON lists each option as
+    /// <c>"BitReactorUserSettingDefinition:&lt;key&gt;": { "tagName": "&lt;tag&gt;" }</c>; the binary entry as the setting name followed by
+    /// the tag, both as Unreal strings. Each old pair must be found exactly once; nothing is guessed.
+    /// </summary>
+    public IReadOnlyDictionary<string, byte[]> WithCampaignOptions(IReadOnlyDictionary<string, (string From, string To)> changes,
+                                                                  IReadOnlyDictionary<string, byte[]>? start = null)
+    {
+        byte[]? json = start != null && start.TryGetValue("SaveGameInfoJSON.txt", out var sj) ? sj : Blobs.GetValueOrDefault("SaveGameInfoJSON.txt");
+        byte[]? info = start != null && start.TryGetValue("SaveGameInfo", out var si) ? si : Blobs.GetValueOrDefault("SaveGameInfo");
+        if (json == null || info == null) throw new SaveFormatException("this save has no header entries to update");
+        int skip = json.Length >= 2 && json[0] == 0xFF && json[1] == 0xFE ? 2 : 0;
+        var text = Encoding.Unicode.GetString(json, skip, json.Length - skip);
+        foreach (var (key, (from, to)) in changes)
+        {
+            var rx = new Regex("(\"" + Regex.Escape(CampaignOptionOps.HeaderPrefix + key) + "\"\\s*:\\s*\\{\\s*\"tagName\"\\s*:\\s*\")" + Regex.Escape(from) + "(\")");
+            if (rx.Matches(text).Count != 1) throw new SaveFormatException($"the campaign option {key} was not found exactly once in the save's header");
+            text = rx.Replace(text, m => m.Groups[1].Value + to + m.Groups[2].Value);
+
+            var oldPair = UnrealString(key).Concat(UnrealString(from)).ToArray();
+            int at = IndexOf(info, oldPair);
+            if (at < 0 || IndexOf(info, oldPair, at + 1) >= 0) throw new SaveFormatException($"the campaign option {key} was not found exactly once in the save's binary header");
+            info = info.Take(at).Concat(UnrealString(key)).Concat(UnrealString(to)).Concat(info.Skip(at + oldPair.Length)).ToArray();
+        }
+        var newJson = json.Take(skip).Concat(Encoding.Unicode.GetBytes(text)).ToArray();
+        return new Dictionary<string, byte[]> { ["SaveGameInfoJSON.txt"] = newJson, ["SaveGameInfo"] = info };
     }
 
     static byte[] UnrealString(string s)

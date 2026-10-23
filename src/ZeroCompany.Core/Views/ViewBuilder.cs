@@ -74,7 +74,7 @@ public static class ViewBuilder
         {
             Title = Info(info, "comment"), World = Info(info, "worldName"), Created = Info(info, "creationTime"),
             Mode = Info(info, "gameMode"), Type = Info(info, "saveGameType"), Autosave = Info(info, "autoSaveType"),
-            Difficulty = Info(info, "currentDifficultyLevel"), Permadeath = Info(info, "bPermaDeath"),
+            Difficulty = Info(info, "currentDifficultyLevel"), Permadeath = CampaignOptionOps.Permadeath(info) is { } pd ? JsonValue.Create(pd) : null,
         },
         Progression = m.Prog.ToDictionary(kv => kv.Key, kv => FieldRef.From(kv.Value)),
     };

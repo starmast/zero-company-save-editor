@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
+using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Platform;
 using ZeroCompany.Core.Save;
@@ -129,11 +130,13 @@ public static class DebugReport
             {
                 string S(string k) => info[k] is JsonValue v ? v.ToString() : "?";
                 l.Add($"game:      changelist {S("changelist")} (base {S("baseChangelist")}, {S("branchName")}, {S("platform")})");
-                l.Add($"campaign:  {S("gameMode")} on {S("worldName")}, turn {S("strategyTurn")}, difficulty {S("currentDifficultyLevel")}, permadeath {S("bPermaDeath")}, {S("saveGameType")}"
+                l.Add($"campaign:  {S("gameMode")} on {S("worldName")}, turn {S("strategyTurn")}, difficulty {S("currentDifficultyLevel")}, permadeath {CampaignOptionOps.Permadeath(info)?.ToString().ToLowerInvariant() ?? "?"}, {S("saveGameType")}"
                       + (S("gameMode") == "Strategy" ? "" : $", combat turn {S("combatTurn")}"));
             }
             else l.Add("game:      no save info (not a game save?)");
             var g = new GvasFile(c.Gvas);
+            if (CampaignOptionOps.Read(g) is { } opts)
+                l.Add("options:   " + string.Join(", ", CampaignOptionOps.Describe(opts).Select(o => $"{o.Setting.Label} {o.Label}")));
             l.Add($"structure: {g.Walk().Count():N0} properties, {g.OpaqueCount} left unparsed");
             l.Add("inventory: " + Inventory(g));
         }

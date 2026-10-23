@@ -19,6 +19,10 @@ public sealed class CutInfo
     public Dictionary<string, int> GearSlots { get; } = new();
     /// <summary>Black Market quality tables: table tag -> how many items it must roll.</summary>
     public Dictionary<string, int> MarketTables { get; } = new();
+    /// <summary>Campaign options changed: setting key -> (the tag the save had, the tag it must end up with).</summary>
+    public Dictionary<string, (string From, string To)> CampaignOptions { get; } = new();
+    /// <summary>Expected PermanentFactTags after a campaign option change.</summary>
+    public List<string>? PermanentFactTags { get; set; }
     /// <summary>Expected roster order after a reorder.</summary>
     public List<string>? Roster { get; set; }
     /// <summary>Armory: items added as new inventory entries (item name, entry GUID).</summary>

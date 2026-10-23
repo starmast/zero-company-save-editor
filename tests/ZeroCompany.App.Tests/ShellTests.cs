@@ -66,6 +66,31 @@ public class ShellTests
     }
 
     [SkippableFact]
+    public void Campaign_options_show_for_a_1_2_campaign_only_and_a_choice_is_queued()
+    {
+        Skip.If(Repo.SampleSave() == null || Repo.CombatSaveNamed("Hub_1_2.sav") == null, "no sample saves");
+        using (var old = new TestRig())
+        {
+            old.Start();
+            var cmd = Assert.IsType<CommandViewModel>(old.Main.Screen);
+            Assert.False(cmd.HasCampaignOptions);
+        }
+        using var rig = new TestRig(combatFile: "Hub_1_2.sav");
+        rig.Start(height: 2300);
+        var vm = Assert.IsType<CommandViewModel>(rig.Main.Screen);
+        Assert.True(vm.HasCampaignOptions);
+        Assert.Equal(15, vm.CampaignOptions.Count);
+        Assert.Contains("Permadeath on", vm.Line2);
+        var crits = vm.CampaignOptions.Single(o => o.Label == "Enemies can critically hit");
+        Assert.Equal("Off", crits.Selected?.Label);
+        Headless.Run(() => { crits.Selected = crits.Choices.Single(c => c.Label == "On"); rig.Pump(); });
+        Assert.Equal("Facts.CampaignOptions.Tactical.EnemiesCanCrit.On", rig.Session.Pending.CampaignOptions["US_Gameplay_EnemyCrits"]);
+        Headless.Run(() => { crits.Selected = crits.Choices.Single(c => c.Label == "Off"); rig.Pump(); });
+        Assert.Empty(rig.Session.Pending.CampaignOptions);                      // back at what the save has: nothing to write
+        rig.Shot("02-command-campaign-options");
+    }
+
+    [SkippableFact]
     public void Nothing_can_be_edited_while_a_write_is_running_and_a_copy_keeps_the_edits()
     {
         Skip.If(Repo.SampleSave() == null, "no sample save");

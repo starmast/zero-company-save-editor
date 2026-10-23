@@ -125,6 +125,41 @@ public sealed class MarketTableRowViewModel : ViewModelBase, IDisposable
     public void Dispose() => _pending.Changed -= Sync;
 }
 
+/// <summary>One campaign option (game 1.2) on the Command screen: a drop-down of the choices the game offers for it.</summary>
+public sealed class CampaignOptionRowViewModel : ViewModelBase, IDisposable
+{
+    readonly PendingChanges _pending;
+    readonly string _key;
+    readonly string _saved;
+
+    public CampaignOptionRowViewModel(PendingChanges pending, CampaignOptionOps.Setting setting, string saved)
+    {
+        _pending = pending; _key = setting.Key; _saved = saved;
+        Label = setting.Label; Note = setting.Note;
+        Choices = setting.Choices.Select(c => new GroupChoice(c.Tag, c.Label)).ToList();
+        _pending.Changed += Sync;
+    }
+
+    public string Label { get; }
+    public string Note { get; }
+    public bool HasNote => Note.Length > 0;
+    public IReadOnlyList<GroupChoice> Choices { get; }
+
+    public GroupChoice? Selected
+    {
+        get => Choices.FirstOrDefault(c => c.Value == (_pending.CampaignOptions.TryGetValue(_key, out var t) ? t : _saved));
+        set
+        {
+            if (value == null) return;
+            _pending.SetCampaignOption(_key, value.Value == _saved ? null : value.Value);        // back at what the save has: nothing to write
+        }
+    }
+
+    void Sync() => OnPropertyChanged(nameof(Selected));
+
+    public void Dispose() => _pending.Changed -= Sync;
+}
+
 /// <summary>Command: campaign overview, progression, stockpile, save info and backups (the "hub" screen).</summary>
 public sealed class CommandViewModel : ScreenViewModel
 {
@@ -140,7 +175,7 @@ public sealed class CommandViewModel : ScreenViewModel
         Where = $"{open.Name} ({open.DirId})";
         var kind = info.Type?.ToString() == "AutoSave" ? "Autosave" : "Manual save";
         Line1 = string.Join(" · ", new[] { info.World?.ToString(), info.Mode?.ToString(), kind }.Where(s => !string.IsNullOrEmpty(s)));
-        bool perma = info.Permadeath?.ToString() == "true";
+        bool perma = info.Permadeath?.ToString() is "true" or "True";
         Line2 = $"Difficulty level {info.Difficulty?.ToString() ?? "?"}{(perma ? " · Permadeath on" : "")}";
         Line3 = $"Created {info.Created?.ToString() ?? "?"}";
         Summary = $"{v.Personnel.Roster.Count} operators on the roster · {v.Personnel.Memorial.Count} in the Memorial · "
@@ -170,6 +205,10 @@ public sealed class CommandViewModel : ScreenViewModel
             foreach (var marketKind in MarketOps.Kinds)
                 for (int tier = MarketOps.MinTier; tier <= MarketOps.MaxTier; tier++)
                     MarketTables.Add(Own(new MarketTableRowViewModel(main.Session.Pending, marketKind, tier, market.GetValueOrDefault(MarketOps.Tag(marketKind, tier)))));
+        if (CampaignOptionOps.Read(gvas) is { } held)
+            foreach (var setting in CampaignOptionOps.Settings)
+                if (held.TryGetValue(setting.Key, out var tag) && setting.Choices.Any(c => c.Tag == tag))
+                    CampaignOptions.Add(Own(new CampaignOptionRowViewModel(main.Session.Pending, setting, tag)));
         foreach (var r in v.Header.Resources)
             Stockpile.Add(new FieldRowViewModel(r.Label, fields.Make(r, 0, r.Label)!, r.Description));
         foreach (var b in main.Session.Service.ListBackups(open.Name)) Backups.Add(new BackupRowViewModel(this, b));
@@ -187,6 +226,8 @@ public sealed class CommandViewModel : ScreenViewModel
     public bool HasGearSlots => GearSlots.Count > 0;
     public List<MarketTableRowViewModel> MarketTables { get; } = new();
     public bool HasMarketTables => MarketTables.Count > 0;
+    public List<CampaignOptionRowViewModel> CampaignOptions { get; } = new();
+    public bool HasCampaignOptions => CampaignOptions.Count > 0;
     public List<BackupRowViewModel> Backups { get; } = new();
 
     public Task RestoreAsync(string file) => _main.RestoreAsync(file, _main.PendingBar.Force);
