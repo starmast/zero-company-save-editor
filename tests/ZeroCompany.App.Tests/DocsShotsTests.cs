@@ -32,7 +32,20 @@ public class DocsShotsTests
         Save(rig, "focus-tree");
         Headless.Run(() => rig.Main.Navigate("upgrades", "Facilities"));
         Save(rig, "upgrades");
-        Headless.Run(() => rig.Main.Navigate("command"));
+        if (Repo.CombatSaveNamed("Hub_1_2.sav") == null)
+        {
+            Headless.Run(() => rig.Main.Navigate("command"));
+            Save(rig, "command");
+        }
+    }
+
+    [SkippableFact]
+    public void Regenerate_command_screenshot_with_the_campaign_options()
+    {
+        Skip.IfNot(Enabled, "set ZC_UPDATE_DOCS=1 to regenerate docs/screenshots");
+        Skip.If(Repo.CombatSaveNamed("Hub_1_2.sav") == null, "no game 1.2 sample save");
+        using var rig = new TestRig(combatFile: "Hub_1_2.sav");
+        rig.Start(width: 1280, height: 2140, portraits: false);
         Save(rig, "command");
     }
 

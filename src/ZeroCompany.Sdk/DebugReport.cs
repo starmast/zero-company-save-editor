@@ -25,7 +25,7 @@ public static class DebugReport
     public const string ReportEntry = "report.txt";
     const int CrashLogTail = 64 * 1024;
 
-    /// <summary>"name version" of the running program, e.g. "ZeroCompanyEditor 0.7.0+439b5e3".</summary>
+    /// <summary>"name version" of the running program, e.g. "ZeroCompanyEditor 1.0.0+439b5e3".</summary>
     public static string ToolName(Assembly? asm = null)
     {
         asm ??= Assembly.GetEntryAssembly() ?? typeof(DebugReport).Assembly;

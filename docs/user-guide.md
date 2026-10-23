@@ -14,26 +14,45 @@ listed as such.
 The bar at the top shows your credits, intel, other resources, level and turn. Click any of them to type a new value.
 
 ## Command
-Save details, campaign values (strategy turn, roster level and XP, base focus points), the stockpile, and your **backups**.
-Press **Restore** on a backup to put it back; the current file is saved as a new backup first, so nothing is lost.
+Save details, the campaign values and the stockpile, then the Den and campaign settings, and your **backups**.
+
+- **Campaign**: strategy turn, roster level and XP, **roster capacity** (how many operators the roster holds; it is also what the
+  Recruitment screen checks, so raising it lets you recruit past the Den's limit), base focus points, **field tasks per turn** (the
+  most, and how many are left this turn), the Black Market's **refresh cost** and its **bonus items**.
+- **Gear slots**: give every operator more utility slots (up to 12) or fill the weapon's four mod slots. Shown once the save has had
+  a slot upgrade.
+- **Black Market restock**: how many items a refresh rolls from each quality table (Basic, Superior, Exquisite) for weapon mods and
+  for utility items.
+- **Campaign options** (campaigns started in game 1.2 or later): the additional campaign options picked when the campaign started,
+  such as permadeath, operator injuries, risk of death, Advantage rules, enemy critical hits, operator health gain and the
+  specialization locks. The game fixes them at the start; here each one is a drop-down. Campaigns started before 1.2 have no
+  options, so the panel is not shown for them ([limits](limitations.md)).
+- **Backups**: press **Restore** on a backup to put it back; the current file is saved as a new backup first, so nothing is lost.
 
 ## Personnel
 Pick an operator from the strip at the bottom. Hold and drag an operator's icon sideways (or use **Earlier / Later**) to change
 the roster order; the game's own strip and mission select follow it.
 
+![Focus Tree](screenshots/focus-tree.png)
+
 - **Overview** - unspent focus points (the total moves with it so points spent stay the same) and training and stat effects.
 - **Bonds** - partners placed on the game's 0-8 scale. Click a face to change that bond's level, progress or cross training.
 - **Focus Tree** - set ability levels using the game's own focus costs. Choose **Spend unspent focus** (levelling costs
   what you have) or **Grant the focus** (levelling is free; the total rises to match).
+- **Give an ability** (on the Focus Tree) - copies an ability another operator in the save holds, such as Cly's Combat Jump
+  jetpack, onto this operator. It arrives at level 1; level it up like any other once the save is written.
 - **Complete tree** - shown when an operator (such as the tutorial operator) is missing the higher tiers of some abilities.
   It copies them from another operator who has the same abilities.
 - **Memorial** - a fallen operator's page has **Bring back**, which returns them to the roster ([limits](limitations.md)).
 
 ## Upgrades
+![Upgrades screen](screenshots/upgrades.png)
+
 Facilities, Crew and Weapons rows on a Den Level 1-10 timeline. Click an upgrade to see its cost, duration and requirements,
-then **Queue: start**. Starting works like the game's Build button; the game finishes the upgrade at the next turn change.
-Tick **Also expedite upgrades I start** to have it finish at the very next one. No cost is charged. **Queue all startable**
-queues everything that can be started.
+then **Queue: start**. Starting works like the game's Build button: the game then builds it over its normal duration. Tick
+**Also expedite upgrades I start** to have it finish at the next turn change instead, or use **Queue: expedite** on one that is
+already building. No cost is charged. **Queue all startable** queues everything that can be started, **Expedite all building**
+expedites everything under construction, and **Clear queue** drops the queued starts and expedites.
 
 ## Armory
 Utility items and weapon mods, with how many you own. Use the search box to find one.
@@ -80,23 +99,24 @@ actions for that tab.
 
 ![Combat screen](screenshots/combat.png)
 
-- **Allies, Enemies, Friendly AI** - one card per unit. Edit its **Health**, base max health, **action points**, movement points,
+- **Allies, Enemies, Friendly AI, Other** - one card per unit (*Other* holds units on no side, such as story holograms, whose team
+  cannot be changed). Edit its **Health**, base max health, **action points**, movement points,
   **Advantage** and **position** (X Y Z in world units). Open **All stats** for every other base value (aim, attack, critical
   chance and so on) and **Effects** to remove an effect, change its stacks, or copy an effect from another unit. **Mark dead**
-  sets the dead flag. The **Team** dropdown moves a unit to another side: *Ally* (you control it), *Friendly AI* (friendly, but the
+  sets the dead flag (**Revive** on a dead unit clears it). The **Team** dropdown moves a unit to another side: *Ally* (you control it), *Friendly AI* (friendly, but the
   game moves it, like a rescued VIP or an allied fighter) or *Enemy*. In a **three-way battle** (a mission with two hostile sides
   fighting each other as well as you, like Belly of the Beast) there is also *Enemy2*, the second hostile side, and units can be
   moved between the two ([limits](limitations.md#combat-tab)). Quick actions: **Heal allies to full** and **Enemies to 1 HP**
   (both enemy sides).
 - **Objectives** - each mission objective with its status; **Mark succeeded** or **Set back to active**. Counters such as
   occupy-region points and interactions are editable too. Above them, **Timers** show the turns left on a countdown, what it
-  fails when it runs out, and let you change the turns left and the total.
+  fails or starts when it runs out, and let you change the turns left and the total.
 - **Roster** - operators of your roster who are not in this fight, each with **Bring into the fight** (and **Bring in everyone**). The game
   spawns them with your squad when the save loads, with the health the roster records; the box above the list also queues the free Medbay heal for
   injured ones. The game places them itself near the start point and some land outside the playable area, so apply, load the save, save it in the
   game, open that save here and set their Position X Y Z (Allies tab) to a spot next to your squad.
 - **Reinforcements** - the **current round** of the fight (the game saves it; you can change it), the waves already on their way (the round each arrives, its spawn group, **Cancel wave**), the encounter's
-  wave definitions (how many times each may spawn, how many times it has been triggered, group) and the triggers that start waves (switch off). **Mission
+  wave definitions (numbered per encounter when a mission has several) (how many times each may spawn, how many times it has been triggered, group) and the triggers that start waves (switch off). **Mission
   settings** above them has the **enemy threat tier** the mission draws its units from (for example *Coil threat 10*; tiers of
   other factions are offered too, marked experimental) and, in a three-way battle, the **turn structure**. **The threat tier does nothing for
   the encounter you are in**: it is read when an encounter starts, so the enemies on the map and the waves in the save are already fixed

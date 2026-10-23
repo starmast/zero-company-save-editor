@@ -41,8 +41,11 @@ are reproduced only to illustrate how the tool works.
   gain an unfair advantage over other players or to violate anyone's rights.
 
 ## What the tool does and does not do
-- It reads and writes **save files only**. It does not inject into, attach to, or modify the running game or its
-  memory, and it does not modify, patch or bypass the game's installation, DRM, licensing or anti-cheat systems.
+- The editor and `zc` read and write **save files only**. They do not inject into, attach to, or modify the running game or
+  its memory, and they do not modify, patch or bypass the game's installation, DRM, licensing or anti-cheat systems.
+- The repository also holds `zcdebug`, a developer tool that is not part of the releases. It talks to the running game through
+  a mod loader (UE4SS) that you install yourself, to learn what save values mean; see [docs/development.md](docs/development.md).
+  It is for understanding saves, offline, and the editor never uses it.
 - It is a desktop application: it runs no web server and loads nothing from the internet while you edit.
 - The only network access is the first game-data extraction, which downloads the Oodle decompression library (through
   CUE4Parse) so the game's compressed files can be read. No save data is sent anywhere by this software.

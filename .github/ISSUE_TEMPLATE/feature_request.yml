@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Ideas are welcome. Keep in mind that this project only reads and writes save files: it will not modify the game,
+        Ideas are welcome. Keep in mind that the editor only reads and writes save files: it will not modify the game,
         its files or its protections, and it is meant for offline single-player use (see DISCLAIMER.md).
   - type: textarea
     id: idea

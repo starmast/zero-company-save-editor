@@ -29,8 +29,13 @@ public class ExtractorIntegrationTests
         Skip.If(GameExtractor.FindPaksDir(game) == null, "game not installed");
         Skip.If(usmap == null, "no .usmap");
         Skip.IfNot(File.Exists(Path.Combine(oodleDir, "oodle-data-shared.dll")), "no local Oodle library");
-        var legacy = RawGameData.LoadLegacyDirectory(Path.Combine(Repo.Root, "gamedata"));
+        var dumps = Path.Combine(Repo.Root, "gamedata");
+        var legacy = RawGameData.LoadLegacyDirectory(dumps);
         Skip.If(legacy == null, "no legacy dumps to compare against");
+        // the dumps describe the game as it was when they were made; after a game update (1.2 changed upgrade costs) they cannot match
+        var gameFiles = Directory.EnumerateFiles(GameExtractor.FindPaksDir(game)!, "*.utoc").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty().Max();
+        var dumped = Directory.EnumerateFiles(dumps, "*.json").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty().Max();
+        Skip.If(gameFiles > dumped, $"the game was updated ({gameFiles:yyyy-MM-dd}) after the dumps were made ({dumped:yyyy-MM-dd}); make new dumps to compare");
 
         var log = new List<string>();
         var db = GameExtractor.Extract(new ExtractOptions { GameDir = game, UsmapPath = usmap!, OodleDir = oodleDir },
