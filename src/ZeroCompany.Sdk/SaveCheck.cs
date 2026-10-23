@@ -37,7 +37,8 @@ public static class SaveCheck
             list.Add(Header(c));
             list.Add(Metadata(c, g));
         }
-        list.Add(Screens(ws, entry));
+        // settings and character-pool files are plain GVAS the editor does not open: nothing more to check, and nothing wrong
+        list.Add(c.IsZip ? Screens(ws, entry) : Check.Ok("screens", "not a game save (settings or character pool); the editor leaves these alone"));
         return list;
     }
 

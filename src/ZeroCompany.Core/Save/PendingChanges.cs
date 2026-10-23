@@ -449,7 +449,7 @@ public sealed class PendingChanges
         }
         var v = save.View;
         string Op(string guid) => v.Personnel.Roster.Concat(v.Personnel.Memorial).FirstOrDefault(o => o.Guid == guid)?.Name ?? "operator";
-        static string AbilityLabel(string tag) => Naming.Pretty(tag[(tag.LastIndexOf('.') + 1)..]);
+        string AbilityLabel(string tag) => Naming.Ability(save.Model.Db, tag);
         foreach (var id in _starts)
         {
             var row = save.Upgrades.Items.FirstOrDefault(x => x.Id == id);
@@ -490,7 +490,7 @@ public sealed class PendingChanges
             foreach (var x in _effectCopies) Add($"Give {U(x.Unit)} the effect {E(x.FromUnit, x.FromIndex)}");
             foreach (var x in _effectRemovals.OrderBy(x => x.Unit).ThenBy(x => x.Index)) Add($"Remove effect {E(x.Unit, x.Index)} from {U(x.Unit)}");
             foreach (var (k, grp) in _groups.OrderBy(kv => kv.Key.Kind).ThenBy(kv => kv.Key.Index))
-                Add($"Reinforcement {(k.Kind == "wave" ? "wave" : "definition")} {k.Index + 1}: group {CombatOps.GroupLabel(grp)}");
+                Add($"Reinforcement {cb.Reinforcements.EncounterPrefix(k.Logic)}{(k.Kind == "wave" ? "wave" : "definition")} {k.Index + 1}: group {CombatOps.GroupLabel(grp)}");
             if (_sceneryRestores.Count > 0) Add($"Restore {_sceneryRestores.Count} destroyed or damaged scenery prop{(_sceneryRestores.Count == 1 ? "" : "s")}");
             if (_sceneryDestroys.Count > 0) Add($"Destroy {_sceneryDestroys.Count} scenery prop{(_sceneryDestroys.Count == 1 ? "" : "s")}");
             if (_spawnSet.TryGetValue(0, out var sset)) Add($"Enemy spawn set: {CombatOps.SpawnSetLabel(sset)}");
@@ -498,7 +498,7 @@ public sealed class PendingChanges
             if (_turn.TryGetValue(0, out var tstr)) Add($"Turn structure: {(tstr == CombatOps.TurnThreeWay ? "three-way battle" : "standard")} (experimental)");
             foreach (var (logic, on) in _triggers.OrderBy(kv => kv.Key))
                 Add($"Reinforcement trigger {cb.Reinforcements.Triggers.FirstOrDefault(t => t.Logic == logic)?.Title ?? "?"}: {(on ? "on" : "off")}");
-            foreach (var (u, t) in _teams.OrderBy(kv => kv.Key)) Add($"Team: {U(u)} -> {t} (experimental)");
+            foreach (var (u, t) in _teams.OrderBy(kv => kv.Key)) Add($"Team: {U(u)} -> {t}");
             foreach (var (i, st) in _objectives.OrderBy(kv => kv.Key))
                 Add($"Objective {cb.Objectives.FirstOrDefault(o => o.Index == i)?.Title ?? "?"}: {st}");
         }

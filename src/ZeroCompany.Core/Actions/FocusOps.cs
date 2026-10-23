@@ -73,9 +73,11 @@ public static class FocusOps
     public static Dictionary<string, List<string>> Incomplete(GvasFile g)
     {
         var @out = new Dictionary<string, List<string>>();
+        // one donor list for everyone: a donor must hold more tiers than the operator, so the operator's own list never qualifies
+        var donors = Donors(g, skip: "");
         foreach (var gid in MedbayOps.Characters(g).Keys)
         {
-            var tags = Gaps(g, gid, Donors(g, gid)).Select(x => x.Tag).ToList();
+            var tags = Gaps(g, gid, donors).Select(x => x.Tag).ToList();
             if (tags.Count > 0) @out[gid] = tags;
         }
         return @out;

@@ -47,11 +47,14 @@ public static class CoilOps
         return node != null ? ReadTags(g, node) : new List<string>();
     }
 
-    /// <summary>Upgrades the Coil currently hold.</summary>
+    /// <summary>Upgrades the Coil currently hold (none when the fact tags are not in the expected layout: opening a save must not fail on them).</summary>
     public static List<ActiveUpgrade> Active(GvasFile g)
     {
         var @out = new List<ActiveUpgrade>();
-        foreach (var t in Tags(g))
+        List<string> tags;
+        try { tags = Tags(g); }
+        catch (GvasException) { return @out; }
+        foreach (var t in tags)
         {
             var m = Selected.Match(t);
             if (!m.Success) continue;

@@ -54,18 +54,19 @@ static class SaveProfile
         foreach (var o in cb.Objectives)
             Console.WriteLine($"  [{o.Status ?? "-",-9}] {o.Title}{(o.Counters.Count > 0 ? "  " + string.Join(", ", o.Counters.Select(c => $"{c.Label}={c.Ref.Value:0}")) : "")}");
         foreach (var t in cb.Timers)
-            Console.WriteLine($"  timer {t.Title}: {(t.Remaining == null ? "finished" : $"{t.Remaining.Value:0} of {t.Total?.Value:0} turns left")}  fails: {string.Join(", ", t.Fails)}");
+            Console.WriteLine($"  timer {t.Title}: {(t.Remaining == null ? "finished" : $"{t.Remaining.Value:0} of {t.Total?.Value:0} turns left")}"
+                              + (t.Fails.Count > 0 ? $"  fails: {string.Join(", ", t.Fails)}" : "") + (t.Starts.Count > 0 ? $"  then starts: {string.Join(", ", t.Starts)}" : ""));
 
         var rv = cb.Reinforcements;
         Console.WriteLine();
         Console.WriteLine($"REINFORCEMENTS  ({rv.Waves.Count} queued, {rv.Configs.Count} definitions, {rv.Triggers.Count} triggers)");
-        foreach (var w in rv.Waves) Console.WriteLine($"  wave {w.Index + 1}: round {w.Round?.Value:0}  {CombatOps.GroupLabel(w.Group)}  at {CombatOps.SpawnerLabel(w.EntryPoint)}");
+        foreach (var w in rv.Waves) Console.WriteLine($"  {rv.EncounterPrefix(w.Logic)}wave {w.Index + 1}: round {w.Round?.Value:0}  {CombatOps.GroupLabel(w.Group)}  at {CombatOps.SpawnerLabel(w.EntryPoint)}");
         foreach (var c in rv.Configs)
-            Console.WriteLine($"  def  {c.Index + 1}: {CombatOps.GroupLabel(c.Group)}  at {CombatOps.SpawnerLabel(c.EntryPoint)}  auto={c.Automatic}  delay={c.Delay?.Value:0} spawn={c.TimesToSpawn?.Value:0} done={c.TimesTriggered?.Value:0}");
+            Console.WriteLine($"  {rv.EncounterPrefix(c.Logic)}def {c.Index + 1}: {CombatOps.GroupLabel(c.Group)}  at {CombatOps.SpawnerLabel(c.EntryPoint)}  auto={c.Automatic}  delay={c.Delay?.Value:0} spawn={c.TimesToSpawn?.Value:0} done={c.TimesTriggered?.Value:0}");
         foreach (var t in rv.Triggers) Console.WriteLine($"  trigger {t.Title}: {(t.HasFlag ? (t.Active ? "on" : "off") : "not fired")}");
 
         Console.WriteLine();
-        Console.WriteLine($"SCENERY  {cb.Hazards.Count} fire zones, {cb.Destructibles.Count} destructibles ({cb.Destructibles.Count(d => d.Health.Value <= 0)} destroyed, {cb.Destructibles.Count(d => d.Health.Value > 0 && d.Health.Value < d.MaxHealth.Value)} damaged)");
+        Console.WriteLine($"SCENERY  {cb.Hazards.Count} fire zones, {cb.Props.Count} props ({cb.Props.Count(p => p.Condition == "Destroyed")} destroyed, {cb.Props.Count(p => p.Condition == "Damaged")} damaged)");
         foreach (var h in cb.Hazards) Console.WriteLine($"  {h.Title}: {h.TurnsLeft.Value:0} turns left, radius {h.Radius:0}");
     }
 

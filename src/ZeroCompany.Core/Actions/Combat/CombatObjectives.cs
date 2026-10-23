@@ -79,6 +79,8 @@ public static partial class CombatOps
             };
             foreach (var f in g.Child(ab, "ObjectivesToFailOnTimerFinished")?.Children ?? new List<GvasNode>())
                 if (g.Get(f) is string path && path.Length > 0) t.Fails.Add(ObjectiveTitle(After(path, '.')));
+            foreach (var f in g.Child(ab, "ActorsToTriggerOnTimerCompleted")?.Children ?? new List<GvasNode>())
+                if (g.Get(f) is string path && path.Length > 0) t.Starts.Add(ObjectiveTitle(After(path, '.')));
             view.Timers.Add(t);
         }
     }

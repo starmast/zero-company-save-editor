@@ -61,8 +61,10 @@
                 </Border>
                 <StackPanel Margin="12,8" Spacing="6">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Team (experimental)" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding TeamChoices}" SelectedItem="{Binding SelectedTeam, Mode=TwoWay}" Width="130" />
+                    <TextBlock Text="Team" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding TeamChoices}" SelectedItem="{Binding SelectedTeam, Mode=TwoWay}" Width="130" IsVisible="{Binding CanChangeTeam}" />
+                    <TextBlock Grid.Column="1" Classes="mute" Text="{Binding Team}" VerticalAlignment="Center" IsVisible="{Binding CannotChangeTeam}"
+                               ToolTip.Tip="This unit is on no side the game fights for (a story or scenery unit), so its team cannot be changed." />
                   </Grid>
                   <TextBlock Classes="amber small" TextWrapping="Wrap" IsVisible="{Binding TeamChanged}"
                              Text="Ally = you control it. Friendly AI = friendly to you but moved by the game (rescued VIPs, allied fighters); the safest way to turn an enemy to your side. Switches team tag, friendly flag, the tag inside the unit and its behaviour, as the game does. A unit turned Enemy also copies the AI area and faction tags and the action-point refresh values of the nearest enemy. It moves to the other tab after you apply." />

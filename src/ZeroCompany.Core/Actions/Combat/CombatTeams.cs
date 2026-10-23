@@ -158,9 +158,11 @@ public static partial class CombatOps
     {
         if (!Teams.Contains(team)) throw new GvasException($"unknown team '{team}'");
         if (team == "Enemy2" && !IsThreeWay(g)) throw new GvasException("Enemy2 only works in three-way battles; the game puts those units back on Enemy in other missions");
-        var tn = TeamNode(g, unit) ?? throw new GvasException("unit not found");
+        if (UnitAt(g, unit) == null) throw new GvasException("unit not found");
+        var tn = TeamNode(g, unit) ?? throw new GvasException("this unit has no team tag, so its team cannot be changed");
         var flag = g.Child(UnitAt(g, unit), "bIsFriendly") ?? throw new GvasException("unit has no friendly flag");
         string oldTag = g.GetStr(tn), oldTeam = After(oldTag, '.');
+        if (!Teams.Contains(oldTeam)) throw new GvasException($"this unit is on no side the game fights for ({oldTeam}), so its team cannot be changed");
         string actor = ActorName(g, UnitAt(g, unit)!);
         string tag = "BitReactor.Team." + team;
         bool friendly = !IsEnemyTeam(team);                     // only used when the save has no unit on that team to copy

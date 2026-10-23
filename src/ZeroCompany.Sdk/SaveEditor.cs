@@ -125,6 +125,13 @@ public sealed class SaveEditor
         return a.Run(args);
     }
 
+    /// <summary>An ability tag without its 'br.AbilityID.&lt;kind&gt;.' start: 'CombatJump', or 'Ambush.2nd' for a second specialization's copy.</summary>
+    static string ShortAbility(string tag)
+    {
+        var parts = tag.Split('.');
+        return parts.Length > 3 ? string.Join('.', parts.Skip(3)) : tag;
+    }
+
     static string NormName(string s) => Regex.Replace(s.ToLowerInvariant(), @"[^\p{L}\p{N}]", "");
 
     void Reg(string name, string usage, string summary, Func<IReadOnlyList<string>, string> run, bool combat = false) =>
@@ -141,10 +148,10 @@ public sealed class SaveEditor
             var o = Op(a[0]);
             var opts = AbilityOps.Grantable(Save.Gvas, o.Guid);
             string key = NormName(a[1]);
-            var hit = opts.Where(d => NormName(d.Tag[(d.Tag.LastIndexOf('.') + 1)..]) == key || NormName(d.Tag) == key).ToList();
+            var hit = opts.Where(d => NormName(ShortAbility(d.Tag)) == key || NormName(d.Tag) == key).ToList();
             if (hit.Count != 1)
                 throw new ZcException(hit.Count == 0
-                    ? $"{o.Name} cannot be given '{a[1]}'. Options: {(opts.Count == 0 ? "none (no other operator in this save holds an ability that fits)" : string.Join(", ", opts.Select(d => d.Tag[(d.Tag.LastIndexOf('.') + 1)..])))}"
+                    ? $"{o.Name} cannot be given '{a[1]}'. Options: {(opts.Count == 0 ? "none (no other operator in this save holds an ability that fits)" : string.Join(", ", opts.Select(d => ShortAbility(d.Tag))))}"
                     : $"'{a[1]}' matches more than one ability: {string.Join(", ", hit.Select(d => d.Tag))}");
             int level = a.Count > 2 ? (int)Count(a[2], 1, 6) : 1;
             p.SetGrant(o.Guid, hit[0].Tag, level);
@@ -227,9 +234,13 @@ public sealed class SaveEditor
         {
             var u = Unit(a[0]); bool d = Bool(a[1]); p.SetDead(u.Index, d, u.Dead); return $"unit {u.Index} {u.Name}: {(d ? "dead" : "alive")}";
         }, combat: true);
-        Reg("unit-team", "unit-team <unit> <Player|Enemy|Enemy2|Civilian>", "move a unit to another team (experimental)", a =>
+        Reg("unit-team", "unit-team <unit> <Player|Enemy|Enemy2|Civilian>", "move a unit to another team", a =>
         {
-            var u = Unit(a[0]); p.SetTeam(u.Index, a[1], u.Team); return $"unit {u.Index} {u.Name}: team {a[1]}";
+            var u = Unit(a[0]);
+            var team = CombatOps.Teams.FirstOrDefault(t => string.Equals(t, a[1], StringComparison.OrdinalIgnoreCase))
+                       ?? throw new ZcException($"the team must be one of {string.Join(", ", CombatOps.Teams)}");
+            if (!CombatOps.Teams.Contains(u.Team)) throw new ZcException($"unit {u.Index} {u.Name} is on no side the game fights for ({u.Team}), so its team cannot be changed");
+            p.SetTeam(u.Index, team, u.Team); return $"unit {u.Index} {u.Name}: team {team}";
         }, combat: true);
         Reg("remove-effect", "remove-effect <unit> <effect-index>", "remove one active effect from a unit", a =>
         {

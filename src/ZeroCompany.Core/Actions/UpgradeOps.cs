@@ -52,11 +52,12 @@ public static class UpgradeOps
 
     static string Status(GvasFile g, GvasNode v)
     {
-        var s = g.GetStr(g.Child(v, "Status")!);
+        var s = g.Child(v, "Status") is { } n ? g.GetStr(n) : "";
         return s.StartsWith(StatusPrefix, StringComparison.Ordinal) ? s[StatusPrefix.Length..] : s;
     }
 
-    static string RecipeKey(GvasFile g, GvasNode v) => g.GetStr(g.Child(v, "SoftRecipeClass")!);
+    /// <summary>The recipe's class path, or "" when the record has none (it is then not an upgrade and is skipped).</summary>
+    static string RecipeKey(GvasFile g, GvasNode? v) => g.Child(v, "SoftRecipeClass") is { } n ? g.GetStr(n) : "";
 
     static bool IsUpgrade(string path) => path.Contains(UpgradeDir) && !path.Contains("/Unused/");
 
@@ -98,7 +99,8 @@ public static class UpgradeOps
         var doneNames = new HashSet<string>();
         foreach (var e in g.Child(sd, "CompletedRecipes")?.Children ?? new List<GvasNode>())
         {
-            var path = RecipeKey(g, e.Children![1]);
+            if (e.Children is not { Count: 2 }) continue;
+            var path = RecipeKey(g, e.Children[1]);
             if (!IsUpgrade(path))  continue;
             doneNames.Add(Last(path));
             items.Add(Row(g, e.Children[1], null, "Completed", path, db, roster));
@@ -107,7 +109,8 @@ public static class UpgradeOps
         var active = g.Child(sd, "ActiveRecipes")?.Children ?? new List<GvasNode>();
         for (int i = 0; i < active.Count; i++)
         {
-            var v = active[i].Children![1];
+            if (active[i].Children is not { Count: 2 } kv) continue;
+            var v = kv[1];
             var path = RecipeKey(g, v);
             if (IsUpgrade(path)) rows.Add((i, v, path));
         }
@@ -134,12 +137,12 @@ public static class UpgradeOps
         {
             Id = index != null ? $"r{index}" : null,
             Name = Last(path),
-            Title = g.GetStr(g.Child(v, "TitleProperty")!),
+            Title = g.Child(v, "TitleProperty") is { } t ? g.GetStr(t) : Naming.Pretty(Last(path)),
             Category = PrettyGroup(after[0]),
             Group = after.Length > 2 ? PrettyGroup(after[1]) : "",
             Status = status,
-            Started = g.GetInt(g.Child(v, "TurnStarted")!),
-            Progress = g.GetInt(g.Child(v, "InProgressTurns")!),
+            Started = IntOr(g, v, "TurnStarted"),
+            Progress = IntOr(g, v, "InProgressTurns"),
         };
         var rec = db.UpgradeLookup.Get(row.Name);
         if (rec != null)

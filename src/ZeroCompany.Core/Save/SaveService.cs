@@ -128,7 +128,7 @@ public sealed class SaveService
             throw new EditException($"Could not read save: {e.Message}", e);
         }
         // an unexpected layout surfaces as one of these from the model and view builders
-        catch (Exception e) when (e is NullReferenceException or InvalidOperationException or InvalidCastException
+        catch (Exception e) when (e is NullReferenceException or InvalidOperationException or InvalidCastException or IndexOutOfRangeException
                                      or KeyNotFoundException or ArgumentException or FormatException or OverflowException)
         {
             throw new EditException($"Could not read save (unexpected layout): {e.Message}", e);

@@ -54,7 +54,7 @@ public abstract record SaveAction
     public sealed record RemoveUnitEffect(int Unit, int Index, string Def) : CombatAction;
     /// <summary>Copy another unit's active effect onto this unit.</summary>
     public sealed record CopyUnitEffect(int Unit, int FromUnit, int FromIndex, string Def) : CombatAction;
-    /// <summary>Experimental: move a unit to another team ("Player", "Enemy", "Civilian"); see <c>CombatOps.SetTeam</c> for everything it changes.</summary>
+    /// <summary>Move a unit to another team ("Player", "Enemy", "Enemy2", "Civilian"); see <c>CombatOps.SetTeam</c> for everything it changes.</summary>
     public sealed record SetUnitTeam(int Unit, string Team) : CombatAction;
     /// <summary>Set the spawn group of a queued reinforcement wave (<c>Kind</c> "wave") or a wave definition ("config").</summary>
     public sealed record SetSpawnGroup(string Kind, int Logic, int Index, string Group) : CombatAction;

@@ -310,7 +310,8 @@ public sealed class SaveModel
             var ge = g.Child(cd, "GameplayEffectsToPersist");
             foreach (var e in ge?.Children ?? new List<GvasNode>())
             {
-                var defPath = g.GetStr(g.Child(e, "Def")!);
+                if (g.Child(e, "Def") is not { } defNode) continue;
+                var defPath = g.GetStr(defNode);
                 var d = GeStrip.Replace(Naming.AssetName(defPath).Replace("Default__", ""), "");
                 if (d.StartsWith("Injured", StringComparison.Ordinal) || d.StartsWith("ApplyDead", StringComparison.Ordinal))
                 {
@@ -354,7 +355,7 @@ public sealed class SaveModel
             var tagNode = g.Child(key, "TagName");
             if (tagNode == null) continue;
             var tag = g.GetStr(tagNode);
-            var name = Db.AbilityName(tag) ?? Naming.Pretty(tag[(tag.LastIndexOf('.') + 1)..]);
+            var name = Naming.Ability(Db, tag);
             var lvlNode = g.Child(val, "Level");
             var levelable = g.Child(val, "bIsLevelable");
             Field? lf = null;
@@ -381,8 +382,9 @@ public sealed class SaveModel
         const string scale = "In-game scale 0-8 = this + 4 (0 = Very low, 4 = Neutral, 8 = Very high).";
         foreach (var b in bonds?.Children ?? new List<GvasNode>())
         {
-            var ga = g.GuidHex(g.Child(b, "BondCharacterAID")!);
-            var gb = g.GuidHex(g.Child(b, "BondCharacterBID")!);
+            if (g.Child(b, "BondCharacterAID") is not { } an || g.Child(b, "BondCharacterBID") is not { } bn) continue;
+            var ga = g.GuidHex(an);
+            var gb = g.GuidHex(bn);
             var sect = $"{NameOf(ga)} & {NameOf(gb)}";
             var row = new BondRow { A = ga, B = gb };
             BondRows.Add(row);
