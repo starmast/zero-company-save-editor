@@ -108,20 +108,35 @@ public sealed class SaveService
         try
         {
             var loaded = SaveContainer.Load(raw);
-            if (!loaded.IsZip) throw new EditException("This file type (settings/databank) is not editable here.");
-            var gv = new GvasFile(loaded.Gvas);
-            var model = new SaveModel(gv, loaded.MetadataJson, Db);
-            var info = loaded.SaveInfo();
-            var portraits = new PortraitStore(loaded.Blobs);
-            var upgrades = UpgradeOps.List(gv, Db);
-            open = new OpenSave
+            if (!loaded.IsZip)
             {
-                DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = gv, Model = model,
-                Scalars = SaveModel.ScalarNodes(gv), DiskHash = Sha(raw), Portraits = portraits, Info = info,
-                Upgrades = upgrades,
-                View = ViewBuilder.Build(model, info, portraits.Guids, upgrades),
-                Combat = CombatOps.IsCombatSave(gv) ? CombatOps.Build(gv, info?["comment"]?.ToString() ?? "") : null,
-            };
+                // the profile (achievement counters, unlocks) opens with its own small model; other settings and character pools do not
+                var pg = new GvasFile(loaded.Gvas);
+                if (!ProfileOps.IsProfile(pg)) throw new EditException("This file type (settings/databank) is not editable here.");
+                var pm = SaveModel.ForProfile(pg, Db);
+                open = new OpenSave
+                {
+                    DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = pg, Model = pm,
+                    Scalars = SaveModel.ScalarNodes(pg), DiskHash = Sha(raw), Portraits = new PortraitStore(loaded.Blobs), Info = null,
+                    Profile = ViewBuilder.Profile(pm),
+                };
+            }
+            else
+            {
+                var gv = new GvasFile(loaded.Gvas);
+                var model = new SaveModel(gv, loaded.MetadataJson, Db);
+                var info = loaded.SaveInfo();
+                var portraits = new PortraitStore(loaded.Blobs);
+                var upgrades = UpgradeOps.List(gv, Db);
+                open = new OpenSave
+                {
+                    DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = gv, Model = model,
+                    Scalars = SaveModel.ScalarNodes(gv), DiskHash = Sha(raw), Portraits = portraits, Info = info,
+                    Upgrades = upgrades,
+                    View = ViewBuilder.Build(model, info, portraits.Guids, upgrades),
+                    Combat = CombatOps.IsCombatSave(gv) ? CombatOps.Build(gv, info?["comment"]?.ToString() ?? "") : null,
+                };
+            }
         }
         catch (Exception e) when (e is SaveFormatException or GvasException)
         {

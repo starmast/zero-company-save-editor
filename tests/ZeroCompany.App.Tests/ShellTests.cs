@@ -66,6 +66,27 @@ public class ShellTests
     }
 
     [SkippableFact]
+    public void The_profile_opens_on_its_own_screen_with_only_Profile_and_Advanced()
+    {
+        Skip.If(Repo.CombatSaveNamed("Profile.sav") == null, "no profile sample");
+        using var rig = new TestRig(combatFile: "Profile.sav");
+        rig.Start(height: 2400);
+        var vm = Assert.IsType<ProfileViewModel>(rig.Main.Screen);
+        Assert.Equal(new[] { "profile", "advanced" }, rig.Main.Nav.Where(n => n.IsVisible).Select(n => n.Key));
+        Headless.Run(() => rig.Main.Navigate("command"));
+        Assert.IsType<ProfileViewModel>(rig.Main.Screen);                         // campaign screens are not offered for the profile
+        vm = (ProfileViewModel)rig.Main.Screen!;
+        var bargain = vm.Achievements.Single(a => a.Name == "There Will Be No Bargain");
+        Assert.False(bargain.Reached);
+        Headless.Run(() => { bargain.Count!.SetTo(3); rig.Pump(); });
+        Assert.True(bargain.Reached);
+        Assert.Equal(1, rig.Session.Pending.Count);
+        rig.Shot("profile");
+        Headless.Run(() => rig.Main.Navigate("advanced"));
+        Assert.IsType<AdvancedViewModel>(rig.Main.Screen);
+    }
+
+    [SkippableFact]
     public void Campaign_options_show_for_a_1_2_campaign_only_and_a_choice_is_queued()
     {
         Skip.If(Repo.SampleSave() == null || Repo.CombatSaveNamed("Hub_1_2.sav") == null, "no sample saves");

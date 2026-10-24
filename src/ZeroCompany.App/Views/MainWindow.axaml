@@ -16,6 +16,7 @@
     <DataTemplate DataType="vm:AdvancedViewModel"><v:AdvancedView /></DataTemplate>
     <DataTemplate DataType="vm:PersonnelViewModel"><v:PersonnelView /></DataTemplate>
     <DataTemplate DataType="vm:MedbayViewModel"><v:MedbayView /></DataTemplate>
+    <DataTemplate DataType="vm:ProfileViewModel"><v:ProfileView /></DataTemplate>
     <DataTemplate DataType="vm:GalaxyViewModel"><v:GalaxyView /></DataTemplate>
     <DataTemplate DataType="vm:CombatViewModel"><v:CombatView /></DataTemplate>
     <DataTemplate DataType="vm:PlaceholderViewModel"><v:PlaceholderView /></DataTemplate>
@@ -67,7 +68,7 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:NavItemViewModel">
-            <Button Classes="nav" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" />
+            <Button Classes="nav" Classes.active="{Binding IsActive}" Command="{Binding Command}" Content="{Binding Label}" IsVisible="{Binding IsVisible}" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

@@ -220,6 +220,21 @@ public static class ViewBuilder
         return new ArmoryView { Items = items, Addable = addable };
     }
 
+    /// <summary>The profile: every achievement (in the game's order, with its counter when the profile has one), then counters no achievement uses.</summary>
+    public static ProfileView Profile(SaveModel m)
+    {
+        var counts = ProfileOps.Counters(m.G).ToDictionary(c => c.Stat, c => FieldRef.From(m.ById.GetValueOrDefault(Naming.FieldId(c.Count))));
+        var view = new ProfileView { Unlocks = ProfileOps.Unlocks(m.G) };
+        foreach (var a in ProfileOps.Achievements)
+            view.Achievements.Add(new AchievementView { Stat = a.Stat, Name = a.Name, Target = a.Target, Count = counts.GetValueOrDefault(a.Stat) });
+        foreach (var (stat, count) in counts.Where(kv => ProfileOps.Achievements.All(a => a.Stat != kv.Key)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            view.Achievements.Add(new AchievementView { Stat = stat, Name = ProfileOps.Spaced(stat), Count = count });
+        foreach (var (tag, node) in ProfileOps.ZoneBests(m.G))
+            if (FieldRef.From(m.ById.GetValueOrDefault(Naming.FieldId(node))) is { } f)
+                view.Zones.Add((ZoneRewardOps.Names.GetValueOrDefault(tag) ?? tag, f));
+        return view;
+    }
+
     public static GalaxyView Galaxy(SaveModel m) => new()
     {
         Regions = m.Regions.Select(r => new RegionView

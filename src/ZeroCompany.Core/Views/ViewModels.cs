@@ -311,6 +311,24 @@ public sealed class UpgradesView
 }
 
 /// <summary>Everything the screens show for one open save.</summary>
+/// <summary>The profile file: achievement counters with their targets, the best reward tier per zone, and the profile's unlocks.</summary>
+public sealed class ProfileView
+{
+    public List<AchievementView> Achievements { get; init; } = new();
+    public List<(string Name, FieldRef Best)> Zones { get; init; } = new();
+    public List<string> Unlocks { get; init; } = new();
+}
+
+/// <summary>One counter of the profile and, when it is an achievement's, the achievement and the count that unlocks it.</summary>
+public sealed class AchievementView
+{
+    public string Stat { get; init; } = "";
+    public string Name { get; init; } = "";
+    public int? Target { get; init; }
+    /// <summary>Its count, or null when the profile has no counter for it yet (the game adds one the first time it counts).</summary>
+    public FieldRef? Count { get; init; }
+}
+
 public sealed class SaveView
 {
     public HeaderView Header { get; init; } = new();

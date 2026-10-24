@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             xmlns:c="using:ZeroCompany.App.Controls"
+             x:Class="ZeroCompany.App.Views.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+  <StackPanel Spacing="12">
+    <Border Classes="panel">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="ACHIEVEMENTS" /></Border>
+        <StackPanel Margin="14,10" Spacing="4">
+          <TextBlock Classes="mute" TextWrapping="Wrap"
+                     Text="The game's profile, shared by all your campaigns. The game adds to these counts as you play and unlocks an achievement when its count reaches the target; loading an older campaign save does not change them. EA and Steam keep their own record of unlocked achievements." />
+          <TextBlock Classes="ice small" Text="{Binding Summary}" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Achievements}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:AchievementRowViewModel">
+              <Border Classes="hairline" Padding="14,6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" />
+                    <TextBlock Classes="mute small" Classes.ok="{Binding Reached}" Text="{Binding Progress}" />
+                  </StackPanel>
+                  <Panel Grid.Column="1" VerticalAlignment="Center">
+                    <Panel IsVisible="{Binding HasCount}">
+                      <c:NumField DataContext="{Binding Count}" Width="120" />
+                    </Panel>
+                    <TextBlock Classes="mute" Text="-" HorizontalAlignment="Right" IsVisible="{Binding NoCount}" />
+                  </Panel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="panel" IsVisible="{Binding HasZones}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="BEST ZONE REWARD TIER" /></Border>
+        <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"
+                   Text="The highest influence reward tier reached in each galaxy zone across your campaigns (0 = the first tier)." />
+        <ItemsControl ItemsSource="{Binding Zones}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:FieldRowViewModel">
+              <Border Classes="hairline" Padding="14,6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                  <c:NumField Grid.Column="1" DataContext="{Binding Field}" Width="100" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="panel" IsVisible="{Binding HasUnlocks}">
+      <StackPanel>
+        <Border Classes="panelh"><TextBlock Classes="caps h2" Text="UNLOCKS" /></Border>
+        <TextBlock Classes="mute small" Margin="14,8" TextWrapping="Wrap"
+                   Text="What the profile has unlocked for every campaign, such as story outfits. The Advanced tab shows the raw values, including the language and first-run settings." />
+        <ItemsControl ItemsSource="{Binding Unlocks}" Margin="14,0,14,10">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="small" Text="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

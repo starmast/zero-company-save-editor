@@ -105,6 +105,9 @@ public sealed class OpenSave
     public required JsonObject? Info { get; init; }
     public UpgradeList Upgrades { get; init; } = new();
     public SaveView View { get; init; } = new();
+    /// <summary>The profile file's contents, or null when this is a campaign save.</summary>
+    public ProfileView? Profile { get; init; }
+    public bool IsProfile => Profile != null;
     /// <summary>The in-combat state, or null when this is not a combat save.</summary>
     public CombatView? Combat { get; init; }
 

@@ -144,6 +144,21 @@ public sealed class SaveModel
                                  lo: 1, hi: 1000, note: "How many operators the roster holds, and the limit the Recruitment screen checks (no recruiting at full). Roster upgrades raise it. A higher number than the Den allows works, but the roster screens can look odd.");
     }
 
+    /// <summary>
+    /// The model of the profile file (SharedGameSettings.sav), which has no campaign: only its achievement counters and the best reward
+    /// tier per galaxy zone are editable fields here (everything else is on the Advanced screen). <see cref="Sd"/> is not used.
+    /// </summary>
+    public static SaveModel ForProfile(GvasFile g, GameDatabase? db = null) => new(g, db ?? GameDatabase.Empty);
+
+    SaveModel(GvasFile g, GameDatabase db)
+    {
+        G = g; Db = db; Sd = null!;
+        foreach (var (stat, node) in ProfileOps.Counters(g))
+            Add(node, "Profile", "Achievements", ProfileOps.Spaced(stat), lo: 0, hi: int.MaxValue);
+        foreach (var (tag, node) in ProfileOps.ZoneBests(g))
+            Add(node, "Profile", "Zones", ZoneRewardOps.Names.GetValueOrDefault(tag) ?? Naming.Pretty(tag[(tag.LastIndexOf('.') + 1)..]), lo: -1, hi: 9);
+    }
+
     /// <summary>Den numbers the save keeps as literal facts: (key, fact, label, highest value, note).</summary>
     public static readonly (string Key, string Fact, string Label, double Hi, string Note)[] DenFacts =
     {
