@@ -38,7 +38,7 @@ public static class SaveCheck
             list.Add(Metadata(c, g));
         }
         // settings and character-pool files are plain GVAS the editor does not open: nothing more to check, and nothing wrong
-        list.Add(c.IsZip ? Screens(ws, entry) : Check.Ok("screens", "not a game save (settings or character pool); the editor leaves these alone"));
+        list.Add(c.IsZip || ProfileOps.IsProfile(g) ? Screens(ws, entry) : Check.Ok("screens", "not a game save (settings or character pool); the editor leaves these alone"));
         return list;
     }
 
@@ -88,6 +88,8 @@ public static class SaveCheck
             var svc = new SaveService(SaveCatalog.DirsFor(ws, entry), tmp, ws.LoadDatabase(), () => null);
             var open = svc.Open(entry.DirId, entry.Name);
             var fields = FieldCatalog.Build(open);
+            if (open.Profile is { } p)
+                return Check.Ok("screens", $"the editor reads it as the profile: {p.Achievements.Count(a => a.Count != null)} achievement counters, {p.Unlocks.Count} unlocks, {fields.Entries.Count} editable values");
             return Check.Ok("screens", $"the editor reads it: {open.Model.Operators.Count} operators, {fields.Entries.Count} editable values{(open.Combat != null ? $", combat with {open.Combat.Units.Count} units" : "")}");
         }
         catch (Exception e) { return Check.Fail("screens", "the editor cannot read it: " + e.Message); }

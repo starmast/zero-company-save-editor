@@ -33,6 +33,8 @@ public sealed class GameDatabase
     public Dictionary<string, OperationInfo> Operations { get; set; } = new();
     /// <summary>Crisis effect id ("Major.Guardian_A", as in <see cref="CoilEffects"/>) -> full object path of the crisis effect asset.</summary>
     public Dictionary<string, string> CrisisEffectPaths { get; set; } = new();
+    /// <summary>Galaxy zone tag ("BitReactor.MapRegions.OuterSouth") -> its in-game name and influence reward tiers. Empty on databases extracted by older versions.</summary>
+    public Dictionary<string, ZoneInfo> Zones { get; set; } = new();
     /// <summary>"/.../DA_Guardian_Crisis_Major_A.DA_Guardian_Crisis_Major_A" -> "Major.Guardian_A" (the id <see cref="CoilEffects"/> uses).</summary>
     public static string CrisisIdOf(string path)
     {
@@ -251,6 +253,20 @@ public sealed class ItemInfo
     public List<string> Tags { get; set; } = new();
     /// <summary>The missions that give this item (and the player choice that unlocks it); empty when it is only found or bought.</summary>
     public List<RewardSource> Sources { get; set; } = new();
+}
+
+/// <summary>A galaxy zone as the Holotable shows it: its name ("Zone Jenth") and the rewards its influence unlocks, in tier order.</summary>
+public sealed class ZoneInfo
+{
+    public string Name { get; set; } = "";
+    public List<ZoneTier> Tiers { get; set; } = new();
+}
+
+public sealed class ZoneTier
+{
+    public int Influence { get; set; }
+    public string Reward { get; set; } = "";
+    public string Description { get; set; } = "";
 }
 
 public sealed class EffectInfo

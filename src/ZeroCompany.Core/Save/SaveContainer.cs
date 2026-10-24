@@ -323,7 +323,11 @@ public sealed class SaveContainer
                         };
                 }
             }
-            else if (StartsWith(head, GvasMagic)) s = s with { Kind = "settings" };
+            else if (StartsWith(head, GvasMagic))
+                // the profile (achievement counters, unlocks) can be opened; other settings and character pools cannot
+                s = fi.Length < 1 << 20 && File.ReadAllBytes(path).AsSpan().IndexOf("AchievementStatData"u8) >= 0
+                    ? s with { Kind = "profile", Editable = true, Title = "Profile: achievements and unlocks" }
+                    : s with { Kind = "settings" };
         }
         catch (Exception e) { s = s with { Error = e.Message }; }       // listing must never crash
         return s;

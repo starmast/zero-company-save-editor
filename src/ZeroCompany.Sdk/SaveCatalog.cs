@@ -47,6 +47,13 @@ public static class SaveCatalog
         if (frag != null) return frag;
         var byComment = all.FirstOrDefault(e => e.Comment.Equals(spec, StringComparison.OrdinalIgnoreCase));
         if (byComment != null) return byComment;
+        // the profile file is not a save, so it is not listed, but its exact file name finds it
+        foreach (var dir in ws.SaveDirs.Values)
+            foreach (var name in new[] { spec, spec + ".sav" })
+            {
+                var path = System.IO.Path.Combine(dir, name);
+                if (File.Exists(path) && SaveContainer.Summarize(path).Kind == "profile") return FromPath(path, ws);
+            }
         throw new ZcException($"no save matches '{spec}' (give a path, a file name fragment, a save comment, or 'latest')");
     }
 

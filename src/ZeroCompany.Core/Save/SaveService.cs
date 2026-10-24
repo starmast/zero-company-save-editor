@@ -108,20 +108,35 @@ public sealed class SaveService
         try
         {
             var loaded = SaveContainer.Load(raw);
-            if (!loaded.IsZip) throw new EditException("This file type (settings/databank) is not editable here.");
-            var gv = new GvasFile(loaded.Gvas);
-            var model = new SaveModel(gv, loaded.MetadataJson, Db);
-            var info = loaded.SaveInfo();
-            var portraits = new PortraitStore(loaded.Blobs);
-            var upgrades = UpgradeOps.List(gv, Db);
-            open = new OpenSave
+            if (!loaded.IsZip)
             {
-                DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = gv, Model = model,
-                Scalars = SaveModel.ScalarNodes(gv), DiskHash = Sha(raw), Portraits = portraits, Info = info,
-                Upgrades = upgrades,
-                View = ViewBuilder.Build(model, info, portraits.Guids, upgrades),
-                Combat = CombatOps.IsCombatSave(gv) ? CombatOps.Build(gv, info?["comment"]?.ToString() ?? "") : null,
-            };
+                // the profile (achievement counters, unlocks) opens with its own small model; other settings and character pools do not
+                var pg = new GvasFile(loaded.Gvas);
+                if (!ProfileOps.IsProfile(pg)) throw new EditException("This file type (settings/databank) is not editable here.");
+                var pm = SaveModel.ForProfile(pg, Db);
+                open = new OpenSave
+                {
+                    DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = pg, Model = pm,
+                    Scalars = SaveModel.ScalarNodes(pg), DiskHash = Sha(raw), Portraits = new PortraitStore(loaded.Blobs), Info = null,
+                    Profile = ViewBuilder.Profile(pm),
+                };
+            }
+            else
+            {
+                var gv = new GvasFile(loaded.Gvas);
+                var model = new SaveModel(gv, loaded.MetadataJson, Db);
+                var info = loaded.SaveInfo();
+                var portraits = new PortraitStore(loaded.Blobs);
+                var upgrades = UpgradeOps.List(gv, Db);
+                open = new OpenSave
+                {
+                    DirId = dirId, Name = name, Path = path, Container = loaded, Gvas = gv, Model = model,
+                    Scalars = SaveModel.ScalarNodes(gv), DiskHash = Sha(raw), Portraits = portraits, Info = info,
+                    Upgrades = upgrades,
+                    View = ViewBuilder.Build(model, info, portraits.Guids, upgrades),
+                    Combat = CombatOps.IsCombatSave(gv) ? CombatOps.Build(gv, info?["comment"]?.ToString() ?? "") : null,
+                };
+            }
         }
         catch (Exception e) when (e is SaveFormatException or GvasException)
         {
@@ -452,6 +467,16 @@ public sealed class SaveService
                     if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
                     for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
                     break;
+                case SaveAction.AddProfileCounter pc:
+                    if (!seen.Add("stat" + pc.Stat)) throw new EditException("duplicate counter");
+                    try { g = ProfileOps.AddCounter(g, pc.Stat ?? "", pc.Count, cut); }
+                    catch (GvasException e) { throw new EditException($"Profile: {e.Message}", e); }
+                    break;
+                case SaveAction.SetZoneClaims zc:
+                    if (!seen.Add("zone" + zc.Zone)) throw new EditException("duplicate zone change");
+                    try { g = ZoneRewardOps.SetClaimed(g, zc.Zone ?? "", zc.Tiers ?? Array.Empty<int>(), cut); }
+                    catch (GvasException e) { throw new EditException($"Galaxy: {e.Message}", e); }
+                    break;
                 case SaveAction.SetOperationAge oa:
                     if (!seen.Add("operation" + oa.Operation)) throw new EditException("duplicate operation change");
                     g = OperationOps.SetAge(g, oa.Operation, oa.Age, cut);
@@ -726,6 +751,20 @@ public sealed class SaveService
                 if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
                     throw new EditException("verification failed: a scenery prop's health does not match its state");
         }
+        if (cut.ProfileCounters.Count > 0)
+        {
+            // every counter keeps its count (or the count queued for it), and the started ones are there with theirs
+            var was = ProfileOps.Counters(old).ToDictionary(c => c.Stat, c => old.GetInt(c.Count));
+            var now = ProfileOps.Counters(g2).ToDictionary(c => c.Stat, c => g2.GetInt(c.Count));
+            if (now.Count != was.Count + cut.ProfileCounters.Count || cut.ProfileCounters.Any(kv => !now.TryGetValue(kv.Key, out var v) || v != kv.Value))
+                throw new EditException("verification failed: a started counter is not in the profile with its count");
+            foreach (var (stat, node) in ProfileOps.Counters(old))
+                if (!now.TryGetValue(stat, out var v) || v != was[stat] && !allowed.Contains(PathKey.Of(GvasFile.PathOf(node))))
+                    throw new EditException("verification failed: an existing counter changed");
+        }
+        foreach (var (zone, tiers) in cut.ZoneClaims)
+            if (ZoneRewardOps.Claimed(g2, zone) is not { } now || !now.SequenceEqual(tiers))
+                throw new EditException("verification failed: a zone's claimed rewards are not what was intended");
         if (cut.OperationAges.Count > 0)
         {
             var now = OperationOps.Active(g2).ToDictionary(o => o.Id);

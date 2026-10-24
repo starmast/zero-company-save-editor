@@ -43,7 +43,7 @@ public sealed class HeaderViewModel : ViewModelBase, IDisposable
     {
         _fields = new FieldSet(main.Session.Pending);
         var hd = open.View.Header;
-        Title = open.View.Command.Save.Title?.ToString() is { Length: > 0 } t ? t : open.Name;
+        Title = open.IsProfile ? "Profile" : open.View.Command.Save.Title?.ToString() is { Length: > 0 } t ? t : open.Name;
         Subtitle = $"{open.Name} · {open.DirId}";
         foreach (var r in hd.Resources)
             Chips.Add(new ChipViewModel(Icons.GetValueOrDefault(r.Key, "◇"), r.Label, _fields.Make(r, 0, r.Label)!));

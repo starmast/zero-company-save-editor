@@ -5,6 +5,43 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-24
+
+### Added
+- **Claimed zone rewards.** Galaxy > Influence shows each zone by its Holotable name (Zone Jenth, Zone Aurek ...) with a **Rewards claimed**
+  checkbox per influence tier; `zc edit do <save> zone-claimed <zone> <tier> <true|false>` does the same. The ticks on the Holotable come
+  from the zone's list of claimed tiers, which the editor could not see before, so lowering a zone's influence never unticked anything.
+  Untick a tier and the game offers its reward again, as long as the zone's influence still reaches it. This is how to earn Zone Jenth's
+  Hutt Roulette Prize again (the "There Will Be No Bargain" achievement wants it three times; the game counts it in its profile file,
+  `SharedGameSettings.sav`, not in campaign saves, so a reloaded save still adds to the count).
+- Game data: the extractor reads the 12 zones with each tier's influence and reward, so the checkboxes say "Tier 3 · 100 influence,
+  Hutt Roulette Prize" after extracting again. The zone names are built in, so they show without game data too.
+- **Profile.** The game's profile file, `SharedGameSettings.sav` (one per player, shared by every campaign), now opens in the editor
+  instead of being listed as "not editable here". Its Profile tab lists every achievement the game counts (from the game's own list:
+  the counter it watches, the target and whether it is reached) with the count editable, the best reward tier reached in each zone, and
+  the profile's unlocks (story outfits, campaign complete ...); the Advanced tab shows every raw value, including the language and the
+  first-run flags. The campaign tabs are hidden for it, and writes get the same backup, refusal and verification as saves.
+  `zc edit` reads and writes it with `stat.<Counter>` and `zone_best.<Zone>` paths.
+- **Start a missing achievement counter.** The game only adds a counter to the profile the first time it counts something, so an
+  achievement you have never progressed shows "not counted yet". Its row now has a **Start at** box: type a count and apply, and the
+  counter is added with that count (a copy of an existing counter's entry, renamed). `zc edit do SharedGameSettings.sav add-stat
+  <counter> <count>` does the same, e.g. `add-stat AngryBeeps 1`. Only the counters of the game's own achievements can be started.
+  Checked in the game: Angry Beeps started at 1 was read, kept when the game rewrote the profile, and still 1 after loading two saves.
+  `zc` also finds the profile by its file name now (`SharedGameSettings`), not only by its full path.
+
+### Changed
+- The release downloads now include `zc`, the command line tool, next to the editor (`zc.exe` on Windows). It used to be built from
+  source only.
+- The zone field that used to be called "Reward tier claimed" is now "Reward index" (the highest tier the zone has reached); the claimed
+  tiers are the new checkboxes.
+
+### Checked in the game
+- A Den copy with Zone Jenth's tier 3 unticked (influence 150): the game reported the Hutt Roulette Prize claimable again (and only that
+  tier); claiming it with the game's own claim call added an Exotic weapon mod (Stabilizer Bracing T4), ticked the tier again in the save
+  the game wrote next, and raised the profile's There Will Be No Bargain count from 1 to 2.
+- A profile counter lowered with the editor (There Will Be No Bargain, 2 to 0) stayed at 0 after the game started and after a save was
+  loaded, with the game rewriting the file each time: the game counts from the file, it does not restore counts from EA at start-up.
+
 ## [1.1.0] - 2026-10-24
 
 ### Added
@@ -334,7 +371,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.7.0...v0.8.0

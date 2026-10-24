@@ -32,6 +32,8 @@ public sealed partial class NavItemViewModel : ViewModelBase
     public string Key { get; }
     public string Label { get; }
     [ObservableProperty] bool _isActive;
+    /// <summary>Shown for the open file: the campaign tabs for a save, Profile and Advanced for the profile file.</summary>
+    [ObservableProperty] bool _isVisible = true;
     public System.Windows.Input.ICommand Command { get; }
     public NavItemViewModel(string key, string label, Action<string> go)
     {
@@ -44,7 +46,7 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     static readonly (string Key, string Label)[] NavDefs =
     {
-        ("command", "Command"), ("personnel", "Personnel"), ("armory", "Armory"), ("upgrades", "Upgrades"),
+        ("profile", "Profile"), ("command", "Command"), ("personnel", "Personnel"), ("armory", "Armory"), ("upgrades", "Upgrades"),
         ("medbay", "Medbay"), ("galaxy", "Galaxy"), ("combat", "Combat"), ("advanced", "Advanced"),
     };
 
@@ -164,6 +166,11 @@ public sealed partial class MainViewModel : ViewModelBase
     public void Navigate(string key, params string[] args)
     {
         if (HasSave == false && key is not ("saves" or "gamedata")) key = "saves";
+        // the profile file has only its own screen and Advanced; a campaign save has every screen but Profile
+        bool profile = Session.Current?.IsProfile == true;
+        if (profile && key is not ("profile" or "advanced" or "saves" or "gamedata")) key = "profile";
+        if (!profile && key == "profile") key = HasSave ? "command" : "saves";
+        foreach (var n in Nav) n.IsVisible = profile ? n.Key is "profile" or "advanced" : n.Key != "profile";
         if (BannerKind != "err") SetBanner(null);
         var old = Screen;
         CurrentKey = key;
@@ -182,6 +189,7 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             "saves" => new SavesViewModel(this),
             "gamedata" => new GameDataViewModel(this),
+            "profile" when open?.Profile != null => new ProfileViewModel(this, open),
             "command" when open != null => new CommandViewModel(this, open),
             "armory" when open != null => new ArmoryViewModel(this, open, args.FirstOrDefault()),
             "upgrades" when open != null => new UpgradesViewModel(this, open, args.FirstOrDefault()),
@@ -216,7 +224,7 @@ public sealed partial class MainViewModel : ViewModelBase
             HasSave = true;
             PendingBar.Refresh();
             var running = Session.Service.GameRunning();
-            Navigate("command");
+            Navigate(open.IsProfile ? "profile" : "command");
             if (running != null)
                 SetBanner($"The game appears to be running ({running}). Close it before applying, or the game may overwrite your edit.", "err");
         }

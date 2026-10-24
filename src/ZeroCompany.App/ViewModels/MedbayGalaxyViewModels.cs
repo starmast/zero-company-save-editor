@@ -80,15 +80,59 @@ public sealed class MedbayViewModel : ScreenViewModel
 }
 
 // ------------------------------------------------------------------------------------------------ galaxy
-public sealed class RegionCardViewModel
+/// <summary>One influence reward tier of a zone, with whether the game counts it as claimed (ticked on the Holotable).</summary>
+public sealed class ZoneTierViewModel : ViewModelBase, IDisposable
 {
-    public RegionCardViewModel(RegionView r, FieldSet fields)
+    readonly PendingChanges _p;
+    readonly string _zone;
+    readonly int _tier;
+    readonly IReadOnlyCollection<int> _saved;
+
+    public ZoneTierViewModel(PendingChanges p, RegionView r, int tier)
+    {
+        _p = p; _zone = r.Tag; _tier = tier; _saved = r.Claimed!;
+        var known = tier < r.Tiers.Count ? r.Tiers[tier] : default;
+        Label = $"Tier {tier + 1}" + (known.Influence > 0 ? $" · {known.Influence} influence" : "");
+        Reward = known.Reward ?? "";
+        Tip = string.IsNullOrEmpty(known.Description) ? null : known.Description;
+        _p.Changed += Sync;
+    }
+
+    public string Label { get; }
+    public string Reward { get; }
+    public bool HasReward => Reward.Length > 0;
+    public string? Tip { get; }
+
+    public bool IsClaimed
+    {
+        get => _p.ZoneTierClaimed(_zone, _tier, _saved);
+        set { if (value != IsClaimed) _p.SetZoneTierClaimed(_zone, _tier, value, _saved); }
+    }
+
+    public bool IsChanged => _p.ZoneClaimChanges.ContainsKey(_zone) && IsClaimed != _saved.Contains(_tier);
+    void Sync() { OnPropertyChanged(nameof(IsClaimed)); OnPropertyChanged(nameof(IsChanged)); }
+    public void Dispose() => _p.Changed -= Sync;
+}
+
+public sealed class RegionCardViewModel : IDisposable
+{
+    public RegionCardViewModel(RegionView r, FieldSet fields, PendingChanges pending)
     {
         Name = r.Name;
         Influence = fields.Make(r.Influence, 0, "Influence");
         Contacts = fields.Make(r.Contacts, 0, "Contacts");
-        Reward = fields.Make(r.Reward, 0, "Reward tier claimed");
+        Reward = fields.Make(r.Reward, 0, "Reward index");
+        if (r.Claimed != null)
+        {
+            // every zone has three tiers; more if the game data or the save says so
+            int tiers = Math.Max(Math.Max(r.Tiers.Count, 3), r.Claimed.Count == 0 ? 0 : r.Claimed.Max() + 1);
+            for (int t = 0; t < tiers; t++) Tiers.Add(new ZoneTierViewModel(pending, r, t));
+        }
     }
+
+    public List<ZoneTierViewModel> Tiers { get; } = new();
+    public bool HasTiers => Tiers.Count > 0;
+    public void Dispose() { foreach (var t in Tiers) t.Dispose(); }
 
     public string Name { get; }
     public EditableField? Influence { get; }
@@ -243,7 +287,7 @@ public sealed class GalaxyViewModel : ScreenViewModel
         _main = main;
         _pending = main.Session.Pending;
         var fields = Own(new FieldSet(_pending));
-        foreach (var r in open.View.Galaxy.Regions) Regions.Add(new RegionCardViewModel(r, fields));
+        foreach (var r in open.View.Galaxy.Regions) Regions.Add(Own(new RegionCardViewModel(r, fields, _pending)));
         foreach (var o in open.View.Galaxy.Operations) Operations.Add(Own(new OperationRowViewModel(_pending, o)));
         foreach (var m in open.View.Galaxy.Missions) Missions.Add(Own(new MissionRowViewModel(_pending, m)));
         foreach (var u in open.View.Coil.Active) Coil.Add(Own(new CoilRowViewModel(_pending, u)));

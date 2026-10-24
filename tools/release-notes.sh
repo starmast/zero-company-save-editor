@@ -21,5 +21,5 @@ cat <<NOTES
 | macOS (Apple Silicon) | \`ZeroCompanyEditor-$tag-osx-arm64.tar.gz\` |
 | macOS (Intel) | \`ZeroCompanyEditor-$tag-osx-x64.tar.gz\` |
 
-Unpack and run \`ZeroCompanyEditor\`; nothing else needs installing. macOS builds are unsigned (right-click > Open). Linux and macOS are less tested than Windows. See the [README]($repo#readme) and [docs]($repo/tree/main/docs).
+Unpack and run \`ZeroCompanyEditor\`; nothing else needs installing. The \`zc\` command line tool is in the same folder (\`zc --help\`). macOS builds are unsigned (right-click > Open). Linux and macOS are less tested than Windows. See the [README]($repo#readme) and [docs]($repo/tree/main/docs).
 NOTES

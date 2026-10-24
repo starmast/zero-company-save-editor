@@ -77,7 +77,10 @@ can't add resources, which already have an editable amount. Adding an item has b
 ## Galaxy
 The Galaxy screen has four tabs.
 
-**Influence**: influence, contacts and reward tier for each region.
+**Influence**: each zone by its Holotable name, with its influence, contacts, reward index and a **Rewards claimed** checkbox per
+influence tier (with the tier's influence and reward once the game data is extracted). A ticked tier is one whose reward you have claimed.
+Untick it and the game offers the reward again on the Holotable, as long as the zone's influence still reaches that tier; lowering the
+influence alone never unticks anything. For example, untick Zone Jenth's tier 3 to claim the Hutt Roulette Prize again.
 
 **Operations**: the Holotable's operations by name, with "Expires in N of M cycles". **Longer** and
 **Full time** give an operation that is about to expire more time; **Shorter** takes it away (both confirmed in the game). Operations
@@ -137,6 +140,20 @@ actions for that tab.
 
 The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
 pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.
+
+## Profile
+The game keeps one profile file for all your campaigns, `SharedGameSettings.sav`, next to the saves. It is listed as **Profile:
+achievements and unlocks**; opening it shows a **Profile** tab and **Advanced** only.
+
+- **Achievements** - every achievement the game counts, with the counter it watches, the target, and whether the count reaches it. The
+  count is editable. The game adds to these counts as you play (in any campaign) and checks them against the targets; loading an older
+  save does not change them. A counter the game has not started yet shows "not counted yet" and a **Start at** box: type a count and
+  apply to add the counter with that count; the game adds to it from there.
+- **Best zone reward tier** - the highest influence tier reached in each galaxy zone across your campaigns.
+- **Unlocks** - what the profile has unlocked for every campaign, such as story outfits.
+
+The game rewrites this file while it runs, so close the game before applying, as with saves. EA and Steam keep their own record of
+unlocked achievements.
 
 ## Advanced
 Every editable value as a flat list, grouped the way the save stores it, with a filter, plus a raw property tree that lets you

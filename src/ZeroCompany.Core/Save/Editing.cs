@@ -23,6 +23,10 @@ public abstract record SaveAction
     public sealed record HealOperator(string Guid) : SaveAction;
     public sealed record CompleteFocusTree(string Guid) : SaveAction;
     public sealed record ReviveOperator(string Guid) : SaveAction;
+    /// <summary>Start an achievement counter the profile file does not have yet (stat name such as "AngryBeeps") at <c>Count</c>.</summary>
+    public sealed record AddProfileCounter(string Stat, long Count) : SaveAction;
+    /// <summary>Set which influence reward tiers of a galaxy zone (tag) count as claimed; a tier left out can be claimed again in the game.</summary>
+    public sealed record SetZoneClaims(string Zone, IReadOnlyList<int> Tiers) : SaveAction;
     /// <summary>Give an operator a bond trait (a class trait normally learned through cross training), by its effect asset name.</summary>
     public sealed record GiveTrait(string Guid, string Trait) : SaveAction;
     /// <summary>Give every operator <c>Total</c> gear slots of a type ("mod" or "utility").</summary>
@@ -103,6 +107,9 @@ public sealed class OpenSave
     public required JsonObject? Info { get; init; }
     public UpgradeList Upgrades { get; init; } = new();
     public SaveView View { get; init; } = new();
+    /// <summary>The profile file's contents, or null when this is a campaign save.</summary>
+    public ProfileView? Profile { get; init; }
+    public bool IsProfile => Profile != null;
     /// <summary>The in-combat state, or null when this is not a combat save.</summary>
     public CombatView? Combat { get; init; }
 

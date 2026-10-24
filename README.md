@@ -22,6 +22,9 @@ an app that looks like the game. Every change is backed up and checked before it
 
 Tip: copy a save somewhere first and try your edits on the copy. Load it in the game, and only then edit the real one.
 
+The download also has `zc`, a command line tool that reads and edits saves the same way the editor does (`zc --help`; see
+[docs/development.md](docs/development.md#the-sdk-and-zc)).
+
 Optional but nice: open the **Game data** tab once to show real item names and upgrade costs instead of internal names
 ([how](docs/game-data.md); you also need a
 free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
@@ -32,7 +35,8 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
 - **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has or any bond trait (the class traits
   normally learned through cross training), roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
-- **Armory** (including adding items you never had), **Galaxy** (influence, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
+- **Armory** (including adding items you never had), **Galaxy** (influence and claimed zone rewards, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
+- **Profile** - open the game's shared profile file to see every achievement's count and target, change the counts, and start the ones not counted yet.
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
   objectives, countdown timers, reinforcements, fire zones and destructible scenery, the enemy threat tier, and bring more of your roster into the fight. Newer than the
   rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).

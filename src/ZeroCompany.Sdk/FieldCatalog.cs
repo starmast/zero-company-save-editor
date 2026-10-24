@@ -42,8 +42,17 @@ public sealed class FieldCatalog
     public static FieldCatalog Build(OpenSave save)
     {
         var c = new FieldCatalog(save);
-        c.Walk(save.View, save.Combat);
+        if (save.Profile is { } profile) c.WalkProfile(profile);
+        else c.Walk(save.View, save.Combat);
         return c;
+    }
+
+    /// <summary>The profile file: <c>stat.&lt;Stat&gt;</c> for each achievement counter it has, <c>zone_best.&lt;Zone&gt;</c> for the best tier per zone.</summary>
+    void WalkProfile(ProfileView p)
+    {
+        foreach (var a in p.Achievements)
+            Add("stat." + Slug(a.Stat), a.Target is { } t ? $"{a.Name} (achievement at {t})" : a.Name, a.Count);
+        foreach (var (name, best) in p.Zones) Add("zone_best." + Slug(name), $"{name}: best reward tier reached", best);
     }
 
     void Add(string path, string label, FieldRef? r)

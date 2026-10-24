@@ -157,6 +157,33 @@ public sealed class SaveEditor
             p.SetGrant(o.Guid, hit[0].Tag, level);
             return $"give {o.Name} {hit[0].Tag} at level {level}";
         });
+        Reg("zone-claimed", "zone-claimed <zone> <tier> <true|false>", "mark a galaxy zone's influence reward tier (1 = first) claimed or not; false lets the game offer it again, e.g. zone-claimed Jenth 3 false", a =>
+        {
+            string key = NormName(a[0]);
+            var zones = Save.View.Galaxy.Regions.Where(r => r.Claimed != null).ToList();
+            // an exact zone tag ("OuterSouth") wins over a part of a name ("Jenth" in "Zone Jenth (Outer South)")
+            var hit = zones.Where(r => NormName(r.Tag[(r.Tag.LastIndexOf('.') + 1)..]) == key).ToList();
+            if (hit.Count == 0) hit = zones.Where(r => key.Length >= 3 && NormName(r.Name).Contains(key)).ToList();
+            if (hit.Count != 1)
+                throw new ZcException($"{(hit.Count == 0 ? "no zone" : "more than one zone")} matches '{a[0]}'. Zones: {string.Join(", ", zones.Select(r => r.Name))}");
+            var z = hit[0];
+            int tier = (int)Count(a[1], 1, ZoneRewardOps.MaxTier + 1) - 1;
+            bool claimed = a.Count > 2 && bool.TryParse(a[2], out var b) ? b : throw new ZcException("usage: zone-claimed <zone> <tier> <true|false>");
+            p.SetZoneTierClaimed(z.Tag, tier, claimed, z.Claimed!);
+            return $"{z.Name}: {z.TierLabel(tier)} {(claimed ? "marked claimed" : "claimable again")}";
+        });
+        Reg("add-stat", "add-stat <counter> <count>", "start an achievement counter the profile (SharedGameSettings.sav) does not have yet, e.g. add-stat AngryBeeps 1", a =>
+        {
+            if (!ProfileOps.IsProfile(Save.Gvas)) throw new ZcException("'add-stat' only works on the profile file, SharedGameSettings.sav");
+            string key = NormName(a[0]);
+            var hit = ProfileOps.Achievements.Where(x => NormName(x.Stat) == key || NormName(x.Id) == key).Select(x => x.Stat).Distinct().ToList();
+            if (hit.Count != 1) throw new ZcException($"'{a[0]}' is not an achievement counter. Counters: {string.Join(", ", ProfileOps.Achievements.Select(x => x.Stat))}");
+            if (ProfileOps.Counters(Save.Gvas).Any(c => c.Stat == hit[0]))
+                throw new ZcException($"the profile already counts {hit[0]}; set it with: zc edit set <file> stat.{hit[0]} <count>");
+            if (a.Count < 2 || !long.TryParse(a[1], out var count) || count < 0) throw new ZcException("usage: add-stat <counter> <count> (a whole number of 0 or more)");
+            p.SetProfileCounterAdd(hit[0], count);
+            return $"start counting {hit[0]} at {count}";
+        });
         Reg("give-trait", "give-trait <operator> <trait>", "give an operator a bond trait (a class trait normally learned through cross training), e.g. give-trait Hawks Grenadier", a =>
         {
             var o = Op(a[0]);

@@ -199,6 +199,14 @@ public sealed class RegionView
     public FieldRef? Influence { get; init; }
     public FieldRef? Contacts { get; init; }
     public FieldRef? Reward { get; init; }
+    /// <summary>The reward tiers claimed in this zone (0-based); null when the save does not show them in the expected layout.</summary>
+    public List<int>? Claimed { get; init; }
+    /// <summary>The zone's reward tiers from the game data: influence needed and reward name (empty without extracted data).</summary>
+    public List<(int Influence, string Reward, string Description)> Tiers { get; init; } = new();
+
+    /// <summary>"tier 3 (Hutt Roulette Prize)", or just "tier 3" when the game data does not name it.</summary>
+    public string TierLabel(int tier) =>
+        $"tier {tier + 1}" + (tier < Tiers.Count && Tiers[tier].Reward.Length > 0 ? $" ({Tiers[tier].Reward})" : "");
 }
 
 /// <summary>A mission the Den offers, with the enemy faction and threat tier it will spawn.</summary>
@@ -303,6 +311,24 @@ public sealed class UpgradesView
 }
 
 /// <summary>Everything the screens show for one open save.</summary>
+/// <summary>The profile file: achievement counters with their targets, the best reward tier per zone, and the profile's unlocks.</summary>
+public sealed class ProfileView
+{
+    public List<AchievementView> Achievements { get; init; } = new();
+    public List<(string Name, FieldRef Best)> Zones { get; init; } = new();
+    public List<string> Unlocks { get; init; } = new();
+}
+
+/// <summary>One counter of the profile and, when it is an achievement's, the achievement and the count that unlocks it.</summary>
+public sealed class AchievementView
+{
+    public string Stat { get; init; } = "";
+    public string Name { get; init; } = "";
+    public int? Target { get; init; }
+    /// <summary>Its count, or null when the profile has no counter for it yet (the game adds one the first time it counts).</summary>
+    public FieldRef? Count { get; init; }
+}
+
 public sealed class SaveView
 {
     public HeaderView Header { get; init; } = new();
