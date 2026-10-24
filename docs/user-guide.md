@@ -141,6 +141,19 @@ actions for that tab.
 The game caps Health at each unit's real maximum when it loads the save, so typing a high value is a full heal. Changes are
 pending like everywhere else: **Apply to save**, or **Save as copy** to try them first.
 
+## Profile
+The game keeps one profile file for all your campaigns, `SharedGameSettings.sav`, next to the saves. It is listed as **Profile:
+achievements and unlocks**; opening it shows a **Profile** tab and **Advanced** only.
+
+- **Achievements** - every achievement the game counts, with the counter it watches, the target, and whether the count reaches it. The
+  count is editable. The game adds to these counts as you play (in any campaign) and checks them against the targets; loading an older
+  save does not change them. A counter the game has not started yet shows "not counted yet" and cannot be added here.
+- **Best zone reward tier** - the highest influence tier reached in each galaxy zone across your campaigns.
+- **Unlocks** - what the profile has unlocked for every campaign, such as story outfits.
+
+The game rewrites this file while it runs, so close the game before applying, as with saves. EA and Steam keep their own record of
+unlocked achievements.
+
 ## Advanced
 Every editable value as a flat list, grouped the way the save stores it, with a filter, plus a raw property tree that lets you
 edit numbers in place. Use with care.

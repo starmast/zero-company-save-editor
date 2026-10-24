@@ -142,6 +142,8 @@ numbers), `operator.<name>.focus|total_focus`, `operator.<name>.ability.<tag>.le
 `unit.<n>.attr.<Stat>`, `unit.<n>.x|y|z|advantage`, `unit.<n>.effect.<i>.stacks`, `wave.<logic>.<n>.round`, `config.<logic>.<n>.delay|spawns|triggered`,
 `objective.<n>.counter.<label>`, `timer.<n>.remaining|total`, `hazard.<n>.turns`, `prop.<n>.health|max_health`. They ignore case and punctuation; a
 raw field id such as `o2897` always works. Campaign options are an action, not a field: `zc edit do latest set-option EnemyCrits On`.
+The profile file (`SharedGameSettings.sav`) has `stat.<Counter>` (an achievement count, e.g. `stat.ThereWillBeNoBargain`) and
+`zone_best.<Zone>`; zone rewards are an action: `zc edit do latest zone-claimed Jenth 3 false`.
 A script is `{ "save": "latest", "set": { "resource.Intelligence": 300 }, "actions": [ { "do": "heal", "args": ["Neiya"] } ] }`.
 Exit codes: 0 done or previewed, 1 error (nothing written), 2 refused (the game is running, or the file changed on disk). With `--json` an error is
 `{ "error": ..., "exitCode": ... }` on stdout. A file written this way is the same as one the editor writes: both go through `SaveService`.

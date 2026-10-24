@@ -17,6 +17,10 @@
   no seed for them: a candidate kept her name and talent but came back with a different specialization and weapon after a reload), so you cannot choose who
   appears. What the editor can change is the room to recruit (Roster capacity) and, afterwards, the new operator: abilities (Personnel > Focus Tree > Give an
   ability) and gear slots.
+- **Profile** (`SharedGameSettings.sav`): achievement counts can be changed, and the game keeps an edited count (tried: a count lowered to
+  0 stayed 0 after the game started and loaded a save), so the next thing the game counts adds to it. Whether a count raised to its target
+  this way makes EA or Steam show the achievement was not tried. Counters the profile has not started yet, and the unlocks, cannot be
+  added here.
 - **Zone rewards:** unticking a claimed tier was tried in the game on Zone Jenth: the Hutt Roulette Prize became claimable again, claiming it
   added an Exotic item and the game counted it towards There Will Be No Bargain. Achievement counts live in the game's profile file
   (`SharedGameSettings.sav`), which the editor does not change; whether a platform (EA, Steam) then shows the achievement is up to it.

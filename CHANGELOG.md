@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
   `SharedGameSettings.sav`, not in campaign saves, so a reloaded save still adds to the count).
 - Game data: the extractor reads the 12 zones with each tier's influence and reward, so the checkboxes say "Tier 3 · 100 influence,
   Hutt Roulette Prize" after extracting again. The zone names are built in, so they show without game data too.
+- **Profile.** The game's profile file, `SharedGameSettings.sav` (one per player, shared by every campaign), now opens in the editor
+  instead of being listed as "not editable here". Its Profile tab lists every achievement the game counts (from the game's own list:
+  the counter it watches, the target and whether it is reached) with the count editable, the best reward tier reached in each zone, and
+  the profile's unlocks (story outfits, campaign complete ...); the Advanced tab shows every raw value, including the language and the
+  first-run flags. The campaign tabs are hidden for it, and writes get the same backup, refusal and verification as saves.
+  `zc edit` reads and writes it with `stat.<Counter>` and `zone_best.<Zone>` paths. A counter the profile has not started yet cannot be
+  added.
 
 ### Changed
 - The zone field that used to be called "Reward tier claimed" is now "Reward index" (the highest tier the zone has reached); the claimed
@@ -25,6 +32,8 @@ All notable changes to this project are documented here. The format follows
 - A Den copy with Zone Jenth's tier 3 unticked (influence 150): the game reported the Hutt Roulette Prize claimable again (and only that
   tier); claiming it with the game's own claim call added an Exotic weapon mod (Stabilizer Bracing T4), ticked the tier again in the save
   the game wrote next, and raised the profile's There Will Be No Bargain count from 1 to 2.
+- A profile counter lowered with the editor (There Will Be No Bargain, 2 to 0) stayed at 0 after the game started and after a save was
+  loaded, with the game rewriting the file each time: the game counts from the file, it does not restore counts from EA at start-up.
 
 ## [1.1.0] - 2026-10-24
 
