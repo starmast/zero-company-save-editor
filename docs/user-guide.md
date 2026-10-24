@@ -39,6 +39,10 @@ the roster order; the game's own strip and mission select follow it.
 - **Bonds** - partners placed on the game's 0-8 scale. Click a face to change that bond's level, progress or cross training.
 - **Focus Tree** - set ability levels using the game's own focus costs. Choose **Spend unspent focus** (levelling costs
   what you have) or **Grant the focus** (levelling is free; the total rises to match).
+- **Give a bond trait** (on the Overview) - adds one of the 32 class traits operators normally learn only from a bond partner of
+  another class through cross training, such as a Scout's Difficult Target or a Soldier's Grenadier. Pick it from the list (it shows
+  the game's description once the game data is extracted) and press **Add**; after you apply it is listed under training and stat
+  effects, and the operator has the trait's ability in fights.
 - **Give an ability** (on the Focus Tree) - copies an ability another operator in the save holds, such as Cly's Combat Jump
   jetpack, onto this operator. It arrives at level 1; level it up like any other once the save is written.
 - **Complete tree** - shown when an operator (such as the tutorial operator) is missing the higher tiers of some abilities.

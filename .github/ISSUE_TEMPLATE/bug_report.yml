@@ -48,4 +48,4 @@ body:
     attributes:
       label: Editor version
       description: Only if you could not paste a debug report. Shown in the debug report and in the release you downloaded.
-      placeholder: "1.0.0"
+      placeholder: "1.1.0"
