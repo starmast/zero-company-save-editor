@@ -21,8 +21,13 @@ All notable changes to this project are documented here. The format follows
   the counter it watches, the target and whether it is reached) with the count editable, the best reward tier reached in each zone, and
   the profile's unlocks (story outfits, campaign complete ...); the Advanced tab shows every raw value, including the language and the
   first-run flags. The campaign tabs are hidden for it, and writes get the same backup, refusal and verification as saves.
-  `zc edit` reads and writes it with `stat.<Counter>` and `zone_best.<Zone>` paths. A counter the profile has not started yet cannot be
-  added.
+  `zc edit` reads and writes it with `stat.<Counter>` and `zone_best.<Zone>` paths.
+- **Start a missing achievement counter.** The game only adds a counter to the profile the first time it counts something, so an
+  achievement you have never progressed shows "not counted yet". Its row now has a **Start at** box: type a count and apply, and the
+  counter is added with that count (a copy of an existing counter's entry, renamed). `zc edit do SharedGameSettings.sav add-stat
+  <counter> <count>` does the same, e.g. `add-stat AngryBeeps 1`. Only the counters of the game's own achievements can be started.
+  Checked in the game: Angry Beeps started at 1 was read, kept when the game rewrote the profile, and still 1 after loading two saves.
+  `zc` also finds the profile by its file name now (`SharedGameSettings`), not only by its full path.
 
 ### Changed
 - The zone field that used to be called "Reward tier claimed" is now "Reward index" (the highest tier the zone has reached); the claimed

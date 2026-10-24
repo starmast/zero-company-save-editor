@@ -467,6 +467,11 @@ public sealed class SaveService
                     if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
                     for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
                     break;
+                case SaveAction.AddProfileCounter pc:
+                    if (!seen.Add("stat" + pc.Stat)) throw new EditException("duplicate counter");
+                    try { g = ProfileOps.AddCounter(g, pc.Stat ?? "", pc.Count, cut); }
+                    catch (GvasException e) { throw new EditException($"Profile: {e.Message}", e); }
+                    break;
                 case SaveAction.SetZoneClaims zc:
                     if (!seen.Add("zone" + zc.Zone)) throw new EditException("duplicate zone change");
                     try { g = ZoneRewardOps.SetClaimed(g, zc.Zone ?? "", zc.Tiers ?? Array.Empty<int>(), cut); }
@@ -745,6 +750,17 @@ public sealed class SaveService
             foreach (var (actor, state) in cut.SceneryStates)
                 if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
                     throw new EditException("verification failed: a scenery prop's health does not match its state");
+        }
+        if (cut.ProfileCounters.Count > 0)
+        {
+            // every counter keeps its count (or the count queued for it), and the started ones are there with theirs
+            var was = ProfileOps.Counters(old).ToDictionary(c => c.Stat, c => old.GetInt(c.Count));
+            var now = ProfileOps.Counters(g2).ToDictionary(c => c.Stat, c => g2.GetInt(c.Count));
+            if (now.Count != was.Count + cut.ProfileCounters.Count || cut.ProfileCounters.Any(kv => !now.TryGetValue(kv.Key, out var v) || v != kv.Value))
+                throw new EditException("verification failed: a started counter is not in the profile with its count");
+            foreach (var (stat, node) in ProfileOps.Counters(old))
+                if (!now.TryGetValue(stat, out var v) || v != was[stat] && !allowed.Contains(PathKey.Of(GvasFile.PathOf(node))))
+                    throw new EditException("verification failed: an existing counter changed");
         }
         foreach (var (zone, tiers) in cut.ZoneClaims)
             if (ZoneRewardOps.Claimed(g2, zone) is not { } now || !now.SequenceEqual(tiers))

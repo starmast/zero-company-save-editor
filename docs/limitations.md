@@ -19,11 +19,13 @@
   ability) and gear slots.
 - **Profile** (`SharedGameSettings.sav`): achievement counts can be changed, and the game keeps an edited count (tried: a count lowered to
   0 stayed 0 after the game started and loaded a save), so the next thing the game counts adds to it. Whether a count raised to its target
-  this way makes EA or Steam show the achievement was not tried. Counters the profile has not started yet, and the unlocks, cannot be
-  added here.
+  this way makes EA or Steam show the achievement was not tried. A counter the profile has not started can be added (tried: Angry Beeps
+  started at 1, below its target; the game read it, kept it when it rewrote the profile and through loading two saves). The bond
+  achievements' counters (Heroes On Both Sides, Lost Causes ...) probably hold a bond level the game sets itself, so the game may
+  overwrite a count started or changed by hand. The unlocks cannot be added here.
 - **Zone rewards:** unticking a claimed tier was tried in the game on Zone Jenth: the Hutt Roulette Prize became claimable again, claiming it
   added an Exotic item and the game counted it towards There Will Be No Bargain. Achievement counts live in the game's profile file
-  (`SharedGameSettings.sav`), which the editor does not change; whether a platform (EA, Steam) then shows the achievement is up to it.
+  (`SharedGameSettings.sav`, see Profile above); whether a platform (EA, Steam) then shows the achievement is up to it.
 - **Galaxy:** a Den mission's and an operation's time on offer were tried in the game: after one cycle, a mission moved earlier and an
   operation aged by one were gone, while a mission given full time and an operation set back to 0 were still on offer. The crisis
   mission's **Coil upgrade** drop-down has not been tried (no save so far had a crisis mission on offer).

@@ -53,12 +53,35 @@ public static class ProfileOps
     /// <summary>Whether <paramref name="g"/> is the profile file (it has achievement counters and no campaign).</summary>
     public static bool IsProfile(GvasFile g) => g.Root.Any(n => n.Name == "AchievementStatData");
 
+    static GvasNode? StatsMap(GvasFile g) => g.Child(g.Root.FirstOrDefault(n => n.Name == "AchievementStatData"), "Stats");
+
+    /// <summary>
+    /// Start a counter the profile does not have yet (the game adds one the first time it counts): a copy of an existing counter entry
+    /// with both of its stat tags renamed and its count set. Only the counters of the game's achievements can be started.
+    /// </summary>
+    public static GvasFile AddCounter(GvasFile g, string stat, long count, CutInfo cut)
+    {
+        if (Achievements.All(a => a.Stat != stat)) throw new GvasException($"{stat} is not one of the game's achievement counters");
+        if (count < 0) throw new GvasException("a count cannot be negative");
+        if (Counters(g).Any(c => c.Stat == stat)) throw new GvasException($"the profile already counts {stat}");
+        var map = StatsMap(g) ?? throw new GvasException("this file has no achievement counters");
+        var donor = map.Children?.FirstOrDefault(e => e.Children is { Count: 2 }) ?? throw new GvasException("the profile has no counter to copy the layout from");
+        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(map)));
+        int index = map.Children!.Count;
+        g = g.MapAppendRaw(map, g.Slice(donor.Start, donor.End));
+        GvasNode Entry() => StatsMap(g)!.Children![index];
+        g = g.SetString(g.Child(Entry().Children![0], "TagName")!, StatPrefix + stat);
+        g = g.SetString(g.Child(g.Child(g.Child(Entry().Children![1], "Data"), "Identifier"), "TagName")!, StatPrefix + stat);
+        g.Set(g.Child(g.Child(Entry().Children![1], "Data"), "Stat")!, count);
+        cut.ProfileCounters[stat] = count;
+        return g;
+    }
+
     /// <summary>Each counter in the file: stat name (without "br.Online.Stats."), and the node holding its count.</summary>
     public static List<(string Stat, GvasNode Count)> Counters(GvasFile g)
     {
         var @out = new List<(string, GvasNode)>();
-        var map = g.Child(g.Root.FirstOrDefault(n => n.Name == "AchievementStatData"), "Stats");
-        foreach (var e in map?.Children ?? new List<GvasNode>())
+        foreach (var e in StatsMap(g)?.Children ?? new List<GvasNode>())
         {
             if (e.Children is not { Count: 2 } kv || g.Child(kv[0], "TagName") is not { } t) continue;
             var count = g.Child(g.Child(kv[1], "Data"), "Stat");

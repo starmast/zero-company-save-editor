@@ -15,6 +15,8 @@ public sealed class CutInfo
     public List<(string Guid, Dictionary<string, List<byte[]>> Expected)> Focus { get; } = new();
     /// <summary>Abilities given to an operator: (operator guid, ability tag, the tier record copied in).</summary>
     public List<(string Guid, string Tag, byte[] Record)> Granted { get; } = new();
+    /// <summary>Profile counters started: stat name -> the count it must have.</summary>
+    public Dictionary<string, long> ProfileCounters { get; } = new();
     /// <summary>Galaxy zones whose claimed reward tiers changed: zone tag -> the tiers it must end up with, sorted.</summary>
     public Dictionary<string, List<int>> ZoneClaims { get; } = new();
     /// <summary>Bond traits given: (operator guid, trait effect asset).</summary>

@@ -81,7 +81,20 @@ public class ShellTests
         Headless.Run(() => { bargain.Count!.SetTo(3); rig.Pump(); });
         Assert.True(bargain.Reached);
         Assert.Equal(1, rig.Session.Pending.Count);
+
+        var beeps = vm.Achievements.Single(a => a.Name == "Angry Beeps");                 // not counted in the sample profile
+        Assert.True(beeps.CanStart);
+        Headless.Run(() => { beeps.StartText = "x"; rig.Pump(); });
+        Assert.True(beeps.IsInvalid); Assert.False(beeps.IsQueued);
+        Headless.Run(() => { beeps.StartText = "1"; rig.Pump(); });
+        Assert.True(beeps.IsQueued);
+        Assert.Equal(1, rig.Session.Pending.ProfileCounterAdds["AngryBeeps"]);
+        Assert.Contains("starts at 1", beeps.Progress);
+        Assert.Equal(2, rig.Session.Pending.Count);
         rig.Shot("profile");
+        Headless.Run(() => { rig.Session.Pending.Discard(); rig.Pump(); });              // Discard empties the box
+        Assert.Equal("", beeps.StartText);
+        Assert.False(beeps.IsQueued);
         Headless.Run(() => rig.Main.Navigate("advanced"));
         Assert.IsType<AdvancedViewModel>(rig.Main.Screen);
     }

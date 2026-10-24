@@ -23,6 +23,8 @@ public abstract record SaveAction
     public sealed record HealOperator(string Guid) : SaveAction;
     public sealed record CompleteFocusTree(string Guid) : SaveAction;
     public sealed record ReviveOperator(string Guid) : SaveAction;
+    /// <summary>Start an achievement counter the profile file does not have yet (stat name such as "AngryBeeps") at <c>Count</c>.</summary>
+    public sealed record AddProfileCounter(string Stat, long Count) : SaveAction;
     /// <summary>Set which influence reward tiers of a galaxy zone (tag) count as claimed; a tier left out can be claimed again in the game.</summary>
     public sealed record SetZoneClaims(string Zone, IReadOnlyList<int> Tiers) : SaveAction;
     /// <summary>Give an operator a bond trait (a class trait normally learned through cross training), by its effect asset name.</summary>

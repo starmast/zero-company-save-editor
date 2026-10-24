@@ -33,7 +33,7 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
   normally learned through cross training), roster order, bring back fallen operators.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory** (including adding items you never had), **Galaxy** (influence and claimed zone rewards, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).
-- **Profile** - open the game's shared profile file to see every achievement's count and target, and change the counts.
+- **Profile** - open the game's shared profile file to see every achievement's count and target, change the counts, and start the ones not counted yet.
 - **Combat** - open a save made during a fight to edit every unit (health, action points, position, effects, team), mission
   objectives, countdown timers, reinforcements, fire zones and destructible scenery, the enemy threat tier, and bring more of your roster into the fight. Newer than the
   rest: try it on a copy first ([limits](docs/limitations.md#combat-tab)).

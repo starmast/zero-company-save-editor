@@ -26,6 +26,10 @@
                     <Panel IsVisible="{Binding HasCount}">
                       <c:NumField DataContext="{Binding Count}" Width="120" />
                     </Panel>
+                    <TextBox Classes="num" Width="120" IsVisible="{Binding CanStart}" Watermark="Start at"
+                             Classes.changed="{Binding IsQueued}" Classes.invalid="{Binding IsInvalid}"
+                             Text="{Binding StartText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip.Tip="The profile does not count this yet. Type a count to start it at; the game adds to it from there." />
                     <TextBlock Classes="mute" Text="-" HorizontalAlignment="Right" IsVisible="{Binding NoCount}" />
                   </Panel>
                 </Grid>

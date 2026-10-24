@@ -1,4 +1,5 @@
 using ZeroCompany.Core.Actions;
+using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Platform;
 using ZeroCompany.Core.Save;
 using ZeroCompany.Sdk;
@@ -65,6 +66,58 @@ public class ProfileTests : IDisposable
         Assert.Equal(before.Length, File.ReadAllBytes(path).Length);                                     // a count is a fixed-size number
         Assert.InRange(changed, 1, 8);                                                                   // one Int64, nothing else
         Assert.Single(ed.Backups(), b => b.Original);
+    }
+
+    [SkippableFact]
+    public void A_missing_counter_is_started_and_every_other_counter_keeps_its_count()
+    {
+        var (ws, path) = Rig();
+        var ed = SaveEditor.Open(ws, path, () => null);
+        var before = ProfileOps.Counters(ed.Save.Gvas).ToDictionary(c => c.Stat, c => ed.Save.Gvas.GetInt(c.Count));
+        var missing = ProfileOps.Achievements.First(a => !before.ContainsKey(a.Stat)).Stat;
+        Assert.Contains("start counting", ed.Do("add-stat", new[] { missing, "1" }));
+        ed.Set("stat.ThereWillBeNoBargain", before["ThereWillBeNoBargain"] + 1);   // a count edit in the same save
+        Assert.Contains(ed.Pending.Describe(ed.Save), l => l.Text != null && l.Text.Contains("Start counting"));
+        ed.Apply();
+
+        var after = SaveEditor.Open(ws, path, () => null);
+        var now = ProfileOps.Counters(after.Save.Gvas).ToDictionary(c => c.Stat, c => after.Save.Gvas.GetInt(c.Count));
+        Assert.Equal(before.Count + 1, now.Count);
+        Assert.Equal(1, now[missing]);
+        Assert.Equal(before["ThereWillBeNoBargain"] + 1, now["ThereWillBeNoBargain"]);
+        foreach (var (stat, count) in before.Where(kv => kv.Key != "ThereWillBeNoBargain")) Assert.Equal(count, now[stat]);
+        Assert.Equal(1, after.Fields.Resolve("stat." + missing).Value);
+        Assert.Contains(after.Save.Profile!.Achievements, a => a.Stat == missing && a.Count != null);
+        Assert.False(SaveCheck.Run(ws, path).HasFailure());
+    }
+
+    [SkippableFact]
+    public void Starting_a_counter_refuses_one_the_profile_has_or_the_game_does_not_know()
+    {
+        var (ws, path) = Rig();
+        var ed = SaveEditor.Open(ws, path, () => null);
+        Assert.Throws<ZcException>(() => ed.Do("add-stat", new[] { "ThereWillBeNoBargain", "1" }));     // already counted
+        Assert.Throws<ZcException>(() => ed.Do("add-stat", new[] { "NoSuchCounter", "1" }));
+        var missing = ProfileOps.Achievements.First(a => ProfileOps.Counters(ed.Save.Gvas).All(c => c.Stat != a.Stat));
+        Assert.Throws<ZcException>(() => ed.Do("add-stat", new[] { missing.Stat, "-1" }));
+        Assert.Contains(missing.Stat, ed.Do("add-stat", new[] { missing.Id, "0" }));                     // by achievement id too
+
+        // the Core refuses the same things on its own
+        var cut = new CutInfo();
+        Assert.Throws<GvasException>(() => ProfileOps.AddCounter(ed.Save.Gvas, "ThereWillBeNoBargain", 1, cut));
+        Assert.Throws<GvasException>(() => ProfileOps.AddCounter(ed.Save.Gvas, "NoSuchCounter", 1, cut));
+    }
+
+    [SkippableFact]
+    public void The_profile_is_found_by_its_file_name_but_not_listed_as_a_save()
+    {
+        var (_, path) = Rig();
+        var ws = ZcWorkspace.Open(Path.Combine(_tmp, "data"), useSystemSaveDirs: false);
+        ws.Settings.SaveDirs.Add(Path.GetDirectoryName(path)!);
+        Assert.DoesNotContain(SaveCatalog.List(ws), e => e.Name == ProfileOps.FileName);
+        Assert.Equal(path, SaveCatalog.Resolve(ws, "SharedGameSettings.sav").Path);
+        Assert.Equal(path, SaveCatalog.Resolve(ws, "SharedGameSettings").Path);
+        Assert.Throws<ZcException>(() => SaveCatalog.Resolve(ws, "latest"));                          // no campaign save in the folder
     }
 
     [SkippableFact]

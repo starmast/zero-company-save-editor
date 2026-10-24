@@ -147,7 +147,8 @@ achievements and unlocks**; opening it shows a **Profile** tab and **Advanced** 
 
 - **Achievements** - every achievement the game counts, with the counter it watches, the target, and whether the count reaches it. The
   count is editable. The game adds to these counts as you play (in any campaign) and checks them against the targets; loading an older
-  save does not change them. A counter the game has not started yet shows "not counted yet" and cannot be added here.
+  save does not change them. A counter the game has not started yet shows "not counted yet" and a **Start at** box: type a count and
+  apply to add the counter with that count; the game adds to it from there.
 - **Best zone reward tier** - the highest influence tier reached in each galaxy zone across your campaigns.
 - **Unlocks** - what the profile has unlocked for every campaign, such as story outfits.
 
