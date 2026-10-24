@@ -5,6 +5,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-24
+
+### Added
+- **Give a bond trait.** Personnel > Overview has a "Give a bond trait" box for the class traits operators normally learn only from a bond
+  partner of another class through cross training, such as a Scout's Difficult Target, a Soldier's Grenadier or a Warrior's Hazard Training.
+  All 32 traits the game defines are offered, not only ones someone in the save already has; `zc edit do <save> give-trait <operator> <trait>`
+  does the same. A trait is one record in the operator's saved gameplay effects, so the editor copies a trait record already in the save (the
+  operator's own when they have one) and switches it to the trait chosen. In a campaign where nobody has learned a trait yet, the operator's
+  own health-progression record is used instead, with its stat values removed (a trait has none). Traits an operator already has are now
+  named on the Overview ("Pack Tactics (bond trait, Scout)").
+- Game data: the extractor also reads the bond traits, so after extracting again each one shows the game's own name and description.
+
+### Checked in the game
+- A fight copy with three traits given (Grenadier, which nobody in the save had; Pack Tactics, copied from Hawks; Hazard Training): after
+  loading, each hero carried the trait and held the ability it grants (`GA_Grenadier_T1`, `GA_PackTactics_T1`, `GA_HazardTraining_T1`).
+- An early Den save in which nobody had learned a trait (so the trait was made from a progression record): after loading, Hawks carried
+  Grenadier and the effect its ability applies, and a save the game wrote afterwards still held the trait.
+
 ## [1.0.0] - 2026-10-23
 
 The final planned release. Checked against game 1.2 (build 199049) with every save the game wrote in a full campaign, from the first
@@ -316,7 +334,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.6.0...v0.7.0

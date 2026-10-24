@@ -109,6 +109,29 @@ public class PersonnelTests
     }
 
     [SkippableFact]
+    public void Overview_gives_a_bond_trait_and_the_operator_keeps_it_after_the_write()
+    {
+        Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");
+        using var rig = new TestRig(combatFile: "Hub_Traits.sav");
+        rig.Start(height: 1600);
+        var op = rig.Main.Session.Current!.View.Personnel.Roster.First(o => !o.Dead
+            && ZeroCompany.Core.Actions.TraitOps.Givable(rig.Main.Session.Current.Gvas, o.Guid).Any(t => t.Class == "Soldier"));
+        Headless.Run(() => rig.Main.Navigate("personnel", op.Guid, "overview"));
+        var tab = (OverviewTabViewModel)Vm(rig).Content!;
+        Assert.True(tab.CanGiveTrait);
+        var grenadier = tab.TraitOptions.Single(t => t.Asset == "GE_Offense_Soldier_Grenadier");
+        Headless.Run(() => { tab.ChosenTrait = grenadier; tab.AddTraitCommand.Execute(null); rig.Pump(); });
+        Assert.Contains(("" + op.Guid, "GE_Offense_Soldier_Grenadier"), rig.Main.Session.Pending.Traits);
+        Assert.DoesNotContain(tab.TraitOptions, t => t.Asset == grenadier.Asset);                // queued: out of the list, into the queue
+        Assert.Single(tab.QueuedTraits);
+        rig.Shot("personnel-give-trait");
+
+        Headless.RunAsync(() => rig.Main.ApplyAsync(copy: false, force: false)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        Assert.Contains("GE_Offense_Soldier_Grenadier", ZeroCompany.Core.Actions.TraitOps.Held(rig.Main.Session.Current!.Gvas, op.Guid));
+    }
+
+    [SkippableFact]
     public void Raising_unspent_focus_then_spending_it_keeps_the_total_in_step()
     {
         using var rig = Open("personnel");

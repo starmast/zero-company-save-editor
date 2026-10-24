@@ -157,6 +157,19 @@ public sealed class SaveEditor
             p.SetGrant(o.Guid, hit[0].Tag, level);
             return $"give {o.Name} {hit[0].Tag} at level {level}";
         });
+        Reg("give-trait", "give-trait <operator> <trait>", "give an operator a bond trait (a class trait normally learned through cross training), e.g. give-trait Hawks Grenadier", a =>
+        {
+            var o = Op(a[0]);
+            var opts = TraitOps.Givable(Save.Gvas, o.Guid);
+            if (opts.Count == 0)
+                throw new ZcException(TraitOps.CanGive(Save.Gvas, o.Guid) ? $"{o.Name} already has every bond trait" : $"{o.Name} has no effect record a trait can be copied from");
+            string key = NormName(string.Join(" ", a.Skip(1)));
+            var hit = opts.Where(t => NormName(t.Name) == key || NormName(t.Asset) == key || NormName(t.Asset["GE_".Length..]) == key).ToList();
+            if (hit.Count != 1)
+                throw new ZcException($"{o.Name} cannot be given '{string.Join(" ", a.Skip(1))}'. Options: {string.Join(", ", opts.Select(t => $"{t.Name} ({t.Class})"))}");
+            p.SetTrait(o.Guid, hit[0].Asset, true);
+            return $"give {o.Name} the bond trait {hit[0].Name}";
+        });
         Reg("set-market", "set-market <mods|utility> <tier 1-3> <count>", "how many items the Black Market rolls per refresh from one quality table (1 Basic, 2 Superior, 3 Exquisite)", a =>
         {
             string kind = a[0].ToLowerInvariant();

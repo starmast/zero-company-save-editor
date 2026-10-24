@@ -21,6 +21,11 @@
   operation aged by one were gone, while a mission given full time and an operation set back to 0 were still on offer. The crisis
   mission's **Coil upgrade** drop-down has not been tried (no save so far had a crisis mission on offer).
 - **Give an ability** can only copy an ability from an operator who has it in the same save, and it arrives at level 1.
+- **Give a bond trait** offers all 32 traits. A trait is one saved gameplay effect, so it is made from a trait record already in the save
+  or, in a campaign where nobody has learned one, from the operator's own health-progression record with its stat values removed. Tried in
+  the game both ways: the heroes carried the traits and their abilities after loading, and a save the game wrote afterwards kept them.
+  The game normally limits which traits an operator can learn (from a partner of another class, at certain bond levels); the editor does
+  not, so an operator can be given their own class's traits too. Not every trait was played through, and traits cannot be taken away here.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.
 - **Bring back** works in the Personnel screens, the Den and on missions (tested in the game with the tutorial operator), but it
   was built by comparing a fallen operator with the living roster, not from a save the game wrote itself. A returning operator

@@ -271,7 +271,7 @@ public static class Distiller
         var @out = new Dictionary<string, EffectInfo>();
         foreach (var a in Assets(family))
         {
-            string title = "", desc = "";
+            string title = "", desc = "", shownTitle = "", shownDesc = "";
             var mods = new List<EffectModifier>();
             foreach (var o in Objects(a.Value))
             {
@@ -280,6 +280,12 @@ public static class Distiller
                 {
                     title = Text(Truthy(p["Title"]) ? p["Title"] : Truthy(p["DisplayName"]) ? p["DisplayName"] : p["Name"]);
                     desc = Text(Truthy(p["Description"]) ? p["Description"] : p["ShortDescription"]);
+                }
+                // bond traits name themselves only in their effect UI data
+                if (shownTitle.Length == 0 && Truthy(p["DisplayableEffectName"]))
+                {
+                    shownTitle = Text(p["DisplayableEffectName"]);
+                    shownDesc = Text(p["GenericDescription"]);
                 }
                 if (((string?)o["Type"] ?? "").EndsWith("_C", StringComparison.Ordinal) && p["Modifiers"] is JArray ma)
                     foreach (var m in ma)
@@ -296,6 +302,8 @@ public static class Distiller
                         });
                     }
             }
+            if (title.Length == 0 && a.Name.StartsWith("GE_", StringComparison.Ordinal) && a.Name.Split('_') is [_, "Offense" or "Defense" or "Support", _, _])
+                (title, desc) = (shownTitle, shownDesc);
             @out[a.Name] = new EffectInfo { Name = a.Name, Title = title, Description = GameDatabase.Plain(desc), Modifiers = mods };
         }
         return @out;
