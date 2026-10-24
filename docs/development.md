@@ -94,7 +94,7 @@ always agree. The layering is `GameData <- Core <- Sdk <- App, zc, zcdebug`; any
 | `ZcDoctor` | What is set up and what is missing |
 | `Sdk.Cli` | Shared argument parsing, error handling and exit codes for the tools |
 
-`src/ZeroCompany.Cli` builds `zc`. Every group has `--help`; `--json` prints machine-readable output; `--data-dir DIR` (or `ZC_DATA_DIR`) points it
+`src/ZeroCompany.Cli` builds `zc`; release downloads have it next to the editor (`zc.exe` on Windows). Every group has `--help`; `--json` prints machine-readable output; `--data-dir DIR` (or `ZC_DATA_DIR`) points it
 at another settings/backups/game-data folder, which is how to try things without touching your real one.
 
 ```

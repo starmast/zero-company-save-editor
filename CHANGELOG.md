@@ -30,6 +30,8 @@ All notable changes to this project are documented here. The format follows
   `zc` also finds the profile by its file name now (`SharedGameSettings`), not only by its full path.
 
 ### Changed
+- The release downloads now include `zc`, the command line tool, next to the editor (`zc.exe` on Windows). It used to be built from
+  source only.
 - The zone field that used to be called "Reward tier claimed" is now "Reward index" (the highest tier the zone has reached); the claimed
   tiers are the new checkboxes.
 

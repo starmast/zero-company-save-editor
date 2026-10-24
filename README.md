@@ -22,6 +22,9 @@ an app that looks like the game. Every change is backed up and checked before it
 
 Tip: copy a save somewhere first and try your edits on the copy. Load it in the game, and only then edit the real one.
 
+The download also has `zc`, a command line tool that reads and edits saves the same way the editor does (`zc --help`; see
+[docs/development.md](docs/development.md#the-sdk-and-zc)).
+
 Optional but nice: open the **Game data** tab once to show real item names and upgrade costs instead of internal names
 ([how](docs/game-data.md); you also need a
 free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mods/99?tab=description)).
