@@ -403,6 +403,15 @@ public sealed class SaveService
                     g = Grant(c, g, guid, ga.Tag, ga.Level, cut);
                     break;
                 }
+                case SaveAction.GiveTrait gt:
+                {
+                    var guid = NormGuid(gt.Guid);
+                    if (!granted.Add(guid + "|" + gt.Trait)) throw new EditException("bad trait reference");
+                    if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
+                    try { g = TraitOps.Give(g, guid, gt.Trait ?? "", cut); }
+                    catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
+                    break;
+                }
                 case SaveAction.SetGearSlots gs:
                 {
                     string type;
@@ -781,6 +790,19 @@ public sealed class SaveService
             throw new EditException("verification failed: the Black Market tables are not what was intended");
         foreach (var (type, total) in cut.GearSlots)
             if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
+        foreach (var guid in cut.TraitsGiven.Select(t => t.Guid).Distinct())
+        {
+            // the operator's effects must be exactly the old ones followed by the traits given, in that order
+            // (injury records a heal in the same write removes are left out of the comparison)
+            static bool Injury(GvasFile f, GvasNode e) => MedbayOps.EffectName(f, e) is var n && (n.Contains("Injured", StringComparison.Ordinal) || n.Contains("ApplyDead", StringComparison.Ordinal));
+            var given = cut.TraitsGiven.Where(t => t.Guid == guid).Select(t => t.Asset).ToList();
+            var was = (MedbayOps.EffectsNode(old, guid)?.Children ?? new List<GvasNode>()).Where(e => !Injury(old, e)).Select(e => old.Slice(e.Start, e.End)).ToList();
+            var now = (MedbayOps.EffectsNode(g2, guid)?.Children ?? new List<GvasNode>()).Where(e => !Injury(g2, e)).ToList();
+            if (now.Count != was.Count + given.Count || !now.Take(was.Count).Select(e => g2.Slice(e.Start, e.End)).Zip(was).All(p => p.First.AsSpan().SequenceEqual(p.Second)))
+                throw new EditException("verification failed: an operator's existing effects changed");
+            if (!now.Skip(was.Count).Select(e => MedbayOps.EffectName(g2, e)).SequenceEqual(given) || given.Any(a => TraitOps.Count(g2, guid, a) != 1))
+                throw new EditException("verification failed: a bond trait is not on the operator as intended");
+        }
         foreach (var (guid, tag, record) in cut.Granted)
             if (!AbilityOps.Has(g2, guid, tag, record))
                 throw new EditException("verification failed: a granted ability is not on the operator as intended");

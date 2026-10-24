@@ -35,6 +35,31 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="panel" IsVisible="{Binding CanGiveTrait}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Give a bond trait" /></Border>
+          <StackPanel Margin="14,10" Spacing="8">
+            <TextBlock Classes="mute" TextWrapping="Wrap"
+                       Text="Bond traits are the class traits an operator normally learns from a bond partner of another class through cross training, such as a Scout's Difficult Target. Pick one to give this operator; it shows up under training and stat effects once the save is written." />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <ComboBox ItemsSource="{Binding TraitOptions}" SelectedItem="{Binding ChosenTrait}" HorizontalAlignment="Stretch" PlaceholderText="Choose a trait" />
+              <Button Grid.Column="1" Content="Add" Command="{Binding AddTraitCommand}" IsEnabled="{Binding HasChosenTrait}" />
+            </Grid>
+            <TextBlock Classes="ice small" Text="{Binding ChosenTraitDescription}" IsVisible="{Binding HasChosenTraitDescription}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding QueuedTraits}" IsVisible="{Binding HasQueuedTraits}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:QueuedGrantViewModel">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,2">
+                    <TextBlock Classes="amber" Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Undo" Command="{Binding RemoveCommand}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <Border Classes="panel">
         <StackPanel>
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="TRAINING &amp; STAT EFFECTS" /></Border>

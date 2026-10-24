@@ -34,11 +34,19 @@ public sealed class EffectRowViewModel
     public bool HasMagnitudes => Magnitudes.Count > 0;
 }
 
-public sealed class OverviewTabViewModel : PersonnelTabViewModel
+/// <summary>A bond trait this operator could be given.</summary>
+public sealed record TraitOption(string Asset, string Name, string Source, string Description)
+{
+    public override string ToString() => $"{Name} ({Source})";
+}
+
+public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
 {
     readonly PendingChanges _pending;
     readonly FocusView? _focus;
     readonly FieldSet _fields;
+    readonly string _guid;
+    readonly List<TraitOption> _allTraits = new();
 
     public OverviewTabViewModel(MainViewModel main, OperatorView op, FaceViewModel face)
     {
@@ -52,6 +60,54 @@ public sealed class OverviewTabViewModel : PersonnelTabViewModel
         if (op.Focus != null) Unspent = _fields.Make(op.Focus, 0, "Unspent focus points");
         foreach (var e in op.Effects) Effects.Add(new EffectRowViewModel(e, _fields));
         if (Unspent != null) Unspent.PropertyChanged += (_, _) => OnPropertyChanged(nameof(TotalText));
+        _guid = op.Guid;
+        if (!op.Dead && main.Session.Current is { } open)
+        {
+            var db = main.Session.Service.Db;
+            _allTraits = TraitOps.Givable(open.Gvas, op.Guid)
+                .Select(t =>
+                {
+                    var (title, desc) = db.EffectText(t.Asset);         // the game's own name and text once the game data is extracted
+                    return new TraitOption(t.Asset, title is { Length: > 0 } ? title : t.Name, $"{t.Class} {t.Kind.ToLowerInvariant()}", desc);
+                })
+                .OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        }
+        _pending.Changed += RefreshTraits;
+        RefreshTraits();
+    }
+
+    // ---- give a bond trait -------------------------------------------------------------------
+    public ObservableCollection<TraitOption> TraitOptions { get; } = new();
+    public ObservableCollection<QueuedGrantViewModel> QueuedTraits { get; } = new();
+    [ObservableProperty] TraitOption? _chosenTrait;
+    public bool CanGiveTrait => _allTraits.Count > 0;
+    public bool HasQueuedTraits => QueuedTraits.Count > 0;
+    public bool HasChosenTrait => ChosenTrait != null;
+    /// <summary>What the chosen trait does, from the game data (empty until it is extracted).</summary>
+    public string ChosenTraitDescription => ChosenTrait?.Description ?? "";
+    public bool HasChosenTraitDescription => ChosenTraitDescription.Length > 0;
+    partial void OnChosenTraitChanged(TraitOption? value)
+    {
+        OnPropertyChanged(nameof(HasChosenTrait)); OnPropertyChanged(nameof(ChosenTraitDescription)); OnPropertyChanged(nameof(HasChosenTraitDescription));
+    }
+
+    [RelayCommand]
+    void AddTrait()
+    {
+        if (ChosenTrait is { } t) _pending.SetTrait(_guid, t.Asset, true);
+    }
+
+    void RefreshTraits()
+    {
+        var queued = _pending.Traits.Where(x => x.Guid == _guid).Select(x => x.Trait).ToHashSet();
+        var keep = ChosenTrait;
+        TraitOptions.Clear();
+        foreach (var t in _allTraits.Where(t => !queued.Contains(t.Asset))) TraitOptions.Add(t);
+        ChosenTrait = keep != null && TraitOptions.Contains(keep) ? keep : null;
+        QueuedTraits.Clear();
+        foreach (var t in _allTraits.Where(t => queued.Contains(t.Asset)))
+            QueuedTraits.Add(new QueuedGrantViewModel($"{t.Name} ({t.Source})", () => _pending.SetTrait(_guid, t.Asset, false)));
+        OnPropertyChanged(nameof(HasQueuedTraits));
     }
 
     public string Name { get; }
@@ -68,7 +124,7 @@ public sealed class OverviewTabViewModel : PersonnelTabViewModel
     public List<EffectRowViewModel> Effects { get; } = new();
     public bool NoEffects => Effects.Count == 0;
 
-    public override void Dispose() => _fields.Dispose();
+    public override void Dispose() { _pending.Changed -= RefreshTraits; _fields.Dispose(); }
 }
 
 // ------------------------------------------------------------------------------------------------ bonds

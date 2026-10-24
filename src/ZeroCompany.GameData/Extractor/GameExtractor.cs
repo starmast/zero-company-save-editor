@@ -77,7 +77,7 @@ public static class GameExtractor
         foreach (var (label, target, subs) in new (string, Action<JObject>, string[])[]
         {
             ("items", o => raw.Items = o, new[] { "GameData/ItemData/" }),
-            ("effects", o => raw.Effects = o, new[] { "RosterUpgradeEffects/", "CrossTrainingStatRewards/", "GameData/Progression/" }),
+            ("effects", o => raw.Effects = o, new[] { "RosterUpgradeEffects/", "CrossTrainingStatRewards/", "BondData/TestCrossTrainingEffects/", "GameData/Progression/" }),
             ("focus costs", o => raw.Focus = o, new[] { "GameData/FocusPointData/" }),
             ("Coil upgrades", o => raw.Crisis = o, new[] { "ResultEffects/CrisisEffects/" }),
         })

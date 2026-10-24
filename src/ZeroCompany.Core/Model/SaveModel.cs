@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using ZeroCompany.Core.Actions;
 using ZeroCompany.Core.Gvas;
 using ZeroCompany.GameData.Models;
 
@@ -325,6 +326,7 @@ public sealed class SaveModel
                 var label = Naming.Pretty(d.Replace("CrossTraining_", "Cross-training: ").Replace("Progression_", "Progression: "));
                 var (title, edesc) = Db.EffectText(Naming.AssetName(defPath));
                 if (!string.IsNullOrEmpty(title)) label = title;
+                else if (TraitOps.Find(Naming.AssetName(defPath)) is { } trait) label = $"{trait.Name} (bond trait, {trait.Class})";
                 var eff = new OperatorEffect { Asset = Naming.AssetName(defPath), Title = label, Description = edesc };
                 eff.Stacks = Add(g.Child(e, "StackCount"), "Operators", sect, $"{label} - stacks", hi: 100, note: edesc);
                 var mods = g.Child(e, "Modifiers");
