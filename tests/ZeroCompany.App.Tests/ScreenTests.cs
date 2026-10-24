@@ -182,6 +182,26 @@ public class ScreenTests
     }
 
     [SkippableFact]
+    public void Galaxy_influence_unticks_a_claimed_zone_reward()
+    {
+        Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");
+        using var rig = new TestRig(combatFile: "Hub_Traits.sav");
+        rig.Start(height: 1500);
+        Headless.Run(() => rig.Main.Navigate("galaxy"));
+        var vm = Assert.IsType<GalaxyViewModel>(rig.Main.Screen);
+        Headless.Run(() => vm.Tabs.First(t => t.Key == "influence").Command.Execute(null));
+        var jenth = vm.Regions.Single(r => r.Name.StartsWith("Zone Jenth"));
+        Assert.Equal(3, jenth.Tiers.Count);
+        Assert.All(jenth.Tiers, t => Assert.True(t.IsClaimed));
+        Headless.Run(() => { jenth.Tiers[2].IsClaimed = false; rig.Pump(); });
+        Assert.Equal(new[] { 0, 1 }, rig.Main.Session.Pending.ZoneClaimChanges["BitReactor.MapRegions.OuterSouth"]);
+        Assert.True(jenth.Tiers[2].IsChanged);
+        rig.Shot("galaxy-zone-rewards");
+        Headless.Run(() => { jenth.Tiers[2].IsClaimed = true; rig.Pump(); });
+        Assert.Empty(rig.Main.Session.Pending.ZoneClaimChanges);                  // back at what the save has
+    }
+
+    [SkippableFact]
     public void Galaxy_missions_can_be_given_more_time_and_crisis_missions_another_coil_upgrade()
     {
         var src = Repo.CombatSaveNamed("Hub_Missions.sav");

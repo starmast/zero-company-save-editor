@@ -80,6 +80,7 @@ public static class GameExtractor
             ("effects", o => raw.Effects = o, new[] { "RosterUpgradeEffects/", "CrossTrainingStatRewards/", "BondData/TestCrossTrainingEffects/", "GameData/Progression/" }),
             ("focus costs", o => raw.Focus = o, new[] { "GameData/FocusPointData/" }),
             ("Coil upgrades", o => raw.Crisis = o, new[] { "ResultEffects/CrisisEffects/" }),
+            ("galaxy zones", o => raw.Zones = o, new[] { "MapLocationData/MapRegions/" }),
         })
         {
             ct.ThrowIfCancellationRequested();

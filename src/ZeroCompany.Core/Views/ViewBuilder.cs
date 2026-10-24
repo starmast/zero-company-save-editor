@@ -224,8 +224,12 @@ public static class ViewBuilder
     {
         Regions = m.Regions.Select(r => new RegionView
         {
-            Tag = r.Tag, Name = r.Name, Influence = FieldRef.From(r.Influence), Contacts = FieldRef.From(r.Contacts),
-            Reward = FieldRef.From(r.Reward),
+            Tag = r.Tag,
+            Name = (m.Db.Zones.TryGetValue(r.Tag, out var z) && z.Name.Length > 0 ? z.Name : ZoneRewardOps.Names.GetValueOrDefault(r.Tag)) is { } zn
+                ? $"{zn} ({r.Name})" : r.Name,
+            Influence = FieldRef.From(r.Influence), Contacts = FieldRef.From(r.Contacts), Reward = FieldRef.From(r.Reward),
+            Claimed = ZoneRewardOps.Claimed(m.G, r.Tag),
+            Tiers = z?.Tiers.Select(t => (t.Influence, t.Reward, t.Description)).ToList() ?? new(),
         }).ToList(),
         Missions = Missions(m),
         Operations = Operations(m),

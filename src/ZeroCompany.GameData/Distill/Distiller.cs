@@ -14,6 +14,8 @@ public sealed class RawGameData
     public JObject Effects { get; set; } = new();
     public JObject Focus { get; set; } = new();
     public JObject Crisis { get; set; } = new();
+    /// <summary>The galaxy zones (MapLocationData/MapRegions), same shape as the families above.</summary>
+    public JObject Zones { get; set; } = new();
     /// <summary>Missions that give inventory items, from <c>RewardReader</c>: { recipe, title, tiers:[{ choices, items:[{ item, amount }] }] }.</summary>
     public JArray Rewards { get; set; } = new();
     /// <summary>Every mission's own description, from <c>MissionReader</c>.</summary>
@@ -78,6 +80,7 @@ public static class Distiller
             Missions = Missions(raw.Missions),
             CrisisEffectPaths = CrisisPaths(raw.Crisis),
             Operations = Operations(raw.Operations),
+            Zones = Zones(raw.Zones),
             CoilUnits = CrisisUnitKeys.Where(k => flat.ContainsKey(k.Key)).ToDictionary(k => k.Unit, k => flat[k.Key]),
             NameStrings = flat.Where(kv => kv.Key.EndsWith("_Name", StringComparison.Ordinal))
                               .OrderBy(kv => kv.Key, StringComparer.Ordinal)
@@ -95,6 +98,46 @@ public static class Distiller
             if (CrisisAssetRx.Match(p.Name) is { Success: true } m && (string?)p.Value["path"] is { } path)
                 d[$"{m.Groups["t"].Value}.{m.Groups["u"].Value}_{m.Groups["ab"].Value}"] = $"{path}.{p.Name}";
         return d;
+    }
+
+    /// <summary>
+    /// Each zone's name and reward tiers. A tier names its rewards either in a custom reward object of the same asset (NameFormat,
+    /// "Hutt Roulette Prize") or by referring to a rewards asset ("Rewards_Credits_RegionalSmall", shown as "Credits").
+    /// </summary>
+    static Dictionary<string, ZoneInfo> Zones(JObject family)
+    {
+        var @out = new Dictionary<string, ZoneInfo>();
+        foreach (var a in Assets(family))
+        {
+            var objs = Objects(a.Value).ToList();
+            var main = objs.FirstOrDefault(o => Props(o)["InfluenceRewardTiers"] is JArray);
+            if (main == null || (string?)Props(main)["RegionTag"]?["TagName"] is not { Length: > 0 } tag) continue;
+            var zone = new ZoneInfo { Name = Text(Props(main)["Name"]) };
+            foreach (var t in (JArray)Props(main)["InfluenceRewardTiers"]!)
+            {
+                var names = new List<string>(); var descs = new List<string>();
+                foreach (var cr in t["CustomRewards"] as JArray ?? new JArray())
+                {
+                    var sub = ((string?)cr["ObjectName"] ?? "").Split(':').Last().TrimEnd('\'');
+                    var o = objs.FirstOrDefault(x => (string?)x["Name"] == sub);
+                    // a name built at run time ("+{amount} Focus Points", "{ItemAmount}") cannot be shown as it is, so it is left out
+                    if (o != null && GameDatabase.Plain(Text(Props(o)["NameFormat"])) is { Length: > 0 } n && !n.Contains('{'))
+                    {
+                        names.Add(n);
+                        if (GameDatabase.Plain(Text(Props(o)["DescriptionFormat"])) is { Length: > 0 } d && !d.Contains('{')) descs.Add(d);
+                    }
+                }
+                foreach (var r in t["Rewards"] as JArray ?? new JArray())
+                    if (Regex.Match((string?)r["ObjectName"] ?? "", @"'Rewards_([A-Za-z]+)") is { Success: true } m) names.Add(m.Groups[1].Value);
+                zone.Tiers.Add(new ZoneTier
+                {
+                    Influence = (int?)t["RequiredInfluence"] ?? 0,
+                    Reward = string.Join(", ", names), Description = string.Join(" ", descs),
+                });
+            }
+            @out[tag] = zone;
+        }
+        return @out;
     }
 
     static Dictionary<string, OperationInfo> Operations(JArray ops)

@@ -452,6 +452,11 @@ public sealed class SaveService
                     if (!seen.Add("item" + ai.Asset)) throw new EditException("duplicate item action");
                     for (int n = 0; n < ai.Copies; n++) g = ArmoryOps.AddItem(g, ai.Asset, cut);
                     break;
+                case SaveAction.SetZoneClaims zc:
+                    if (!seen.Add("zone" + zc.Zone)) throw new EditException("duplicate zone change");
+                    try { g = ZoneRewardOps.SetClaimed(g, zc.Zone ?? "", zc.Tiers ?? Array.Empty<int>(), cut); }
+                    catch (GvasException e) { throw new EditException($"Galaxy: {e.Message}", e); }
+                    break;
                 case SaveAction.SetOperationAge oa:
                     if (!seen.Add("operation" + oa.Operation)) throw new EditException("duplicate operation change");
                     g = OperationOps.SetAge(g, oa.Operation, oa.Age, cut);
@@ -726,6 +731,9 @@ public sealed class SaveService
                 if (CombatOps.PropHealth(g2, actor) is { } h && h.Health != (state == "Pristine" ? h.Max : 0))
                     throw new EditException("verification failed: a scenery prop's health does not match its state");
         }
+        foreach (var (zone, tiers) in cut.ZoneClaims)
+            if (ZoneRewardOps.Claimed(g2, zone) is not { } now || !now.SequenceEqual(tiers))
+                throw new EditException("verification failed: a zone's claimed rewards are not what was intended");
         if (cut.OperationAges.Count > 0)
         {
             var now = OperationOps.Active(g2).ToDictionary(o => o.Id);
