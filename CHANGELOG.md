@@ -5,6 +5,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-24
+
+### Added
+- **Claimed zone rewards.** Galaxy > Influence shows each zone by its Holotable name (Zone Jenth, Zone Aurek ...) with a **Rewards claimed**
+  checkbox per influence tier; `zc edit do <save> zone-claimed <zone> <tier> <true|false>` does the same. The ticks on the Holotable come
+  from the zone's list of claimed tiers, which the editor could not see before, so lowering a zone's influence never unticked anything.
+  Untick a tier and the game offers its reward again, as long as the zone's influence still reaches it. This is how to earn Zone Jenth's
+  Hutt Roulette Prize again (the "There Will Be No Bargain" achievement wants it three times; the game counts it in its profile file,
+  `SharedGameSettings.sav`, not in campaign saves, so a reloaded save still adds to the count).
+- Game data: the extractor reads the 12 zones with each tier's influence and reward, so the checkboxes say "Tier 3 · 100 influence,
+  Hutt Roulette Prize" after extracting again. The zone names are built in, so they show without game data too.
+
+### Changed
+- The zone field that used to be called "Reward tier claimed" is now "Reward index" (the highest tier the zone has reached); the claimed
+  tiers are the new checkboxes.
+
+### Checked in the game
+- A Den copy with Zone Jenth's tier 3 unticked (influence 150): the game reported the Hutt Roulette Prize claimable again (and only that
+  tier); claiming it with the game's own claim call added an Exotic weapon mod (Stabilizer Bracing T4), ticked the tier again in the save
+  the game wrote next, and raised the profile's There Will Be No Bargain count from 1 to 2.
+
 ## [1.1.0] - 2026-10-24
 
 ### Added
@@ -334,7 +355,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.7.0...v0.8.0

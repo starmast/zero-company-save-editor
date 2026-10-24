@@ -77,7 +77,10 @@ can't add resources, which already have an editable amount. Adding an item has b
 ## Galaxy
 The Galaxy screen has four tabs.
 
-**Influence**: influence, contacts and reward tier for each region.
+**Influence**: each zone by its Holotable name, with its influence, contacts, reward index and a **Rewards claimed** checkbox per
+influence tier (with the tier's influence and reward once the game data is extracted). A ticked tier is one whose reward you have claimed.
+Untick it and the game offers the reward again on the Holotable, as long as the zone's influence still reaches that tier; lowering the
+influence alone never unticks anything. For example, untick Zone Jenth's tier 3 to claim the Hutt Roulette Prize again.
 
 **Operations**: the Holotable's operations by name, with "Expires in N of M cycles". **Longer** and
 **Full time** give an operation that is about to expire more time; **Shorter** takes it away (both confirmed in the game). Operations

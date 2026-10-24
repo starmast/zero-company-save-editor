@@ -85,6 +85,13 @@ public class SaveParityTests : IDisposable
         var open = svc.Open("t", name);
         var golden = JsonNode.Parse(File.ReadAllText(Path.Combine(GoldenDir, "state.json")))!["view"]![screen];
         var actual = JsonCompare.ToNode(open.View)![screen];
+        if (screen == "galaxy")
+            // the Python editor named zones by their tag ("Outer Southwest") and knew nothing of claimed tiers; this one adds the Holotable name
+            foreach (var r in actual!["regions"]!.AsArray().OfType<JsonObject>())
+            {
+                if (System.Text.RegularExpressions.Regex.Match(r["name"]!.GetValue<string>(), @"^Zone \w+ \((.+)\)$") is { Success: true } m) r["name"] = m.Groups[1].Value;
+                r.Remove("claimed"); r.Remove("tiers");
+            }
         Assert.Null(JsonCompare.Diff(golden, actual, Ignore, "$." + screen));
     }
 

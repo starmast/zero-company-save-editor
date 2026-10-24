@@ -17,6 +17,9 @@
   no seed for them: a candidate kept her name and talent but came back with a different specialization and weapon after a reload), so you cannot choose who
   appears. What the editor can change is the room to recruit (Roster capacity) and, afterwards, the new operator: abilities (Personnel > Focus Tree > Give an
   ability) and gear slots.
+- **Zone rewards:** unticking a claimed tier was tried in the game on Zone Jenth: the Hutt Roulette Prize became claimable again, claiming it
+  added an Exotic item and the game counted it towards There Will Be No Bargain. Achievement counts live in the game's profile file
+  (`SharedGameSettings.sav`), which the editor does not change; whether a platform (EA, Steam) then shows the achievement is up to it.
 - **Galaxy:** a Den mission's and an operation's time on offer were tried in the game: after one cycle, a mission moved earlier and an
   operation aged by one were gone, while a mission given full time and an operation set back to 0 were still on offer. The crisis
   mission's **Coil upgrade** drop-down has not been tried (no save so far had a crisis mission on offer).
