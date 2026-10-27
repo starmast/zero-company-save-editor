@@ -118,6 +118,23 @@ public class WeaponCopyTests : IDisposable
     }
 
     [SkippableFact]
+    public void Every_listed_donor_can_be_copied_including_weapons_that_name_fragments_below_their_slots()
+    {
+        var g = Sample();
+        int copies = 0;
+        foreach (var target in WeaponOps.Operators(g))
+            foreach (var donor in WeaponOps.Donors(g, target))
+            {
+                var cut = new CutInfo();
+                var (copied, _) = WeaponOps.Copy(g, target, donor, cut);
+                Assert.True(WeaponOps.Holds(copied, target, cut.WeaponCopies[target]), $"{target} from {donor}");
+                Assert.Equal(WeaponOps.Read(g, donor)!.Parts, WeaponOps.Read(copied, donor)!.Parts);
+                copies++;
+            }
+        Skip.If(copies == 0, "the sample save has no operator that can copy a weapon");
+    }
+
+    [SkippableFact]
     public void Copy_refuses_a_donor_of_another_class_and_an_operator_without_a_weapon()
     {
         var g = Sample();

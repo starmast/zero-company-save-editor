@@ -27,7 +27,9 @@ public static class WeaponOps
     }
 
     const string SlotObjectClass = "BRC_CustomizationFragmentInstanceSlot";
-    static readonly Regex ObjectName = new(@"(CharacterCustomizationSlotInstanceWrapper|CharacterCustomizationInstanceWrapper|CharacterCustomizationVariantInstanceWrapper|BRC_CustomizationFragmentInstanceSlot)_(\d+)", RegexOptions.CultureInvariant);
+    // A slot object is a name right after the game instance ("...BP_BrunoGameInstance_C_0.BRC_CustomizationFragmentInstanceSlot_414"); its
+    // fragments are named below it ("...Slot_414.BRC_CustomizationFragmentInstanceSlot_2"), with numbers that start again for every slot.
+    static readonly Regex ObjectName = new(@"(CharacterCustomizationSlotInstanceWrapper|CharacterCustomizationInstanceWrapper|CharacterCustomizationVariantInstanceWrapper|(?<=BP_BrunoGameInstance_C_0\.)BRC_CustomizationFragmentInstanceSlot)_(\d+)", RegexOptions.CultureInvariant);
     static readonly Regex WeaponSpec = new(@"CPD_WeaponSpec_[A-Za-z0-9]+_[A-Za-z0-9]+", RegexOptions.CultureInvariant);
 
     static GvasNode? Archive(GvasFile g, string guid) =>
