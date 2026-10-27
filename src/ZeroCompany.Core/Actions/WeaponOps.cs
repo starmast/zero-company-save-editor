@@ -109,8 +109,17 @@ public static class WeaponOps
         return new Weapon(guid, Class(g, guid), parts);
     }
 
-    static bool IsMod(string s) =>
-        s.Contains("_BF2_", StringComparison.Ordinal) || (s.StartsWith("/Game/", StringComparison.Ordinal) && !s.StartsWith("/Game/Game/", StringComparison.Ordinal));
+    /// <summary>Asset folders under /Game/ that the game itself uses besides /Game/Game/ (its Wwise audio switches, for one).</summary>
+    public static readonly IReadOnlySet<string> GameRoots = new HashSet<string>(StringComparer.Ordinal) { "Game", "WwiseAudio" };
+
+    /// <summary>Whether an asset path or part name comes from a mod: an asset folder the game does not use, or a part named like a mod's ("..._BF2_...").</summary>
+    public static bool IsMod(string s)
+    {
+        if (s.Contains("_BF2_", StringComparison.Ordinal)) return true;
+        if (!s.StartsWith("/Game/", StringComparison.Ordinal)) return false;
+        var root = s.AsSpan(6); int slash = root.IndexOf('/');
+        return !GameRoots.Contains((slash < 0 ? root : root[..slash]).ToString());
+    }
 
     /// <summary>
     /// Whether the weapon's parts come from a mod: a part name or an asset path outside the game's own. The lists of meshes a part could
