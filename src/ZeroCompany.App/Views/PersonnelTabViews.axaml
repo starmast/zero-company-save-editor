@@ -203,9 +203,10 @@
           <ItemsControl ItemsSource="{Binding Parts}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:WeaponPartRowViewModel">
-                <Grid ColumnDefinitions="90,*">
+                <Grid ColumnDefinitions="90,*,Auto">
                   <TextBlock Classes="caps mute small" Text="{Binding Slot}" />
                   <TextBlock Grid.Column="1" Classes="mute" Text="{Binding Name}" TextWrapping="Wrap" />
+                  <TextBlock Grid.Column="2" Classes="caps amber small" Text="NO DATA" IsVisible="{Binding NoData}" Margin="8,0,0,0" />
                 </Grid>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -216,6 +217,7 @@
               <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
             <Button Content="{Binding ToggleText}" Command="{Binding Toggle}" HorizontalAlignment="Left" IsVisible="{Binding ShowToggle}" />
+            <TextBlock Classes="amber" TextWrapping="Wrap" Text="{Binding QueuedHint}" IsVisible="{Binding IsQueued}" />
             <StackPanel Spacing="6" IsVisible="{Binding Confirming}">
               <TextBlock Classes="mute" TextWrapping="Wrap" Text="This weapon works. Replacing it removes it from this operator (a backup keeps it)." />
               <StackPanel Orientation="Horizontal" Spacing="8">

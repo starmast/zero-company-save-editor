@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-27
+
+### Fixed
+- **Copy weapon did not bring the weapon back in the game.** An operator's weapon is saved in two places: the weapon's parts, and the operator's **gear kit**
+  (`CPD_GK_Rifle_Auromae` and the like), the character part that tells the game which weapon they carry. A mod weapon that stopped loading lost the data of
+  both, but 1.3.0 only replaced the first, so the game still showed no weapon on a copy (a report on issue 22: the editor showed the new rifle, the game
+  did not). Copy weapon now replaces the gear kit too, from the same donor, or from the generic weapon's own kit; the Loadout tab lists it as **Gear kit**
+  and marks a weapon whose kit lost its data as damaged, and the debug report and `zc save weapons` do the same. The four generic weapons now carry
+  their gear kits (recaptured from game build 199049). Not tried in the game yet: please try it on a copy.
+- After **Copy weapon** is pressed the Loadout tab now says what happens next (nothing is written until Apply to save or Save as copy in the bar at the
+  bottom), and parts that lost their data are marked **NO DATA**.
+
 ## [1.3.0] - 2026-10-27
 
 ### Added

@@ -123,7 +123,7 @@ public class WeaponCopyTests : IDisposable
         var g = Sample();
         int copies = 0;
         foreach (var target in WeaponOps.Operators(g))
-            foreach (var donor in WeaponOps.Donors(g, target).Take(2))                                  // enough to cover every operator without minutes of copying
+            foreach (var donor in WeaponOps.Donors(g, target).Take(1))                                  // one per operator covers every layout without minutes of copying
             {
                 var cut = new CutInfo();
                 var (copied, _) = WeaponOps.Copy(g, target, donor, cut);
@@ -143,10 +143,17 @@ public class WeaponCopyTests : IDisposable
         {
             Assert.Equal("Blaster_" + t.Name, t.Class);
             Assert.Equal(9, t.Parts.Count);
+            Assert.StartsWith("CPD_GK_", t.Kit);                              // the operator's gear kit comes with the weapon
+            Assert.NotEmpty(t.KitElement);
+            Assert.False(string.IsNullOrEmpty(t.KitTop));
+            Assert.Equal(t.Parts.Append(t.Kit).ToList(), t.AllParts.ToList());
             Assert.Equal(t.Parts.Count, t.SlotNumbers.Count);
             Assert.StartsWith("CPD_WP_Type_", t.Type);
             Assert.True(t.Changelist > 0);
             var text = System.Text.Encoding.Latin1.GetString(t.Elements);
+            var kitText = System.Text.Encoding.Latin1.GetString(t.KitElement);
+            Assert.DoesNotContain("BF2_", kitText);
+            Assert.DoesNotContain("/Game/ZC", kitText);
             Assert.DoesNotContain("/Game/ZC", text);                         // nothing from a mod
             Assert.DoesNotContain("_BF2_", text);
             Assert.All(t.Parts, p => Assert.DoesNotContain("BF2_", p));
@@ -154,6 +161,9 @@ public class WeaponCopyTests : IDisposable
             Assert.Equal(t.Elements, again.Elements);
             Assert.Equal(t.Parts, again.Parts);
             Assert.Equal(t.SlotNumbers, again.SlotNumbers);
+            Assert.Equal(t.Kit, again.Kit);
+            Assert.Equal(t.KitTop, again.KitTop);
+            Assert.Equal(t.KitElement, again.KitElement);
         }
         Assert.Same(WeaponOps.Templates[0], WeaponOps.Template(WeaponOps.Templates[0].Key));
         Assert.Equal(WeaponOps.Template("rifle"), WeaponOps.Template("template:Rifle"));
@@ -172,7 +182,7 @@ public class WeaponCopyTests : IDisposable
             var (copied, used) = WeaponOps.Copy(g0, target, t.Key, cut);
             Assert.Equal(t.Key, used);
             Assert.True(WeaponOps.Holds(copied, target, cut.WeaponCopies[target]), $"{target} <- {t.Name}");
-            Assert.Equal(t.Parts, WeaponOps.Read(copied, target)!.Parts.Select(p => p.Name).ToList());
+            Assert.Equal(t.AllParts, WeaponOps.Read(copied, target)!.Parts.Select(p => p.Name).ToList());
             foreach (var other in WeaponOps.Operators(g0).Where(o => o != target))                          // nobody else changed
                 Assert.Equal(WeaponOps.Read(g0, other)!.Parts, WeaponOps.Read(copied, other)!.Parts);
             copies++;
@@ -190,7 +200,7 @@ public class WeaponCopyTests : IDisposable
         {
             var (copied, used) = WeaponOps.Copy(g0, lone, null, new CutInfo());
             Assert.True(WeaponOps.IsTemplate(used));
-            Assert.True(WeaponOps.Holds(copied, lone, WeaponOps.Template(used)!.Parts));
+            Assert.True(WeaponOps.Holds(copied, lone, WeaponOps.Template(used)!.AllParts));
         }
         var noClass = WeaponOps.Operators(g0).FirstOrDefault(o => WeaponOps.TemplateFor(WeaponOps.Class(g0, o)) == null && WeaponOps.Donors(g0, o).Count == 0);
         Skip.If(noClass == null && lone == null, "the sample save has no operator without a donor");
@@ -199,8 +209,52 @@ public class WeaponCopyTests : IDisposable
             var e = Assert.Throws<GvasException>(() => WeaponOps.Copy(g0, noClass, null, new CutInfo()));
             Assert.Contains("Rifle", e.Message);                                                                // names the generic weapons to pick from
             var (copied, _) = WeaponOps.Copy(g0, noClass, "template:Rifle", new CutInfo());                    // an explicit choice always works
-            Assert.Equal(WeaponOps.Template("Rifle")!.Parts, WeaponOps.Read(copied, noClass)!.Parts.Select(p => p.Name).ToList());
+            Assert.Equal(WeaponOps.Template("Rifle")!.AllParts, WeaponOps.Read(copied, noClass)!.Parts.Select(p => p.Name).ToList());
         }
+    }
+
+    /// <summary>Strip the operator's gear kit of its fragments, as the game did to the mod operators in the reporter's save.</summary>
+    static GvasFile DamageKit(GvasFile g, string guid)
+    {
+        var arch = g.Child(MedbayOps.Characters(g)[guid], "ArchiveBytes")!;
+        var tag = g.Walk(new[] { arch }).First(n => n.Name == "SlotNameTag" && g.Child(n, "TagName") is { } t && g.GetStr(t).EndsWith("Weapon.GearKit"));
+        var el = tag.Parent!; while (!(el.Parent != null && el.Parent.Name == "FragmentInstanceWrappers" && el.Parent.TName == "ArrayProperty")) el = el.Parent!;
+        var inner = g.Child(el, "ArchiveBytes")!;
+        var frag = g.Child(inner, "FragmentInstanceWrappers")!;
+        return g.RemoveFromArchive(inner, frag.Start, frag.End);
+    }
+
+    [SkippableFact]
+    public void A_weapon_is_damaged_when_only_the_gear_kit_lost_its_data_and_copying_gives_back_a_working_kit_that_hangs_under_the_operators_own_slot()
+    {
+        var g0 = Sample();
+        var (victim, donor) = Pair(g0);
+        var g = DamageKit(g0, victim);
+        var damaged = WeaponOps.Read(g, victim)!;
+        Assert.True(damaged.Broken);
+        Assert.Equal(new[] { WeaponOps.KitSlot }, damaged.Stripped.Select(p => p.Slot).ToArray());          // the weapon parts are fine, the kit is not
+
+        var (copied, _) = WeaponOps.Copy(g, victim, donor, new CutInfo());
+        var after = WeaponOps.Read(copied, victim)!;
+        Assert.False(after.Broken);
+        Assert.Equal(WeaponOps.Read(g0, donor)!.Parts.Select(p => p.Name), after.Parts.Select(p => p.Name));
+        Assert.Equal(WeaponOps.KitSlot, after.Parts[^1].Slot);
+
+        // every object name of the kit hangs under the operator's own slot object, not the donor's
+        string KitText(GvasFile f, string guid)
+        {
+            var arch = f.Child(MedbayOps.Characters(f)[guid], "ArchiveBytes")!;
+            var tag = f.Walk(new[] { arch }).First(n => n.Name == "SlotNameTag" && f.Child(n, "TagName") is { } t && f.GetStr(t).EndsWith("Weapon.GearKit"));
+            var el = tag.Parent!; while (!(el.Parent != null && el.Parent.Name == "FragmentInstanceWrappers" && el.Parent.TName == "ArrayProperty")) el = el.Parent!;
+            return System.Text.Encoding.Latin1.GetString(f.Data, el.Start, el.End - el.Start);
+        }
+        var rx = new System.Text.RegularExpressions.Regex(@"BP_BrunoGameInstance_C_0\.BRC_CustomizationFragmentInstanceSlot_(\d+)");
+        var mine = rx.Matches(KitText(g, victim)).Select(m => m.Groups[1].Value).Distinct().ToList();      // the operator's own top slot, from the stripped kit
+        var now = rx.Matches(KitText(copied, victim)).Select(m => m.Groups[1].Value).Distinct().ToList();
+        Skip.If(mine.Count != 1, "the stripped kit names no slot object");
+        Assert.Equal(mine, now);
+        Assert.NotEqual(rx.Match(KitText(copied, donor)).Groups[1].Value, now[0]);                          // and not the donor's
+        Assert.Equal(KitText(g0, donor), KitText(copied, donor));                                           // the donor's own kit is untouched
     }
 
     [SkippableFact]

@@ -10,6 +10,9 @@ namespace ZeroCompany.Core.Actions;
 /// so on). A healthy part carries <c>FragmentInstanceWrappers</c> (its mesh and variant choices); a part whose game assets could
 /// not be loaded when the game last saved (a weapon from a mod that stopped working after a game update) has none, and the Armory
 /// then shows no weapon and greys out its menus.
+/// The character also keeps a <b>gear kit</b> (<c>br.Customization.Slot.Character.Specializations.Weapon.GearKit</c>, "CPD_GK_Rifle_Auromae"):
+/// the part that tells the game which weapon the operator carries. A mod's gear kit loses its fragments the same way, and until it is
+/// replaced too the game still shows no weapon, so <see cref="Read"/> lists it as a last part (slot "GearKit") and <see cref="Copy"/> copies it with the weapon.
 /// <see cref="Copy"/> gives an operator (one with such a weapon, or any other) a copy of the weapon of another operator with the same weapon class.
 /// </summary>
 public static class WeaponOps
@@ -30,6 +33,7 @@ public static class WeaponOps
     // A slot object is a name right after the game instance ("...BP_BrunoGameInstance_C_0.BRC_CustomizationFragmentInstanceSlot_414"); its
     // fragments are named below it ("...Slot_414.BRC_CustomizationFragmentInstanceSlot_2"), with numbers that start again for every slot.
     static readonly Regex ObjectName = new(@"(CharacterCustomizationSlotInstanceWrapper|CharacterCustomizationInstanceWrapper|CharacterCustomizationVariantInstanceWrapper|(?<=BP_BrunoGameInstance_C_0\.)BRC_CustomizationFragmentInstanceSlot)_(\d+)", RegexOptions.CultureInvariant);
+    static readonly Regex Wrappers = new(@"(CharacterCustomizationSlotInstanceWrapper|CharacterCustomizationInstanceWrapper|CharacterCustomizationVariantInstanceWrapper)_(\d+)", RegexOptions.CultureInvariant);
     static readonly Regex WeaponSpec = new(@"CPD_WeaponSpec_[A-Za-z0-9]+_[A-Za-z0-9]+", RegexOptions.CultureInvariant);
 
     static GvasNode? Archive(GvasFile g, string guid) =>
@@ -70,12 +74,38 @@ public static class WeaponOps
         return tag == null ? "" : g.GetStr(tag);
     }
 
+    public const string KitSlot = "GearKit";
+    const string KitTag = "br.Customization.Slot.Character.Specializations.Weapon.GearKit";
+    static readonly Regex KitTop = new(@"BP_BrunoGameInstance_C_0\.BRC_CustomizationFragmentInstanceSlot_(\d+)", RegexOptions.CultureInvariant);
+
+    /// <summary>The operator's gear kit: the element of a FragmentInstanceWrappers array in their character data whose slot is the weapon gear kit slot.</summary>
+    static GvasNode? KitElement(GvasFile g, string guid)
+    {
+        var arch = Archive(g, guid);
+        if (arch == null) return null;
+        foreach (var n in g.Walk(new[] { arch }))
+        {
+            if (n.Name != "SlotNameTag" || g.Child(n, "TagName") is not { } tag || g.GetStr(tag) != KitTag) continue;
+            var el = n.Parent;
+            while (el != null && !(el.Parent != null && el.Parent.Name == "FragmentInstanceWrappers" && el.Parent.TName == "ArrayProperty")) el = el.Parent;
+            return el;
+        }
+        return null;
+    }
+
+    static int KitFragments(GvasFile g, GvasNode el) =>
+        g.Child(g.Child(el, "ArchiveBytes"), "FragmentInstanceWrappers")?.Children?.Count ?? 0;
+
+    /// <summary>The number of the operator's own top-level slot object the gear kit's object names hang under ("...BP_BrunoGameInstance_C_0.BRC_CustomizationFragmentInstanceSlot_411.").</summary>
+    static string? KitTopOf(string text) => KitTop.Match(text) is { Success: true } m ? m.Groups[1].Value : null;
+
     public static Weapon? Read(GvasFile g, string guid)
     {
         var kids = WrappersNode(g, guid)?.Children;
         if (kids == null || kids.Count == 0) return null;
         var parts = kids.Select(el => new Part(SlotTag(g, el), PartName(g, el),
             g.Child(g.Child(el, "ArchiveBytes"), "FragmentInstanceWrappers")?.Children?.Count ?? 0)).ToList();
+        if (KitElement(g, guid) is { } kit) parts.Add(new Part(KitSlot, PartName(g, kit), KitFragments(g, kit)));
         return new Weapon(guid, Class(g, guid), parts);
     }
 
@@ -89,7 +119,9 @@ public static class WeaponOps
     static bool UsesMod(GvasFile g, string guid)
     {
         var w = WrappersNode(g, guid)!;
-        foreach (var n in g.Walk(w.Children!))
+        var roots = w.Children!.AsEnumerable();
+        if (KitElement(g, guid) is { } kit) roots = roots.Append(kit);
+        foreach (var n in g.Walk(roots))
             if (n.Name != "SkeletalMesh" && GvasFile.StringTypes.Contains(n.TName) && IsMod(g.GetStr(n))) return true;
         return false;
     }
@@ -115,7 +147,7 @@ public static class WeaponOps
     public static List<string> Donors(GvasFile g, string guid)
     {
         var cls = Class(g, guid);
-        var want = WrappersNode(g, guid)?.Children?.Count ?? 0;
+        var want = Read(g, guid)?.Parts.Count ?? 0;
         if (cls.Length == 0 || want == 0) return new List<string>();
         return Operators(g).Where(o => o != guid && Class(g, o) == cls
                 && Read(g, o) is { Broken: false } w && w.Parts.Count == want && !UsesMod(g, o)
@@ -127,17 +159,21 @@ public static class WeaponOps
 
     /// <summary>
     /// A plain vanilla weapon of one class, captured from a save with <see cref="Capture"/> and shipped inside the editor, for an operator
-    /// no other operator in the save can serve. <see cref="Elements"/> is the saved bytes of the weapon's wrappers; the object names in it are
-    /// renamed when it is copied, like a donor's.
+    /// no other operator in the save can serve. <see cref="Elements"/> is the saved bytes of the weapon's wrappers and <see cref="KitElement"/> the
+    /// operator's gear kit (<see cref="Kit"/> is its part name, <see cref="KitTop"/> the number of the slot object its names hang under); the
+    /// object names in them are renamed when they are copied, like a donor's.
     /// </summary>
-    public sealed record WeaponTemplate(string Name, string Class, string Type, IReadOnlyList<string> Parts, IReadOnlyList<int> SlotNumbers, int Changelist, byte[] Elements)
+    public sealed record WeaponTemplate(string Name, string Class, string Type, IReadOnlyList<string> Parts, IReadOnlyList<int> SlotNumbers, int Changelist, byte[] Elements,
+        string Kit, string KitTop, byte[] KitElement)
     {
+        /// <summary>The part names the weapon has once copied, the gear kit last.</summary>
+        public IReadOnlyList<string> AllParts => Kit.Length > 0 ? Parts.Append(Kit).ToList() : Parts;
         public string Key => "template:" + Name;
         public string Label => $"Generic {Name} weapon ({Type.Replace("CPD_WP_Type_", "")})";
     }
 
     const string TemplatePrefix = "template:";
-    static readonly byte[] Magic = "ZCW1"u8.ToArray();
+    static readonly byte[] Magic = "ZCW2"u8.ToArray();
 
     public static bool IsTemplate(string? source) => source != null && source.StartsWith(TemplatePrefix, StringComparison.Ordinal);
 
@@ -167,13 +203,13 @@ public static class WeaponOps
         return list;
     }
 
-    sealed record Manifest(string Name, string Class, string Type, List<string> Parts, List<int> SlotNumbers, int Changelist);
+    sealed record Manifest(string Name, string Class, string Type, List<string> Parts, List<int> SlotNumbers, int Changelist, string Kit, string KitTop, int ElementsLength);
 
     public static byte[] WriteTemplate(WeaponTemplate t)
     {
-        var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new Manifest(t.Name, t.Class, t.Type, t.Parts.ToList(), t.SlotNumbers.ToList(), t.Changelist));
+        var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new Manifest(t.Name, t.Class, t.Type, t.Parts.ToList(), t.SlotNumbers.ToList(), t.Changelist, t.Kit, t.KitTop, t.Elements.Length));
         using var raw = new MemoryStream();
-        raw.Write(BitConverter.GetBytes(json.Length)); raw.Write(json); raw.Write(t.Elements);
+        raw.Write(BitConverter.GetBytes(json.Length)); raw.Write(json); raw.Write(t.Elements); raw.Write(t.KitElement);
         using var @out = new MemoryStream();
         @out.Write(Magic);
         using (var z = new System.IO.Compression.DeflateStream(@out, System.IO.Compression.CompressionLevel.SmallestSize, true)) z.Write(raw.ToArray());
@@ -188,7 +224,7 @@ public static class WeaponOps
         var b = all.ToArray();
         int n = BitConverter.ToInt32(b, 0);
         var m = System.Text.Json.JsonSerializer.Deserialize<Manifest>(b.AsSpan(4, n)) ?? throw new GvasException("bad weapon template");
-        return new WeaponTemplate(m.Name, m.Class, m.Type, m.Parts, m.SlotNumbers, m.Changelist, b[(4 + n)..]);
+        return new WeaponTemplate(m.Name, m.Class, m.Type, m.Parts, m.SlotNumbers, m.Changelist, b[(4 + n)..(4 + n + m.ElementsLength)], m.Kit, m.KitTop, b[(4 + n + m.ElementsLength)..]);
     }
 
     /// <summary>
@@ -227,15 +263,23 @@ public static class WeaponOps
         if (slots.Count != kids.Count) throw new GvasException("the weapon slot list does not match the weapon parts");
         if (!OwnSlotsOnly(g, guid)) throw new GvasException("the weapon data refers to objects that are not its own slots");
         var elements = g.Slice(kids[0].Start, kids[^1].End);
+        var kit = KitElement(g, guid);
+        byte[] kitBytes = Array.Empty<byte>(); string kitTop = "", kitName = "";
+        if (kit != null)
+        {
+            kitBytes = g.Slice(kit.Start, kit.End);
+            kitName = PartName(g, kit);
+            kitTop = KitTopOf(Encoding.Latin1.GetString(kitBytes)) ?? throw new GvasException("the gear kit names no slot object");
+        }
         foreach (var other in MedbayOps.Characters(g).Keys)
         {
             var raw = new byte[16];
             for (int i = 0; i < 4; i++) BitConverter.GetBytes(Convert.ToUInt32(other.Substring(i * 8, 8), 16)).CopyTo(raw, i * 4);
-            if (elements.AsSpan().IndexOf(raw) >= 0) throw new GvasException("the weapon data names an operator");
+            if (elements.AsSpan().IndexOf(raw) >= 0 || kitBytes.AsSpan().IndexOf(raw) >= 0) throw new GvasException("the weapon data names an operator");
         }
         var read = Read(g, guid)!;
-        return new WeaponTemplate(name, w.Class, w.Type, read.Parts.Select(p => p.Name).ToList(),
-            slots.Select(n => Number(g, n, SlotObjectClass)).ToList(), changelist, elements);
+        return new WeaponTemplate(name, w.Class, w.Type, read.Parts.Where(p => p.Slot != KitSlot).Select(p => p.Name).ToList(),
+            slots.Select(n => Number(g, n, SlotObjectClass)).ToList(), changelist, elements, kitName, kitTop, kitBytes);
     }
 
     // ---- copying ---------------------------------------------------------------------------------------
@@ -260,7 +304,7 @@ public static class WeaponOps
         if (IsTemplate(source))
         {
             var t = Template(source) ?? throw new GvasException($"there is no generic weapon '{source[TemplatePrefix.Length..]}'");
-            return (Place(g, guid, t.Elements, t.Parts.Count, t.SlotNumbers, t.Parts, cut), t.Key);
+            return (Place(g, guid, t.Elements, t.Parts.Count, t.SlotNumbers, t.AllParts, t.KitElement, t.KitTop, cut), t.Key);
         }
         if (!candidates.Contains(source)) throw new GvasException("that operator's weapon cannot be copied here (different class, damaged, or from a mod)");
 
@@ -270,7 +314,10 @@ public static class WeaponOps
         if (dSlots == null || dSlots.Count != dk.Count) throw new GvasException("the weapon slot list does not match the weapon parts");
         if (dk[0].Start != src.ValueOffset + 4 || dk[^1].End != src.End) throw new GvasException("unexpected layout of the weapon data");
         var parts = Read(g, source)!.Parts.Select(p => p.Name).ToList();
-        return (Place(g, guid, g.Slice(dk[0].Start, dk[^1].End), dk.Count, dSlots.Select(n => Number(g, n, SlotObjectClass)).ToList(), parts, cut), source);
+        var dKit = KitElement(g, source);
+        var kitBytes = dKit == null ? Array.Empty<byte>() : g.Slice(dKit.Start, dKit.End);
+        var kitTop = dKit == null ? "" : KitTopOf(Encoding.Latin1.GetString(kitBytes)) ?? throw new GvasException("the donor's gear kit names no slot object");
+        return (Place(g, guid, g.Slice(dk[0].Start, dk[^1].End), dk.Count, dSlots.Select(n => Number(g, n, SlotObjectClass)).ToList(), parts, kitBytes, kitTop, cut), source);
     }
 
     /// <summary>
@@ -278,7 +325,7 @@ public static class WeaponOps
     /// number nothing else in the save uses, as long as its own was (so no size field inside the copy moves), and the operator's
     /// CharacterData.WeaponCustomizationSlots, the only other place that names a weapon slot object, is pointed at the copy's slot objects.
     /// </summary>
-    static GvasFile Place(GvasFile g, string guid, byte[] elements, int count, IReadOnlyList<int> slotNumbers, IReadOnlyList<string> parts, CutInfo cut)
+    static GvasFile Place(GvasFile g, string guid, byte[] elements, int count, IReadOnlyList<int> slotNumbers, IReadOnlyList<string> parts, byte[] kitBytes, string kitTop, CutInfo cut)
     {
         var dest = WrappersNode(g, guid)!;
         var tk = dest.Children!;
@@ -337,7 +384,68 @@ public static class WeaponOps
             var want = text[..m.Groups[2].Index] + newSlots[i] + text[(m.Groups[2].Index + m.Groups[2].Length)..];
             if (want != text) ng = ng.SetString(node, want);
         }
+        if (kitBytes.Length > 0 && KitElement(ng, guid) != null) ng = PlaceKit(ng, guid, kitBytes, kitTop, cut);
         cut.WeaponCopies[guid] = parts.ToList();
+        return ng;
+    }
+
+    /// <summary>
+    /// Replace the operator's gear kit with the donor's (<paramref name="kitBytes"/>, whose object names hang under the slot object
+    /// <paramref name="kitTop"/>). The wrapper objects in it get unused numbers of their own length, like the weapon's; the names under the
+    /// donor's slot object are then rewritten to the operator's own slot object (a different length, so each string is rewritten with its
+    /// enclosing sizes).
+    /// </summary>
+    static GvasFile PlaceKit(GvasFile g, string guid, byte[] kitBytes, string kitTop, CutInfo cut)
+    {
+        var kit = KitElement(g, guid)!;
+        var myTop = KitTopOf(Encoding.Latin1.GetString(g.Data, kit.Start, kit.End - kit.Start))
+                    ?? throw new GvasException("the operator's gear kit names no slot object");
+
+        var used = new Dictionary<string, HashSet<int>>();
+        foreach (Match m in Wrappers.Matches(Encoding.Latin1.GetString(g.Data)))
+        {
+            if (!used.TryGetValue(m.Groups[1].Value, out var set)) used[m.Groups[1].Value] = set = new HashSet<int>();
+            set.Add(int.Parse(m.Groups[2].Value));
+        }
+        var fresh = new Dictionary<(string, int), string>();
+        string Rename(Match m)
+        {
+            string cls = m.Groups[1].Value; string digits = m.Groups[2].Value; int n = int.Parse(digits);
+            if (!fresh.TryGetValue((cls, n), out var to))
+            {
+                if (!used.TryGetValue(cls, out var set)) used[cls] = set = new HashSet<int>();
+                int lo = digits.Length == 1 ? 0 : (int)Math.Pow(10, digits.Length - 1), hi = (int)Math.Pow(10, digits.Length) - 1;
+                int pick = Math.Max(lo, Math.Min(hi, (set.Count == 0 ? 0 : set.Max()) + 1));
+                while (pick <= hi && set.Contains(pick)) pick++;
+                if (pick > hi) { pick = lo; while (pick <= hi && set.Contains(pick)) pick++; }
+                if (pick > hi) throw new GvasException("no free object number of the same length in this save");
+                set.Add(pick);
+                fresh[(cls, n)] = to = pick.ToString(new string('0', digits.Length));
+            }
+            return cls + "_" + to;
+        }
+        var copy = Encoding.Latin1.GetBytes(Wrappers.Replace(Encoding.Latin1.GetString(kitBytes), Rename));
+        if (copy.Length != kitBytes.Length) throw new GvasException("the rewritten gear kit changed size");
+
+        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(kit)));
+        var ng = g.ArrayReplaceElement(kit.Parent!, kit.Parent!.Children!.IndexOf(kit), copy);
+        cut.OpaqueRemoved += g.OpaqueCount - ng.OpaqueCount;
+
+        // names under the donor's slot object now go under the operator's
+        if (kitTop != myTop)
+        {
+            var from = $"BP_BrunoGameInstance_C_0.BRC_CustomizationFragmentInstanceSlot_{kitTop}";
+            var to = $"BP_BrunoGameInstance_C_0.BRC_CustomizationFragmentInstanceSlot_{myTop}";
+            static bool Names(string text, string from) => Regex.IsMatch(text, Regex.Escape(from) + @"(?!\d)");
+            for (int guard = 0; ; guard++)
+            {
+                if (guard > 500) throw new GvasException("the gear kit still names the donor's slot object");
+                var el = KitElement(ng, guid)!;
+                var node = ng.Walk(new[] { el }).FirstOrDefault(n => GvasFile.StringTypes.Contains(n.TName) && Names(ng.GetStr(n), from));
+                if (node == null) break;
+                ng = ng.SetString(node, Regex.Replace(ng.GetStr(node), Regex.Escape(from) + @"(?!\d)", to));
+            }
+        }
         return ng;
     }
 
