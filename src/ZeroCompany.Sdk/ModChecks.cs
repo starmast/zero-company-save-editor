@@ -22,7 +22,8 @@ public static class ModChecks
     {
         var @out = new List<Check>();
 
-        var folders = ModFolder.Matches(Encoding.Latin1.GetString(g.Data)).GroupBy(m => m.Groups[1].Value).OrderByDescending(x => x.Count()).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
+        var folders = ModFolder.Matches(Encoding.Latin1.GetString(g.Data)).Where(m => !WeaponOps.GameRoots.Contains(m.Groups[1].Value))
+            .GroupBy(m => m.Groups[1].Value).OrderByDescending(x => x.Count()).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
         @out.Add(new Check("mod content", CheckStatus.Ok, folders.Count == 0 ? "no asset folders outside the game's own"
             : $"{folders.Count} asset folder{(folders.Count == 1 ? "" : "s")} outside the game's own: " + string.Join(", ", folders.Take(8).Select(f => $"/Game/{f.Key} ({f.Count()} references)")) + (folders.Count > 8 ? ", ..." : "")));
 
@@ -30,15 +31,20 @@ public static class ModChecks
         if (weapons.Count == 0) { @out.Add(new Check("weapons", CheckStatus.Ok, "no operator weapons found")); return @out; }
 
         var types = string.Join(", ", weapons.GroupBy(w => w.Type.Replace("CPD_WP_Type_", "")).OrderBy(x => x.Key, StringComparer.Ordinal).Select(x => x.Count() == 1 ? x.Key : $"{x.Key} x{x.Count()}"));
-        var damaged = weapons.Where(w => w.Broken).ToList();
+        var roster = (g.Child(g.StrategyDataOrNull(), "Roster")?.Children ?? new List<GvasNode>()).Select(n => g.GuidHex(n)).ToHashSet();
+        var damagedAll = weapons.Where(w => w.Broken).ToList();
+        var away = damagedAll.Where(w => !roster.Contains(w.Guid)).ToList();               // a character record no roster, so no Armory, shows
+        var damaged = damagedAll.Where(w => roster.Contains(w.Guid)).ToList();
         if (damaged.Count == 0)
         {
-            @out.Add(new Check("weapons", CheckStatus.Ok, $"{weapons.Count} weapons, none damaged ({types})"));
+            @out.Add(new Check("weapons", CheckStatus.Ok, $"{weapons.Count} weapons, none damaged on the roster ({types})"
+                + (away.Count == 0 ? "" : $"; {away.Count} damaged on a character that is not on the roster ({string.Join(", ", away.Select(w => w.Type.Replace("CPD_WP_Type_", "")))})")));
             return @out;
         }
         @out.Add(new Check("weapons", CheckStatus.Warn,
-            $"{damaged.Count} of {weapons.Count} weapons have parts, or a gear kit, with no mesh or variant data, so the game cannot build them (the Armory shows no weapon and greys out its menus): "
+            $"{damaged.Count} of {weapons.Count(w => roster.Contains(w.Guid))} weapons on the roster have parts, or a gear kit, with no mesh or variant data, so the game cannot build them (the Armory shows no weapon and greys out its menus): "
             + string.Join("; ", damaged.Select(w => $"{w.Type} {w.Stripped.Count} of {w.Parts.Count} parts [{string.Join(", ", w.Stripped.Select(p => p.Slot.Replace("br.Customization.Slot.Weapon.", "")))}]"))
+            + (away.Count == 0 ? "" : $". {away.Count} more damaged on a character that is not on the roster ({string.Join(", ", away.Select(w => w.Type.Replace("CPD_WP_Type_", "")))})")
             + $". All weapon types: {types}",
             "Personnel > Loadout > Copy weapon, or: zc edit do <save> copy-weapon <operator>; if the weapon comes from a mod, update it for this game version first"));
         return @out;

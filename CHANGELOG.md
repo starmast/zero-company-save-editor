@@ -14,6 +14,8 @@ All notable changes to this project are documented here. The format follows
   did not). Copy weapon now replaces the gear kit too, from the same donor, or from the generic weapon's own kit; the Loadout tab lists it as **Gear kit**
   and marks a weapon whose kit lost its data as damaged, and the debug report and `zc save weapons` do the same. The four generic weapons now carry
   their gear kits (recaptured from game build 199049). Not tried in the game yet: please try it on a copy.
+- The debug report's **Mods** section listed `/Game/WwiseAudio` (the game's own audio) as mod content, and counted a damaged weapon on a character who is
+  not on the roster (a leftover record the Armory never shows) as a problem. It no longer does either, and mentions such a character on its own.
 - After **Copy weapon** is pressed the Loadout tab now says what happens next (nothing is written until Apply to save or Save as copy in the bar at the
   bottom), and parts that lost their data are marked **NO DATA**.
 
