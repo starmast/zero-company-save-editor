@@ -46,7 +46,7 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     static readonly (string Key, string Label)[] NavDefs =
     {
-        ("profile", "Profile"), ("command", "Command"), ("personnel", "Personnel"), ("armory", "Armory"), ("weapons", "Weapons"), ("upgrades", "Upgrades"),
+        ("profile", "Profile"), ("command", "Command"), ("personnel", "Personnel"), ("armory", "Armory"), ("upgrades", "Upgrades"),
         ("medbay", "Medbay"), ("galaxy", "Galaxy"), ("combat", "Combat"), ("advanced", "Advanced"),
     };
 
@@ -192,7 +192,6 @@ public sealed partial class MainViewModel : ViewModelBase
             "profile" when open?.Profile != null => new ProfileViewModel(this, open),
             "command" when open != null => new CommandViewModel(this, open),
             "armory" when open != null => new ArmoryViewModel(this, open, args.FirstOrDefault()),
-            "weapons" when open != null => new WeaponsViewModel(this, open),
             "upgrades" when open != null => new UpgradesViewModel(this, open, args.FirstOrDefault()),
             "advanced" when open != null => new AdvancedViewModel(this, open, args.FirstOrDefault()),
             "personnel" when open != null => new PersonnelViewModel(this, open, args.ElementAtOrDefault(0), args.ElementAtOrDefault(1)),

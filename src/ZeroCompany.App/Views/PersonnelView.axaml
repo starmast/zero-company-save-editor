@@ -14,6 +14,7 @@
     <StaticResource ResourceKey="OverviewTab" />
     <StaticResource ResourceKey="BondsTab" />
     <StaticResource ResourceKey="FocusTab" />
+    <StaticResource ResourceKey="LoadoutTab" />
   </UserControl.DataTemplates>
 
   <StackPanel Spacing="12">
@@ -29,6 +30,13 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+
+      <Border Classes="panel" Padding="14,10" IsVisible="{Binding HasWeaponNotice}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+          <TextBlock Text="{Binding WeaponNotice}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Show me" Command="{Binding ShowDamagedWeaponCommand}" />
+        </Grid>
+      </Border>
 
       <Grid ColumnDefinitions="*,12,300">
         <StackPanel Spacing="12">

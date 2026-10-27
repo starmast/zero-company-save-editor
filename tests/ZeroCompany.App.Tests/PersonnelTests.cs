@@ -39,6 +39,72 @@ public class PersonnelTests
         rig.Shot("22-personnel-focus");
     }
 
+    static LoadoutTabViewModel Loadout(TestRig rig, string guid)
+    {
+        Headless.Run(() => rig.Main.Navigate("personnel", guid, "loadout"));
+        return Assert.IsType<LoadoutTabViewModel>(Vm(rig).Content);
+    }
+
+    [SkippableFact]
+    public void Loadout_tab_shows_the_weapon_and_a_copy_goes_into_the_pending_set_and_a_working_weapon_asks_first()
+    {
+        using var rig = Open("personnel");
+        var view = rig.Main.Session.Current!.View;
+        Skip.If(view.Weapons.Rows.Count == 0, "no operator in the sample save has a weapon");
+        var first = Loadout(rig, view.Weapons.Rows[0].Guid);
+        Assert.NotNull(first.Weapon);
+        Assert.All(first.Weapon!.Parts, p => Assert.False(string.IsNullOrEmpty(p.Name)));
+        rig.Shot("23-personnel-loadout");
+
+        var damaged = view.Weapons.Rows.FirstOrDefault(r => r.Damaged && r.Donors.Count > 0);
+        if (damaged != null)
+        {
+            var w = Loadout(rig, damaged.Guid).Weapon!;
+            Headless.Run(() => w.Toggle.Execute(null));
+            Assert.Equal(1, rig.Main.Session.Pending.Count);
+            Assert.True(w.IsQueued);
+            Headless.Run(() => w.Toggle.Execute(null));
+            Assert.Equal(0, rig.Main.Session.Pending.Count);
+        }
+
+        var working = view.Weapons.Rows.FirstOrDefault(r => !r.Damaged && r.Donors.Count > 0);
+        Skip.If(working == null, "no working weapon with a donor in the sample save");
+        var ww = Loadout(rig, working!.Guid).Weapon!;
+        Headless.Run(() => ww.Toggle.Execute(null));
+        Assert.True(ww.Confirming);                                         // a weapon that works is only replaced after a confirmation
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+        Headless.Run(() => ww.Cancel.Execute(null));
+        Assert.False(ww.Confirming);
+        Headless.Run(() => ww.Toggle.Execute(null));
+        Headless.Run(() => ww.Confirm.Execute(null));
+        Assert.True(ww.IsQueued);
+        Assert.Equal(1, rig.Main.Session.Pending.Count);
+        Headless.Run(() => ww.Toggle.Execute(null));
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+    }
+
+    [SkippableFact]
+    public void Loadout_tab_picks_gear_for_a_slot_and_taking_an_item_from_another_operator_is_shown()
+    {
+        using var rig = Open("personnel");
+        var view = rig.Main.Session.Current!.View;
+        var held = view.Loadout.Items.FirstOrDefault(i => i.Type == "utility" && i.HeldBy.Length > 0);
+        Skip.If(held == null, "no utility item is held in the sample save");
+        var target = view.Loadout.Slots.FirstOrDefault(kv => kv.Key != held!.HeldBy && kv.Value.Any(s => s.Type == "utility")).Key;
+        Skip.If(target == null, "no second operator with a utility slot");
+        var tab = Loadout(rig, target!);
+        var row = tab.Slots.First(s => s.Label.StartsWith("Utility"));
+        var choice = row.Choices.First(c => c.Guid == held!.Guid);
+        Assert.Contains("on ", choice.Label);                                // says who has it now
+        Headless.Run(() => row.Selected = choice);
+        Assert.Equal(1, rig.Main.Session.Pending.Count);
+        Assert.True(row.IsQueued);
+        Assert.Contains(rig.Main.Session.Pending.Describe(rig.Main.Session.Current!), l => l.Text != null && l.Text.Contains("takes it from"));
+        Headless.Run(() => row.Selected = row.Choices[0]);                   // Empty: the slot is empty in the save, or this queues emptying it
+        Headless.Run(() => rig.Main.Session.Pending.Discard());
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+    }
+
     [SkippableFact]
     public void Editing_unspent_focus_moves_the_total_with_it()
     {

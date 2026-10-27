@@ -192,6 +192,74 @@
     </StackPanel>
   </DataTemplate>
 
+  <!-- loadout: weapon and gear -->
+  <DataTemplate x:Key="LoadoutTab" DataType="vm:LoadoutTabViewModel" x:DataType="vm:LoadoutTabViewModel">
+    <StackPanel Spacing="12">
+      <Border Classes="panel" Padding="14,10" IsVisible="{Binding HasWeapon}">
+        <StackPanel Spacing="6" DataContext="{Binding Weapon}" x:DataType="vm:WeaponRowViewModel">
+          <TextBlock Classes="caps mute small" Text="WEAPON" />
+          <TextBlock Classes="caps ice small" Text="{Binding Meta}" TextWrapping="Wrap" />
+          <TextBlock Classes="caps small" Text="DAMAGED: NO MESH OR VARIANT DATA" IsVisible="{Binding Damaged}" />
+          <ItemsControl ItemsSource="{Binding Parts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:WeaponPartRowViewModel">
+                <Grid ColumnDefinitions="90,*">
+                  <TextBlock Classes="caps mute small" Text="{Binding Slot}" />
+                  <TextBlock Grid.Column="1" Classes="mute" Text="{Binding Name}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <StackPanel Spacing="6" IsVisible="{Binding CanCopy}">
+            <TextBlock Classes="caps mute small" Text="{Binding CopyHeading}" TextWrapping="Wrap" />
+            <ComboBox Width="260" ItemsSource="{Binding Donors}" SelectedItem="{Binding SelDonor, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="{Binding ToggleText}" Command="{Binding Toggle}" HorizontalAlignment="Left" IsVisible="{Binding ShowToggle}" />
+            <StackPanel Spacing="6" IsVisible="{Binding Confirming}">
+              <TextBlock Classes="mute" TextWrapping="Wrap" Text="This weapon works. Replacing it removes it from this operator (a backup keeps it)." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Replace it" Command="{Binding Confirm}" />
+                <Button Content="Cancel" Command="{Binding Cancel}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CannotCopy}"
+                     Text="No other operator has an undamaged vanilla weapon of this class to copy." />
+        </StackPanel>
+      </Border>
+      <Border Classes="panel" Padding="14,10" IsVisible="{Binding NoWeapon}">
+        <TextBlock Classes="mute" TextWrapping="Wrap" Text="This operator has no weapon in the save (a droid, or a Jedi with a lightsaber)." />
+      </Border>
+
+      <Border Classes="panel" Padding="14,10" IsVisible="{Binding HasSlots}">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="caps mute small" Text="GEAR" />
+          <ItemsControl ItemsSource="{Binding Slots}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:OperatorGearSlotViewModel">
+                <Grid ColumnDefinitions="150,*,70" Margin="0,0,0,6">
+                  <TextBlock Classes="caps mute small" Text="{Binding Label}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GearChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Grid.Column="2" Classes="amber small" Text="{Binding QueuedText}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding NoUtilityItems}"
+                     Text="The squad owns no utility items to put in a slot. Armory > Add items can add one." />
+          <TextBlock Classes="mute" TextWrapping="Wrap"
+                     Text="An item can only be in one place: choosing one another operator holds takes it from them." />
+        </StackPanel>
+      </Border>
+      <Border Classes="panel" Padding="14,10" IsVisible="{Binding NoSlots}">
+        <TextBlock Classes="mute" TextWrapping="Wrap" Text="This operator has no gear slots in the save." />
+      </Border>
+    </StackPanel>
+  </DataTemplate>
+
   <!-- focus tree -->
   <DataTemplate x:Key="FocusTab" DataType="vm:FocusTabViewModel" x:DataType="vm:FocusTabViewModel">
     <StackPanel Spacing="12">
