@@ -10,7 +10,7 @@ public class WeaponRepairTests : IDisposable
     readonly string _tmp = Path.Combine(Path.GetTempPath(), "zc-weapon-" + Guid.NewGuid().ToString("N"));
     public void Dispose() { try { Directory.Delete(_tmp, true); } catch (IOException) { } }
 
-    static GvasFile Sample()
+    internal static GvasFile Sample()
     {
         var src = Repo.SampleSave();
         Skip.If(src == null, "no sample save");
@@ -18,7 +18,7 @@ public class WeaponRepairTests : IDisposable
     }
 
     /// <summary>Strip every part of an operator's weapon of its fragments, as the game did to the reporter's mod weapons.</summary>
-    static GvasFile Damage(GvasFile g, string guid)
+    internal static GvasFile Damage(GvasFile g, string guid)
     {
         for (int i = 0; ; i++)
         {
@@ -30,7 +30,7 @@ public class WeaponRepairTests : IDisposable
     }
 
     /// <summary>Two operators with intact weapons of one class, so one can be damaged and the other can serve as the donor.</summary>
-    static (string Victim, string Donor) Pair(GvasFile g)
+    internal static (string Victim, string Donor) Pair(GvasFile g)
     {
         var ok = WeaponOps.Operators(g).Select(o => WeaponOps.Read(g, o)!).Where(w => !w.Broken && w.Class.Length > 0).ToList();
         foreach (var w in ok)

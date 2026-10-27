@@ -184,7 +184,8 @@ On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`
 `zc doctor` lists the save folders, game folder, mappings file, Oodle library, game database (and whether the game files are newer than it), backups
 and whether the game is running, with a fix for each problem. `zc doctor --report` prints the debug report (`DebugReport` in the SDK, the same text as the editor's *Copy debug
 report*): tool and OS, the last error with its stack trace (editor only), pending changes, the save as counts (game build, mode, inventory per
-kind with how many are equipped), the save checks and the doctor checks, with the home folder shown as `~`. `--bundle FILE.zip` adds the save
+kind with how many are equipped), the save checks, the mod checks (`ModChecks`: asset folders outside the game's own `/Game/Game/`, the weapon
+types in use, and weapons whose parts lost their mesh and variant data) and the doctor checks, with the home folder shown as `~`. `--bundle FILE.zip` adds the save
 file and the end of `crash.log`. `zc data extract` builds the game database the way the editor's Game data screen does
 (same defaults, same file); `zc data items|upgrades|effects|coil|spawn-sets` list the names `zc edit do` accepts.
 

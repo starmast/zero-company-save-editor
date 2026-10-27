@@ -177,6 +177,7 @@ Real names, descriptions and costs; see [game-data.md](game-data.md).
 ## Reporting a problem
 When something fails, the red banner has **Copy debug report** and **Save debug bundle…**; the same buttons are under **Game data > Report a
 problem** at any time. The report lists the editor and game versions, the last error, your pending changes, counts from the open save (no
-operator names) and how your setup looks, with your home folder shown as `~`. Paste it into a
+operator names), a **Mods** section (asset folders that come from mods, the weapon types in use, and a warning when a weapon, usually from a mod
+that stopped loading, can no longer be built) and how your setup looks, with your home folder shown as `~`. Paste it into a
 [bug report](https://github.com/starmast/zero-company-save-editor/issues/new/choose). The bundle is a zip of the report, the open save as it is
 on disk (without pending edits) and the crash log, for problems that need the save itself.

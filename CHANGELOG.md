@@ -13,6 +13,9 @@ All notable changes to this project are documented here. The format follows
   the operator to copy from or leave it on Automatic. `zc save weapons <save>` prints the same list, and
   `zc edit do <save> repair-weapon <operator> [donor] --write` does the repair. The copy keeps the operator's own weapon slot objects and gives
   its other objects names nothing else in the save uses. Not tried in the game yet: try it on a copy (`--copy`) first.
+- **Mods in the debug report.** The report has a new **Mods** section: the asset folders in the save that are not the game's own (a mod such as
+  `/Game/ZCCompleteBlasters`), the weapon types in use, and a warning when a weapon has parts without mesh or variant data, with the part types
+  and the fix. It holds asset names and counts only, never operator names.
 
 ## [1.2.0] - 2026-10-24
 
