@@ -100,7 +100,7 @@ at another settings/backups/game-data folder, which is how to try things without
 ```
 zc doctor                                   what is set up and what is missing, with the fix for each (exit 1 on a failure)
 zc doctor --report [--save S] [--bundle Z]  the debug report users paste into a bug report; --bundle zips it with the save and crash.log
-zc save list | profile <save> | diff <a> <b> | find <save> <text> | dump <save> [path] | check <save>...
+zc save list | profile <save> | diff <a> <b> | find <save> <text> | dump <save> [path] | weapons <save> | loadout <save> | check <save>...
 zc edit fields|get|set|do|actions|apply|diff|backups|restore ...
 zc assets find|dump|scan|missions|operations|rewards ...
 zc data extract | items|upgrades|effects|coil|spawn-sets [filter]
@@ -180,11 +180,21 @@ On Git Bash, set `MSYS_NO_PATHCONV=1` before passing a path that starts with `/`
 - *Where the rules live.* The turn system itself is native code, so why the game puts Enemy2 units back on Enemy in a standard
   mission is not in any asset; only the data around it is (teams, turn groups, structures).
 
+### Generic weapons
+`src/ZeroCompany.Core/Resources/Weapons/*.zcw` are the generic weapons Copy weapon falls back to when no operator in the save can donate (one per class:
+Rifle, Pistol, Longarm, Repeater). Each is the saved bytes of a vanilla operator's weapon wrappers plus a small manifest (class, part names, the slot object
+numbers, the game build). Make one from a save of the current game build with an operator whose weapon is the game's own and undamaged:
+`zc save capture-weapon <save> <start of the operator's GUID, from zc save weapons> <Name> <file>`. The tool refuses a damaged weapon, one with mod parts, one
+whose data names an operator or objects that are not its own, and cuts meshes a mod added off the end of each part's list (they come after the game's
+own, so no saved choice moves). `WeaponCopyTests` checks the shipped files are parseable, mod-free and round-trip. Capture them again after a game update that
+changes weapons, and prefer a save without mods installed.
+
 ### zc doctor and zc data
 `zc doctor` lists the save folders, game folder, mappings file, Oodle library, game database (and whether the game files are newer than it), backups
 and whether the game is running, with a fix for each problem. `zc doctor --report` prints the debug report (`DebugReport` in the SDK, the same text as the editor's *Copy debug
 report*): tool and OS, the last error with its stack trace (editor only), pending changes, the save as counts (game build, mode, inventory per
-kind with how many are equipped), the save checks and the doctor checks, with the home folder shown as `~`. `--bundle FILE.zip` adds the save
+kind with how many are equipped), the save checks, the mod checks (`ModChecks`: asset folders outside the game's own `/Game/Game/`, the weapon
+types in use, and weapons whose parts lost their mesh and variant data) and the doctor checks, with the home folder shown as `~`. `--bundle FILE.zip` adds the save
 file and the end of `crash.log`. `zc data extract` builds the game database the way the editor's Game data screen does
 (same defaults, same file); `zc data items|upgrades|effects|coil|spawn-sets` list the names `zc edit do` accepts.
 

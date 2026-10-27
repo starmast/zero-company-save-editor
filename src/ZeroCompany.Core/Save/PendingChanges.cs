@@ -20,6 +20,8 @@ public sealed class PendingChanges
     readonly List<string> _starts = new(), _expedites = new(), _heals = new(), _treeFixes = new(), _revives = new();
     readonly Dictionary<string, string> _coil = new();
     readonly Dictionary<(string Kind, int Tier), int> _market = new();                      // Den: (mods/utility, tier) -> items per Black Market refresh
+    readonly Dictionary<(string Guid, string Type, int Slot), string?> _equips = new();             // Personnel: (operator, utility|mod, slot) -> item guid to hold (null = empty)
+    readonly Dictionary<string, string?> _weaponCopies = new();                            // Personnel: operator -> donor operator (null = automatic) for a weapon copy
     readonly Dictionary<string, int> _gearSlots = new();                                    // Den: "mod"/"utility" -> slots every operator should have
     readonly Dictionary<string, string> _options = new();                                   // campaign: option key (US_...) -> wanted fact tag
     readonly Dictionary<(string Guid, string Tag), int> _grants = new();
@@ -68,6 +70,8 @@ public sealed class PendingChanges
     public IReadOnlyDictionary<(string Guid, string Tag), int> Grants => _grants;
     public IReadOnlySet<(string Guid, string Trait)> Traits => _traits;
     public IReadOnlyDictionary<string, int> GearSlots => _gearSlots;
+    public IReadOnlyDictionary<string, string?> WeaponCopies => _weaponCopies;
+    public IReadOnlyDictionary<(string Guid, string Type, int Slot), string?> Equips => _equips;
     public IReadOnlyDictionary<(string Kind, int Tier), int> MarketTables => _market;
     public IReadOnlyDictionary<string, string> CampaignOptions => _options;
     public IReadOnlyDictionary<string, string> CoilChanges => _coil;
@@ -93,7 +97,7 @@ public sealed class PendingChanges
 
     public int Count => _edits.Count + ActionCount;
 
-    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count + _grants.Count + _traits.Count + _gearSlots.Count + _market.Count
+    public int ActionCount => _starts.Count + _expedites.Count + _heals.Count + _revives.Count + _treeFixes.Count + _grants.Count + _traits.Count + _weaponCopies.Count + _equips.Count + _gearSlots.Count + _market.Count
                               + _options.Count + _coil.Count + (RosterOrderOverride != null ? 1 : 0)
                               + _dead.Count + _effectRemovals.Count + _effectCopies.Count + _objectives.Count + _teams.Count + _groups.Count + _triggers.Count + _spawnSet.Count + _turn.Count + _round.Count + _squadAdds.Count + _itemAdds.Count + _missionSets.Count + _operationAges.Count + _zoneClaims.Count + _profileAdds.Count + _missionTurns.Count + _missionCrisis.Count + _sceneryRestores.Count + _sceneryDestroys.Count;
 
@@ -192,7 +196,7 @@ public sealed class PendingChanges
     public void Clear()
     {
         _edits.Clear(); _noLink.Clear(); _linkedDelta.Clear(); _starts.Clear(); _expedites.Clear(); _heals.Clear();
-        _revives.Clear(); _treeFixes.Clear(); _grants.Clear(); _traits.Clear(); _gearSlots.Clear(); _market.Clear(); _options.Clear(); _coil.Clear(); RosterOrderOverride = null;
+        _revives.Clear(); _treeFixes.Clear(); _grants.Clear(); _traits.Clear(); _weaponCopies.Clear(); _equips.Clear(); _gearSlots.Clear(); _market.Clear(); _options.Clear(); _coil.Clear(); RosterOrderOverride = null;
         _dead.Clear(); _effectRemovals.Clear(); _effectCopies.Clear(); _objectives.Clear(); _teams.Clear(); _groups.Clear(); _triggers.Clear(); _spawnSet.Clear(); _turn.Clear(); _round.Clear(); _squadAdds.Clear(); _itemAdds.Clear(); _missionSets.Clear(); _operationAges.Clear(); _zoneClaims.Clear(); _profileAdds.Clear(); _missionTurns.Clear(); _missionCrisis.Clear(); _sceneryRestores.Clear(); _sceneryDestroys.Clear();
     }
 
@@ -243,6 +247,22 @@ public sealed class PendingChanges
     public void SetGearSlots(string type, int total)
     {
         if (total < 1) _gearSlots.Remove(type); else _gearSlots[type] = total;
+        Raise();
+    }
+    /// <summary>
+    /// Queue putting <paramref name="item"/> (null = nothing) in a gear slot; a request for what the slot holds already (<paramref name="saved"/>)
+    /// removes the entry. An item can only be in one place, so asking for it here drops any other queued request for it.
+    /// </summary>
+    public void SetEquip(string guid, string type, int slot, string? item, string? saved)
+    {
+        if (item != null) foreach (var k in _equips.Where(kv => kv.Value == item && kv.Key != (guid, type, slot)).Select(kv => kv.Key).ToList()) _equips.Remove(k);
+        if (item == saved) _equips.Remove((guid, type, slot)); else _equips[(guid, type, slot)] = item;
+        Raise();
+    }
+    /// <summary>Queue giving <paramref name="guid"/> a copy of <paramref name="donor"/>'s weapon (null = the first suitable operator), or take it back out of the queue.</summary>
+    public void SetWeaponCopy(string guid, bool on, string? donor = null)
+    {
+        if (on) _weaponCopies[guid] = donor; else _weaponCopies.Remove(guid);
         Raise();
     }
     /// <summary>Queue giving <paramref name="guid"/> the ability <paramref name="tag"/> at <paramref name="level"/>; a level below 1 takes it back out of the queue.</summary>
@@ -436,6 +456,9 @@ public sealed class PendingChanges
         @out.AddRange(_grants.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Tag, StringComparer.Ordinal)
                              .Select(kv => (SaveAction)new SaveAction.GrantAbility(kv.Key.Guid, kv.Key.Tag, kv.Value)));
         @out.AddRange(_traits.Select(t => (SaveAction)new SaveAction.GiveTrait(t.Guid, t.Trait)));
+        @out.AddRange(_equips.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Type, StringComparer.Ordinal).ThenBy(kv => kv.Key.Slot)
+                             .Select(kv => (SaveAction)new SaveAction.SetEquipped(kv.Key.Guid, kv.Key.Type, kv.Key.Slot, kv.Value)));
+        @out.AddRange(_weaponCopies.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.CopyWeapon(kv.Key, kv.Value)));
         @out.AddRange(_itemAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.AddInventoryItem(kv.Key, kv.Value)));
         @out.AddRange(_profileAdds.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.AddProfileCounter(kv.Key, kv.Value)));
         @out.AddRange(_zoneClaims.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => (SaveAction)new SaveAction.SetZoneClaims(kv.Key, kv.Value.ToList())));
@@ -527,6 +550,16 @@ public sealed class PendingChanges
             @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} {AbilityLabel(tag)} (level {lvl})"));
         foreach (var (g, trait) in _traits)
             @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} the bond trait {TraitOps.Find(trait)?.Name ?? trait}"));
+        foreach (var ((g, type, slot), item) in _equips.OrderBy(kv => kv.Key.Guid, StringComparer.Ordinal).ThenBy(kv => kv.Key.Type, StringComparer.Ordinal).ThenBy(kv => kv.Key.Slot))
+        {
+            var info = item == null ? null : save.View.Loadout.Items.FirstOrDefault(i => i.Guid == item);
+            @out.Add(new PendingLine("Personnel", "", null, null, info == null
+                ? $"Empty {Op(g)}'s {type} slot {slot + 1}"
+                : $"Put {info.Name} in {Op(g)}'s {type} slot {slot + 1}" + (info.HeldBy.Length > 0 && info.HeldBy != g ? $" (takes it from {info.HeldByName})" : "")));
+        }
+        foreach (var (g, donor) in _weaponCopies.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} a copy of {(donor == null ? "another operator's vanilla weapon (else a generic one)" : WeaponOps.IsTemplate(donor) ? "the " + (WeaponOps.Template(donor)?.Label ?? donor) : Op(donor) + "'s vanilla weapon")}"
+                + (save.View.Weapons.Rows.FirstOrDefault(r => r.Guid == g) is { Damaged: false } ? " (replaces a working weapon)" : "")));
         if (FullOverride() is { } order)
             @out.Add(new PendingLine("Personnel", "", null, null, "Roster order: " + string.Join(", ", order.Select(Op))));
         if (save.Combat is { } cb)

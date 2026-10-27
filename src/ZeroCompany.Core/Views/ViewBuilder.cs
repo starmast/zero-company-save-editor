@@ -36,11 +36,75 @@ public static class ViewBuilder
             Command = Command(m, info),
             Personnel = Personnel(m, portraits),
             Armory = Armory(m),
+            Weapons = Weapons(m),
+            Loadout = Loadout(m),
             Medbay = Medbay(m, portraits),
             Galaxy = Galaxy(m),
             Coil = CoilUpgrades(m),
             Upgrades = upgrades != null ? UpgradesScreen(m, upgrades) : null,
         };
+    }
+
+    /// <summary>The weapons of the operators on the roster (the save also holds guests such as a VIP, which the Armory never shows).</summary>
+    public static WeaponsView Weapons(SaveModel m)
+    {
+        var rows = new List<WeaponRowView>();
+        foreach (var guid in WeaponOps.Operators(m.G))
+        {
+            if (!m.Operators.TryGetValue(guid, out var op) || op.Dead) continue;
+            var w = WeaponOps.Read(m.G, guid)!;
+            rows.Add(new WeaponRowView
+            {
+                Guid = guid, Name = m.NameOf(guid), Class = w.Class.Replace('_', ' '), Type = w.Type, Damaged = w.Broken,
+                Parts = w.Parts.Select(p => new WeaponPartView { Slot = p.Slot.Replace("br.Customization.Slot.Weapon.", ""), Name = p.Name, HasData = p.Fragments > 0 }).ToList(),
+                Donors = WeaponOps.Donors(m.G, guid).Where(d => m.Operators.TryGetValue(d, out var o) && !o.Dead)
+                    .Select(d => new OperatorChoiceView { Guid = d, Name = m.NameOf(d) })
+                    .Concat(WeaponOps.Templates.OrderBy(t => t.Class == w.Class ? 0 : 1).ThenBy(t => t.Name, Ord)
+                        .Select(t => new OperatorChoiceView { Guid = t.Key, Name = t.Label + (t.Class == w.Class ? "" : " (other class)") })).ToList(),
+            });
+        }
+        return new WeaponsView { Rows = rows.OrderByDescending(r => r.Damaged).ThenBy(r => r.Name, Ord).ToList() };
+    }
+
+    /// <summary>Utility slots and weapon mod slots per roster operator, and the owned items that fit them.</summary>
+    public static LoadoutView Loadout(SaveModel m)
+    {
+        var items = LoadoutOps.Items(m.G);
+        string Label(LoadoutOps.Item it)
+        {
+            var label = m.Db.ItemLabel(it.Asset) ?? Naming.Pretty(it.Asset);
+            return m.Db.Items.TryGetValue(it.Asset, out var info) && info.Tier is int t and not 0 ? $"{label} (T{t})" : label;
+        }
+        var totals = items.Where(i => i.Count > 0).GroupBy(i => i.Asset).ToDictionary(x => x.Key, x => x.Count());
+        var seen = new Dictionary<string, int>();
+        var views = new List<GearItemView>();
+        foreach (var it in items.Where(i => i.Count > 0).OrderBy(i => i.Type == GearOps.Utility ? 0 : 1).ThenBy(i => Label(i), Ord))
+        {
+            var name = Label(it);
+            if (totals[it.Asset] > 1) { seen[it.Asset] = seen.GetValueOrDefault(it.Asset) + 1; name += $" #{seen[it.Asset]}"; }
+            var held = LoadoutOps.HeldBy(m.G, it.Guid);
+            views.Add(new GearItemView
+            {
+                Guid = it.Guid, Name = name, Type = LoadoutOps.TypeName(it.Type),
+                HeldBy = held?.Operator ?? "", HeldByName = held is { } h ? m.NameOf(h.Operator) : "",
+            });
+        }
+        var byGuid = views.ToDictionary(v => v.Guid);
+        var slots = new Dictionary<string, List<GearSlotView>>();
+        foreach (var (guid, op) in m.Operators)
+        {
+            if (op.Dead) continue;
+            var list = new List<GearSlotView>();
+            foreach (var tag in new[] { GearOps.Utility, GearOps.Modification })
+                foreach (var s in LoadoutOps.Slots(m.G, guid, tag))
+                    list.Add(new GearSlotView
+                    {
+                        Type = LoadoutOps.TypeName(tag), Index = s.Index, Item = s.Item ?? "",
+                        ItemName = s.Item != null && byGuid.TryGetValue(s.Item, out var v) ? v.Name : s.Item != null ? "(unknown item)" : "",
+                    });
+            if (list.Count > 0) slots[guid] = list;
+        }
+        return new LoadoutView { Slots = slots, Items = views };
     }
 
     public static HeaderView Header(SaveModel m)

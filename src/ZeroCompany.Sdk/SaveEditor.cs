@@ -229,6 +229,34 @@ public sealed class SaveEditor
             p.SetGearSlots(type, n);
             return $"every operator gets {n} {type} slots";
         });
+        Reg("equip", "equip <operator> <utility|mod> <slot> <item|empty>", "put an owned item in an operator's gear slot (slots count from 1), or empty the slot", a =>
+        {
+            var o = Op(a[0]);
+            var type = a[1].ToLowerInvariant();
+            if (type is not ("utility" or "mod")) throw new ZcException("the slot type must be utility or mod");
+            var slots = Save.View.Loadout.Slots.GetValueOrDefault(o.Guid)?.Where(s => s.Type == type).ToList() ?? new();
+            if (slots.Count == 0) throw new ZcException($"{o.Name} has no {type} slots");
+            int slot = (int)Count(a[2], 1, slots.Count) - 1;
+            string? saved = slots[slot].Item.Length == 0 ? null : slots[slot].Item;
+            if (a[3].Equals("empty", StringComparison.OrdinalIgnoreCase) || a[3].Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                p.SetEquip(o.Guid, type, slot, null, saved); return $"empty {o.Name}'s {type} slot {slot + 1}";
+            }
+            var it = Pick("item", Save.View.Loadout.Items.Where(i => i.Type == type), a[3], x => x.Guid, x => x.Name);
+            p.SetEquip(o.Guid, type, slot, it.Guid, saved);
+            return $"put {it.Name} in {o.Name}'s {type} slot {slot + 1}" + (it.HeldBy.Length > 0 && it.HeldBy != o.Guid ? $" (takes it from {it.HeldByName})" : "");
+        });
+        Reg("copy-weapon", "copy-weapon <operator> [donor|Rifle|Pistol|Longarm|Repeater]", "give an operator a copy of another operator's vanilla weapon, or of a generic one (the first suitable donor, else the generic weapon of the operator's class)", a =>
+        {
+            var o = Op(a[0]);
+            string? source = null, what = "another operator's (or a generic) weapon";
+            if (a.Count > 1)
+            {
+                if (WeaponOps.Template(a[1]) is { } t) { source = t.Key; what = "the " + t.Label; }
+                else { var d = Op(a[1]); source = d.Guid; what = $"{d.Name}'s weapon"; }
+            }
+            p.SetWeaponCopy(o.Guid, true, source); return $"give {o.Name} a copy of {what}";
+        });
         Reg("move-operator", "move-operator <operator> <position>", "put an operator at a place in the roster (1 = first)", a =>
         {
             var o = Op(a[0]); p.MoveOperatorTo(o.Guid, (int)Count(a[1], 1, 999) - 1, Save.View); return $"move {o.Name} to place {a[1]}";

@@ -39,6 +39,20 @@ the roster order; the game's own strip and mission select follow it.
 - **Bonds** - partners placed on the game's 0-8 scale. Click a face to change that bond's level, progress or cross training.
 - **Focus Tree** - set ability levels using the game's own focus costs. Choose **Spend unspent focus** (levelling costs
   what you have) or **Grant the focus** (levelling is free; the total rises to match).
+- **Loadout** - the operator's weapon and gear. The weapon shows its parts (type, base, barrel, stock, scope, cell, paint); a weapon whose
+  parts have **no mesh or variant data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for
+  example after a game update: the Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*. While one
+  operator has such a weapon, Personnel shows a notice with a **Show me** button. **Copy weapon** queues giving the operator a copy of another
+  operator's vanilla weapon of the same class (rifle, pistol, longarm or repeater). Leave it on *Automatic* (another operator's weapon, and when
+  no one in the save can donate, the editor's own generic weapon of the class), pick an operator, or pick one of the generic weapons (a generic
+  weapon of another class is offered too, but the operator's specialization may not suit it). A weapon that works is only replaced after you
+  confirm. **Apply to save** writes it. A modded weapon is not brought back, only replaced with a working one (a backup keeps the old one);
+  once the mod works again, change the weapon in the game. Below the weapon are the operator's **utility** and **weapon mod** slots, one picker per
+  slot: choose an owned item or *Empty*. An item can only be in one place, so choosing one another operator holds takes it from them (the
+  picker says who has it, and the pending list says "takes it from"). If the squad owns no utility item, add one in Armory > Add items.
+  From the command line: `zc save weapons <save>` and `zc save loadout <save>` list them, `zc edit do <save> copy-weapon <operator>
+  [donor|Rifle|Pistol|Longarm|Repeater]` and `zc edit do <save> equip <operator> <utility|mod> <slot> <item|empty>` change them (add `--write`;
+  without it they only preview). Try it on a copy first; neither has been confirmed in the game.
 - **Give a bond trait** (on the Overview) - adds one of the 32 class traits operators normally learn only from a bond partner of
   another class through cross training, such as a Scout's Difficult Target or a Soldier's Grenadier. Pick it from the list (it shows
   the game's description once the game data is extracted) and press **Add**; after you apply it is listed under training and stat
@@ -165,6 +179,7 @@ Real names, descriptions and costs; see [game-data.md](game-data.md).
 ## Reporting a problem
 When something fails, the red banner has **Copy debug report** and **Save debug bundle…**; the same buttons are under **Game data > Report a
 problem** at any time. The report lists the editor and game versions, the last error, your pending changes, counts from the open save (no
-operator names) and how your setup looks, with your home folder shown as `~`. Paste it into a
+operator names), a **Mods** section (asset folders that come from mods, the weapon types in use, and a warning when a weapon, usually from a mod
+that stopped loading, can no longer be built) and how your setup looks, with your home folder shown as `~`. Paste it into a
 [bug report](https://github.com/starmast/zero-company-save-editor/issues/new/choose). The bundle is a zip of the report, the open save as it is
 on disk (without pending edits) and the crash log, for problems that need the save itself.

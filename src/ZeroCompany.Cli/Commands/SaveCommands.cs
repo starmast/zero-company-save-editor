@@ -1,3 +1,6 @@
+using ZeroCompany.Core.Actions;
+using ZeroCompany.Core.Gvas;
+using ZeroCompany.Core.Model;
 using ZeroCompany.Sdk;
 using ZeroCompany.Sdk.Cli;
 
@@ -15,6 +18,8 @@ static class SaveCommands
           zc save find <save> <text> [--limit N] properties whose name or value contains the text, with their paths
           zc save dump <save> [path] [--depth N] [--take N]
                                                  property tree below a path, e.g. TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6]
+          zc save weapons <save>                 each operator's weapon parts, and which weapons have lost their mesh data
+          zc save loadout <save>                 each operator's utility and weapon mod slots and what is in them
           zc save check <save>...                round-trip and consistency checks (exit 1 on any problem)
 
         <save> is a file path, a file-name fragment ("Brentaal"), a save name ("COMBAT BASE 4.0"), or "latest". --json is available on list and check.
@@ -57,12 +62,82 @@ static class SaveCommands
                 SaveInspect.Dump(doc, a.TakeOptional() ?? "", depth, take);
                 return 0;
             }
+            case "weapons":
+            {
+                NoJson(a, cmd);
+                Weapons(SaveDocument.Open(ws, a.Take("zc save weapons <save>")));
+                return 0;
+            }
+            case "loadout":
+            {
+                NoJson(a, cmd);
+                Loadout(SaveDocument.Open(ws, a.Take("zc save loadout <save>")));
+                return 0;
+            }
+            case "capture-weapon":
+            {
+                // developer tool: make a generic weapon for src/ZeroCompany.Core/Resources/Weapons (see docs/development.md)
+                NoJson(a, cmd);
+                var save = SaveDocument.Open(ws, a.Take("zc save capture-weapon <save> <operator> <name> <file>"));
+                CaptureWeapon(save, a.Take("zc save capture-weapon <save> <operator> <name> <file>"), a.Take("zc save capture-weapon <save> <operator> <name> <file>"), a.Take("zc save capture-weapon <save> <operator> <name> <file>"));
+                return 0;
+            }
             case "check": return Check(a);
             default: throw new ZcException($"unknown command 'zc save {cmd}' (zc save --help)");
         }
     }
 
     static void NoJson(CliArgs a, string cmd) { if (a.Json) throw new ZcException($"--json is not available for 'zc save {cmd}'"); }
+
+    static void Weapons(SaveDocument doc)
+    {
+        var g = doc.Gvas;
+        var model = SaveModel.ForProfile(g);
+        var ops = WeaponOps.Operators(g);
+        Console.WriteLine($"{ops.Count} operators with a weapon");
+        foreach (var guid in ops)
+        {
+            var w = WeaponOps.Read(g, guid)!;
+            var name = MedbayOps.Characters(g).TryGetValue(guid, out var wr) ? Naming.RealName(g, wr) ?? model.NameOf(guid) : guid[..8];
+            Console.WriteLine($"  {guid[..8]}  {name,-24} {(w.Class.Length == 0 ? "?" : w.Class),-16} {(w.Broken ? "DAMAGED" : "ok"),-8} {w.Type}");
+            if (w.Broken)
+                foreach (var p in w.Parts) Console.WriteLine($"      {(p.Fragments == 0 ? "no data" : "ok     ")}  {p.Slot.Replace("br.Customization.Slot.Weapon.", ""),-10} {p.Name}");
+            var donors = WeaponOps.Donors(g, guid);
+            if (w.Broken || donors.Count > 0)
+                Console.WriteLine(donors.Count == 0 ? "      no operator to copy a vanilla weapon from" : "      can copy from: " + string.Join(", ", donors.Select(d => d[..8])));
+        }
+    }
+
+    static void CaptureWeapon(SaveDocument doc, string who, string name, string file)
+    {
+        var g = doc.Gvas;
+        var hits = MedbayOps.Characters(g).Keys.Where(k => k.StartsWith(who, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (hits.Count != 1) throw new ZcException($"'{who}' matches {hits.Count} operators; give the start of the GUID `zc save weapons` shows");
+        int changelist = doc.Container.SaveInfo() is { } info && info["changelist"] is System.Text.Json.Nodes.JsonValue v && int.TryParse(v.ToString(), out var c) ? c : 0;
+        try
+        {
+            var t = WeaponOps.Capture(g, hits[0], name, changelist);
+            File.WriteAllBytes(file, WeaponOps.WriteTemplate(t));
+            Console.WriteLine($"{t.Label}: {t.Parts.Count} parts, {t.Elements.Length:N0} bytes of weapon data, class {t.Class}, game changelist {changelist} -> {file}");
+        }
+        catch (GvasException e) { throw new ZcException(e.Message, e); }
+    }
+
+    static void Loadout(SaveDocument doc)
+    {
+        var g = doc.Gvas;
+        var items = LoadoutOps.Items(g).ToDictionary(i => i.Guid, i => Naming.Pretty(i.Asset));
+        foreach (var (guid, wrapper) in MedbayOps.Characters(g))
+        {
+            var slots = new[] { GearOps.Utility, GearOps.Modification }.SelectMany(t => LoadoutOps.Slots(g, guid, t)).ToList();
+            if (slots.Count == 0) continue;
+            Console.WriteLine($"{guid[..8]}  {Naming.RealName(g, wrapper) ?? "?"}");
+            foreach (var s in slots)
+                Console.WriteLine($"    {LoadoutOps.TypeName(s.Type),-8} {s.Index + 1}  {(s.Item == null ? "(empty)" : items.GetValueOrDefault(s.Item) ?? s.Item)}");
+        }
+        var all = LoadoutOps.AllItems(g);
+        Console.WriteLine(LoadoutOps.Consistent(g, all) ? $"slots and equipped sets agree ({all.Count} items)" : "WARNING: slots and equipped sets disagree");
+    }
 
     static int List(CliArgs a)
     {

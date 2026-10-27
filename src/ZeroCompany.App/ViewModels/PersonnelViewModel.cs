@@ -55,8 +55,8 @@ public sealed partial class PersonnelViewModel : ScreenViewModel
             _byGuid[o.Guid] = o;
             _faces[o.Guid] = new FaceViewModel(o.Name, o.HasPortrait ? main.Portraits.Get(open, o.Guid) : null);
         }
-        _tab = tab is "overview" or "bonds" or "focus" ? tab : main.Memory.PersonnelTab;
-        foreach (var (k, l) in new[] { ("overview", "Overview"), ("bonds", "Bonds"), ("focus", "Focus Tree") })
+        _tab = tab is "overview" or "bonds" or "focus" or "loadout" ? tab : main.Memory.PersonnelTab;
+        foreach (var (k, l) in new[] { ("overview", "Overview"), ("bonds", "Bonds"), ("focus", "Focus Tree"), ("loadout", "Loadout") })
             Tabs.Add(new TabViewModel(k, l, SelectTab));
         _selected = guid != null && _byGuid.ContainsKey(guid) ? guid
                   : main.Memory.SelectedOperator != null && _byGuid.ContainsKey(main.Memory.SelectedOperator) ? main.Memory.SelectedOperator
@@ -67,6 +67,28 @@ public sealed partial class PersonnelViewModel : ScreenViewModel
     }
 
     public ObservableCollection<TabViewModel> Tabs { get; } = new();
+
+    /// <summary>"2 weapons need attention" when a roster operator's weapon lost its data; empty otherwise.</summary>
+    public string WeaponNotice
+    {
+        get
+        {
+            int n = _open.View.Weapons.DamagedCount;
+            return n == 0 ? "" : $"{n} weapon{(n == 1 ? " needs" : "s need")} attention: the game cannot build {(n == 1 ? "it" : "them")} (a mod weapon that stopped loading, say).";
+        }
+    }
+    public bool HasWeaponNotice => WeaponNotice.Length > 0 && _tab != "loadout";
+    /// <summary>Select the first operator whose weapon needs attention and open their Loadout tab.</summary>
+    [RelayCommand]
+    void ShowDamagedWeapon()
+    {
+        var first = _open.View.Weapons.Rows.FirstOrDefault(r => r.Damaged && _byGuid.ContainsKey(r.Guid));
+        if (first == null) return;
+        _selected = first.Guid;
+        _main.Memory.SelectedOperator = first.Guid;
+        SelectTab("loadout");
+        RefreshChips();
+    }
     public ObservableCollection<OperatorChipViewModel> Live { get; } = new();
     public ObservableCollection<OperatorChipViewModel> Memorial { get; } = new();
     public bool HasMemorial => Memorial.Count > 0;
@@ -139,6 +161,7 @@ public sealed partial class PersonnelViewModel : ScreenViewModel
         _tab = key;
         _main.Memory.PersonnelTab = key;
         BuildSelection();
+        OnPropertyChanged(nameof(HasWeaponNotice));
     }
 
     void OnPending()
@@ -166,6 +189,7 @@ public sealed partial class PersonnelViewModel : ScreenViewModel
         {
             "bonds" => new BondsTabViewModel(_main, op, _faces),
             "focus" => new FocusTabViewModel(_main, op),
+            "loadout" when !op.Dead => new LoadoutTabViewModel(_main, _open, op),
             _ => new OverviewTabViewModel(_main, op, face),
         };
         ShowUnspent = _tab != "overview" || op.Focus != null;

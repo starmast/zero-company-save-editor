@@ -16,7 +16,7 @@ public sealed record DebugIncident(string What, Exception? Error, DateTime When)
 
 /// <summary>
 /// A plain-text report to paste into a bug report: the tool and OS, the last error with its stack trace, what was pending, a summary
-/// of the open save made of counts and the game build (no names, GUIDs or bytes), the save checks and the setup checks
+/// of the open save made of counts and the game build (no names, GUIDs or bytes), the save checks, the mod checks (<see cref="ModChecks"/>) and the setup checks
 /// (<see cref="ZcDoctor"/>). The home folder is shown as <c>~</c>. A bundle is the same report zipped with the save file and the
 /// crash log, for bugs that need the real file.
 /// </summary>
@@ -60,6 +60,10 @@ public static class DebugReport
             foreach (var l in SaveSummary(savePath)) sb.AppendLine(l);
             sb.AppendLine().AppendLine("== Save checks");
             try { foreach (var c in SaveCheck.Run(ws, savePath)) sb.AppendLine(Line(c)); }
+            catch (Exception e) { sb.AppendLine($"could not run: {e.GetType().Name}: {e.Message}"); }
+
+            sb.AppendLine().AppendLine("== Mods");
+            try { foreach (var c in ModChecks.Run(savePath)) sb.AppendLine(Line(c)); }
             catch (Exception e) { sb.AppendLine($"could not run: {e.GetType().Name}: {e.Message}"); }
         }
 

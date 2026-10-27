@@ -46,6 +46,8 @@ public class DebugReportTests : IDisposable
         Assert.Matches(@"game:      changelist \d+", text);
         Assert.Matches(@"inventory: resources \d+, utility items \d+ \(\d+ equipped\)", text);
         Assert.Contains("[ok] container", text);                                                     // the save checks
+        Assert.Contains("== Mods", text);
+        Assert.Contains("mod content:", text);
         Assert.Contains("[ok] data folder", text);                                                   // the setup checks
 
         var model = new SaveService(new Dictionary<string, string> { ["t"] = _tmp }, Path.Combine(_tmp, "b"), gameRunning: () => null)
