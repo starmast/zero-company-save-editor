@@ -10,7 +10,7 @@ namespace ZeroCompany.Core.Actions;
 /// so on). A healthy part carries <c>FragmentInstanceWrappers</c> (its mesh and variant choices); a part whose game assets could
 /// not be loaded when the game last saved (a weapon from a mod that stopped working after a game update) has none, and the Armory
 /// then shows no weapon and greys out its menus.
-/// <see cref="Repair"/> gives such an operator a copy of the weapon of another operator with the same weapon class.
+/// <see cref="Copy"/> gives such an operator a copy of the weapon of another operator with the same weapon class.
 /// </summary>
 public static class WeaponOps
 {
@@ -139,7 +139,7 @@ public static class WeaponOps
     /// keep the numbers CharacterData.WeaponCustomizationSlots already points at, and the other wrapper objects get numbers nothing
     /// else in the save uses. Returns the new file and the donor used.
     /// </summary>
-    public static (GvasFile File, string Donor) Repair(GvasFile g, string guid, string? donor, CutInfo cut)
+    public static (GvasFile File, string Donor) Copy(GvasFile g, string guid, string? donor, CutInfo cut)
     {
         var dest = WrappersNode(g, guid) ?? throw new GvasException("this operator has no weapon data");
         var have = Read(g, guid)!;
@@ -209,7 +209,7 @@ public static class WeaponOps
         cut.OpaqueRemoved += g.Walk(tk).Count(n => n.Opaque);
         cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(dest)));
         var ng = g.ReplaceValue(dest, value);
-        cut.WeaponRepairs[guid] = Read(g, donor)!.Parts.Select(p => p.Name).ToList();
+        cut.WeaponCopies[guid] = Read(g, donor)!.Parts.Select(p => p.Name).ToList();
         return (ng, donor);
     }
 

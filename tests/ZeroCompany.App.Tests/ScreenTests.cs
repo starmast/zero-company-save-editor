@@ -32,13 +32,13 @@ public class ScreenTests
     }
 
     [SkippableFact]
-    public void Weapons_lists_each_operators_weapon_and_a_repair_for_a_damaged_one_goes_into_the_pending_set()
+    public void Weapons_lists_each_operators_weapon_and_a_weapon_copy_for_a_damaged_one_goes_into_the_pending_set()
     {
         using var rig = Open("weapons");
         var vm = Assert.IsType<WeaponsViewModel>(rig.Main.Screen);
         Skip.If(vm.Rows.Count == 0, "no operator in the sample save has a weapon");
         Assert.All(vm.Rows, r => Assert.NotEmpty(r.Parts));
-        var damaged = vm.Rows.FirstOrDefault(r => r.CanRepair);
+        var damaged = vm.Rows.FirstOrDefault(r => r.CanCopy);
         Skip.If(damaged == null, "no damaged weapon in the sample save");
         Headless.Run(() => damaged!.Toggle.Execute(null));
         Assert.Equal(1, rig.Main.Session.Pending.Count);

@@ -5,7 +5,7 @@ using ZeroCompany.Core.Save;
 namespace ZeroCompany.Tests;
 
 /// <summary>An operator whose weapon lost its mesh and variant data (a mod weapon the game could no longer load) gets a vanilla weapon back.</summary>
-public class WeaponRepairTests : IDisposable
+public class WeaponCopyTests : IDisposable
 {
     readonly string _tmp = Path.Combine(Path.GetTempPath(), "zc-weapon-" + Guid.NewGuid().ToString("N"));
     public void Dispose() { try { Directory.Delete(_tmp, true); } catch (IOException) { } }
@@ -50,7 +50,7 @@ public class WeaponRepairTests : IDisposable
     }
 
     [SkippableFact]
-    public void A_weapon_stripped_of_its_data_is_reported_and_repair_copies_a_donors_weapon_without_touching_anyone_else()
+    public void A_weapon_stripped_of_its_data_is_reported_and_copy_gives_a_donors_weapon_without_touching_anyone_else()
     {
         var g0 = Sample();
         var (victim, donor) = Pair(g0);
@@ -58,14 +58,14 @@ public class WeaponRepairTests : IDisposable
         Assert.True(WeaponOps.Read(g, victim)!.Broken);
 
         var cut = new CutInfo();
-        var (fixedFile, used) = WeaponOps.Repair(g, victim, donor, cut);
+        var (fixedFile, used) = WeaponOps.Copy(g, victim, donor, cut);
         Assert.Equal(donor, used);
 
         var after = WeaponOps.Read(fixedFile, victim)!;
         var donorParts = WeaponOps.Read(g0, donor)!.Parts;
         Assert.False(after.Broken);
         Assert.Equal(donorParts.Select(p => (p.Slot, p.Name, p.Fragments)), after.Parts.Select(p => (p.Slot, p.Name, p.Fragments)));
-        Assert.True(WeaponOps.Holds(fixedFile, victim, cut.WeaponRepairs[victim]));
+        Assert.True(WeaponOps.Holds(fixedFile, victim, cut.WeaponCopies[victim]));
 
         // everyone else's weapon is byte for byte what it was, and the donor still has its own
         foreach (var other in WeaponOps.Operators(g).Where(o => o != victim))
@@ -73,7 +73,7 @@ public class WeaponRepairTests : IDisposable
             var was = WeaponOps.Read(g, other)!; var now = WeaponOps.Read(fixedFile, other)!;
             Assert.Equal(was.Parts, now.Parts);
         }
-        Assert.Contains(victim, cut.WeaponRepairs.Keys);
+        Assert.Contains(victim, cut.WeaponCopies.Keys);
     }
 
     [SkippableFact]
@@ -84,7 +84,7 @@ public class WeaponRepairTests : IDisposable
         var g = Damage(g0, victim);
         var slotsBefore = g.Child(g.Child(g.Child(MedbayOps.Characters(g)[victim], "ArchiveBytes"), "CharacterData"), "WeaponCustomizationSlots")!
             .Children!.Select(n => g.GetStr(n)).ToList();
-        var (fixedFile, _) = WeaponOps.Repair(g, victim, null, new CutInfo());
+        var (fixedFile, _) = WeaponOps.Copy(g, victim, null, new CutInfo());
 
         // the character's slot list is untouched, and every slot object it names is still used by the operator's weapon parts
         var slotsAfter = fixedFile.Child(fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[victim], "ArchiveBytes"), "CharacterData"), "WeaponCustomizationSlots")!
@@ -107,27 +107,27 @@ public class WeaponRepairTests : IDisposable
     }
 
     [SkippableFact]
-    public void Repair_refuses_a_healthy_weapon_a_donor_of_another_class_and_an_operator_without_a_weapon()
+    public void Copy_refuses_a_healthy_weapon_a_donor_of_another_class_and_an_operator_without_a_weapon()
     {
         var g = Sample();
         var (victim, donor) = Pair(g);
-        Assert.Throws<GvasException>(() => WeaponOps.Repair(g, victim, donor, new CutInfo()));                 // not damaged
+        Assert.Throws<GvasException>(() => WeaponOps.Copy(g, victim, donor, new CutInfo()));                 // not damaged
         var damaged = Damage(g, victim);
         var other = WeaponOps.Operators(damaged).FirstOrDefault(o => o != victim && WeaponOps.Class(damaged, o) != WeaponOps.Class(damaged, victim));
-        if (other != null) Assert.Throws<GvasException>(() => WeaponOps.Repair(damaged, victim, other, new CutInfo()));
-        Assert.Throws<GvasException>(() => WeaponOps.Repair(damaged, "00000000000000000000000000000000", null, new CutInfo()));
+        if (other != null) Assert.Throws<GvasException>(() => WeaponOps.Copy(damaged, victim, other, new CutInfo()));
+        Assert.Throws<GvasException>(() => WeaponOps.Copy(damaged, "00000000000000000000000000000000", null, new CutInfo()));
     }
 
     [SkippableFact]
-    public void The_pending_store_turns_a_queued_repair_into_an_action_and_a_description()
+    public void The_pending_store_turns_a_queued_copy_into_an_action_and_a_description()
     {
         var g = Sample();
         var (victim, _) = Pair(g);
         var p = new PendingChanges();
-        p.SetWeaponRepair(victim, true);
+        p.SetWeaponCopy(victim, true);
         Assert.Equal(1, p.ActionCount);
-        Assert.Equal(new SaveAction.RepairWeapon(victim, null), Assert.Single(p.WeaponRepairs.Select(kv => new SaveAction.RepairWeapon(kv.Key, kv.Value))));
-        p.SetWeaponRepair(victim, false);
+        Assert.Equal(new SaveAction.CopyWeapon(victim, null), Assert.Single(p.WeaponCopies.Select(kv => new SaveAction.CopyWeapon(kv.Key, kv.Value))));
+        p.SetWeaponCopy(victim, false);
         Assert.Equal(0, p.ActionCount);
     }
 }

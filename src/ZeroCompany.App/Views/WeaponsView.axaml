@@ -27,14 +27,14 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <StackPanel Spacing="6" IsVisible="{Binding CanRepair}">
+              <StackPanel Spacing="6" IsVisible="{Binding CanCopy}">
                 <TextBlock Classes="caps mute small" Text="COPY THE VANILLA WEAPON OF" />
                 <ComboBox Width="220" ItemsSource="{Binding Donors}" SelectedItem="{Binding SelDonor, Mode=TwoWay}">
                   <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button Content="{Binding ToggleText}" Command="{Binding Toggle}" HorizontalAlignment="Left" />
               </StackPanel>
-              <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CannotRepair}"
+              <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CannotCopy}"
                          Text="No other operator has an undamaged vanilla weapon of this class to copy." />
             </StackPanel>
           </Border>

@@ -63,11 +63,11 @@ Each roster operator's weapon and its parts (type, base, barrel, stock, scope, c
 data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for example after a game update: the
 Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*.
 
-**Repair weapon** queues giving the operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or
+**Copy weapon** queues giving the operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or
 repeater). Choose which operator to copy from, or leave it on *Automatic*; only operators with an undamaged weapon that uses no mod assets
 are offered. **Apply to save** writes it. The operator keeps their own weapon slots and the old weapon is replaced, so a modded weapon is not
 brought back, only replaced with a working one (a backup keeps the old one). Once the mod works again, change the weapon in the game.
-From the command line: `zc save weapons <save>` lists weapons, and `zc edit do <save> repair-weapon <operator> [donor] --write` repairs one.
+From the command line: `zc save weapons <save>` lists weapons, and `zc edit do <save> copy-weapon <operator> [donor] --write` does the same.
 Try it on a copy first; it has not been confirmed in the game.
 
 ## Armory

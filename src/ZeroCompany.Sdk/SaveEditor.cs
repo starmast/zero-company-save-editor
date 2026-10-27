@@ -229,10 +229,10 @@ public sealed class SaveEditor
             p.SetGearSlots(type, n);
             return $"every operator gets {n} {type} slots";
         });
-        Reg("repair-weapon", "repair-weapon <operator> [donor]", "give an operator whose weapon lost its data a copy of another operator's vanilla weapon", a =>
+        Reg("copy-weapon", "copy-weapon <operator> [donor]", "give an operator whose weapon lost its data a copy of another operator's vanilla weapon", a =>
         {
             var o = Op(a[0]); var d = a.Count > 1 ? Op(a[1]) : null;
-            p.SetWeaponRepair(o.Guid, true, d?.Guid); return $"repair {o.Name}'s weapon" + (d == null ? "" : $" with a copy of {d.Name}'s");
+            p.SetWeaponCopy(o.Guid, true, d?.Guid); return $"give {o.Name} a copy of {(d == null ? "another operator" : d.Name)}'s weapon";
         });
         Reg("move-operator", "move-operator <operator> <position>", "put an operator at a place in the roster (1 = first)", a =>
         {

@@ -23,8 +23,8 @@ public sealed class CutInfo
     public List<(string Guid, string Asset)> TraitsGiven { get; } = new();
     /// <summary>Gear slots set for everyone: item type tag -> the slot count each operator must have at least.</summary>
     public Dictionary<string, int> GearSlots { get; } = new();
-    /// <summary>Weapons repaired: operator guid -> the part names the weapon must have afterwards.</summary>
-    public Dictionary<string, List<string>> WeaponRepairs { get; } = new();
+    /// <summary>Weapons copied: operator guid -> the part names the weapon must have afterwards.</summary>
+    public Dictionary<string, List<string>> WeaponCopies { get; } = new();
     /// <summary>Black Market quality tables: table tag -> how many items it must roll.</summary>
     public Dictionary<string, int> MarketTables { get; } = new();
     /// <summary>Campaign options changed: setting key -> (the tag the save had, the tag it must end up with).</summary>

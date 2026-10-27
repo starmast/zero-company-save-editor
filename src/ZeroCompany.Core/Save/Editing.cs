@@ -28,7 +28,7 @@ public abstract record SaveAction
     /// <summary>Set which influence reward tiers of a galaxy zone (tag) count as claimed; a tier left out can be claimed again in the game.</summary>
     public sealed record SetZoneClaims(string Zone, IReadOnlyList<int> Tiers) : SaveAction;
     /// <summary>Give an operator whose weapon lost its mesh data a copy of another operator's vanilla weapon (<c>Donor</c> null = pick one).</summary>
-    public sealed record RepairWeapon(string Guid, string? Donor) : SaveAction;
+    public sealed record CopyWeapon(string Guid, string? Donor) : SaveAction;
     /// <summary>Give an operator a bond trait (a class trait normally learned through cross training), by its effect asset name.</summary>
     public sealed record GiveTrait(string Guid, string Trait) : SaveAction;
     /// <summary>Give every operator <c>Total</c> gear slots of a type ("mod" or "utility").</summary>

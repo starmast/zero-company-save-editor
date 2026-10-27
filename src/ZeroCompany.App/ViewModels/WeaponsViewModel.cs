@@ -32,8 +32,8 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
         Parts = w.Parts.Select(p => new WeaponPartRowViewModel(p)).ToList();
         Donors = new[] { new GroupChoice(Automatic, "Automatic") }.Concat(w.Donors.Select(d => new GroupChoice(d.Guid, d.Name))).ToList();
         _donor = Donors[0];
-        CanRepair = w.Damaged && w.Donors.Count > 0;
-        Toggle = new RelayCommand(() => _pending.SetWeaponRepair(_guid, !IsQueued, _donor.Value.Length == 0 ? null : _donor.Value));
+        CanCopy = w.Damaged && w.Donors.Count > 0;
+        Toggle = new RelayCommand(() => _pending.SetWeaponCopy(_guid, !IsQueued, _donor.Value.Length == 0 ? null : _donor.Value));
         _pending.Changed += OnChanged;
     }
 
@@ -41,8 +41,8 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
     public string Meta { get; }
     public bool Damaged { get; }
     public bool Healthy => !Damaged;
-    public bool CanRepair { get; }
-    public bool CannotRepair => Damaged && !CanRepair;
+    public bool CanCopy { get; }
+    public bool CannotCopy => Damaged && !CanCopy;
     public IReadOnlyList<WeaponPartRowViewModel> Parts { get; }
     public IReadOnlyList<GroupChoice> Donors { get; }
     public GroupChoice SelDonor
@@ -51,11 +51,11 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
         set
         {
             if (value == null || SetProperty(ref _donor, value) == false) return;
-            if (IsQueued) _pending.SetWeaponRepair(_guid, true, value.Value.Length == 0 ? null : value.Value);
+            if (IsQueued) _pending.SetWeaponCopy(_guid, true, value.Value.Length == 0 ? null : value.Value);
         }
     }
-    public bool IsQueued => _pending.WeaponRepairs.ContainsKey(_guid);
-    public string ToggleText => IsQueued ? "Undo repair" : "Repair weapon";
+    public bool IsQueued => _pending.WeaponCopies.ContainsKey(_guid);
+    public string ToggleText => IsQueued ? "Undo copy" : "Copy weapon";
     public System.Windows.Input.ICommand Toggle { get; }
 
     void OnChanged() { OnPropertyChanged(nameof(IsQueued)); OnPropertyChanged(nameof(ToggleText)); }

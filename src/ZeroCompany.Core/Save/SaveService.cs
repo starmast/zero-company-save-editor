@@ -427,12 +427,12 @@ public sealed class SaveService
                     catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
                     break;
                 }
-                case SaveAction.RepairWeapon rw:
+                case SaveAction.CopyWeapon rw:
                 {
                     var guid = NormGuid(rw.Guid);
-                    if (!seen.Add("weapon" + guid)) throw new EditException("duplicate weapon repair");
+                    if (!seen.Add("weapon" + guid)) throw new EditException("duplicate weapon copy");
                     if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
-                    try { g = WeaponOps.Repair(g, guid, rw.Donor == null ? null : NormGuid(rw.Donor), cut).File; }
+                    try { g = WeaponOps.Copy(g, guid, rw.Donor == null ? null : NormGuid(rw.Donor), cut).File; }
                     catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
                     break;
                 }
@@ -836,8 +836,8 @@ public sealed class SaveService
         }
         if (cut.MarketTables.Count > 0 && !MarketOps.Holds(g2, cut.MarketTables))
             throw new EditException("verification failed: the Black Market tables are not what was intended");
-        foreach (var (guid, names) in cut.WeaponRepairs)
-            if (!WeaponOps.Holds(g2, guid, names)) throw new EditException("verification failed: a repaired weapon is not what was intended");
+        foreach (var (guid, names) in cut.WeaponCopies)
+            if (!WeaponOps.Holds(g2, guid, names)) throw new EditException("verification failed: a copied weapon is not what was intended");
         foreach (var (type, total) in cut.GearSlots)
             if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
         foreach (var guid in cut.TraitsGiven.Select(t => t.Guid).Distinct())

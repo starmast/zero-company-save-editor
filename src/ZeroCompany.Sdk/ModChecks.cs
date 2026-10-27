@@ -40,7 +40,7 @@ public static class ModChecks
             $"{damaged.Count} of {weapons.Count} weapons have parts with no mesh or variant data, so the game cannot build them (the Armory shows no weapon and greys out its menus): "
             + string.Join("; ", damaged.Select(w => $"{w.Type} {w.Stripped.Count} of {w.Parts.Count} parts [{string.Join(", ", w.Stripped.Select(p => p.Slot.Replace("br.Customization.Slot.Weapon.", "")))}]"))
             + $". All weapon types: {types}",
-            "Weapons screen > Repair weapon, or: zc edit do <save> repair-weapon <operator>; if the weapon comes from a mod, update it for this game version first"));
+            "Weapons screen > Copy weapon, or: zc edit do <save> copy-weapon <operator>; if the weapon comes from a mod, update it for this game version first"));
         return @out;
     }
 }
