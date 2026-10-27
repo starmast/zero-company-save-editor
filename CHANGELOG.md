@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Weapons screen and weapon repair.** Weapons lists each roster operator's weapon with its parts (type, base, barrel, stock, scope, cell and
+  the paint) and flags a weapon whose parts have lost their mesh and variant data, which is what a modded weapon looks like after the mod stops
+  loading (an update to the game, say): the Armory then shows no weapon and greys out Equip mods, Change weapon and Customize appearance.
+  **Repair weapon** gives that operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or repeater); pick
+  the operator to copy from or leave it on Automatic. `zc save weapons <save>` prints the same list, and
+  `zc edit do <save> repair-weapon <operator> [donor] --write` does the repair. The copy keeps the operator's own weapon slot objects and gives
+  its other objects names nothing else in the save uses. Not tried in the game yet: try it on a copy (`--copy`) first.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added

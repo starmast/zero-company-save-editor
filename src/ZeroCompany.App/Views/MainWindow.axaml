@@ -12,6 +12,7 @@
     <DataTemplate DataType="vm:CommandViewModel"><v:CommandView /></DataTemplate>
     <DataTemplate DataType="vm:GameDataViewModel"><v:GameDataView /></DataTemplate>
     <DataTemplate DataType="vm:ArmoryViewModel"><v:ArmoryView /></DataTemplate>
+    <DataTemplate DataType="vm:WeaponsViewModel"><v:WeaponsView /></DataTemplate>
     <DataTemplate DataType="vm:UpgradesViewModel"><v:UpgradesView /></DataTemplate>
     <DataTemplate DataType="vm:AdvancedViewModel"><v:AdvancedView /></DataTemplate>
     <DataTemplate DataType="vm:PersonnelViewModel"><v:PersonnelView /></DataTemplate>

@@ -12,6 +12,10 @@
   able to verify.
 - **Roster capacity** can be set higher than the Den's upgrades allow, and a roster above its capacity loads without trimming (tried in the game), but the roster screens
   look odd when the numbers do not fit, for example 18/15.
+- **Weapons**: the editor can read every operator's weapon and repair a damaged one by copying an undamaged vanilla weapon of the same class
+  from another operator. It cannot choose a weapon type for an operator, restore a modded weapon, repair a weapon of a class no other
+  operator has, or repair when the object numbers in the copy would not fit (the donor list says what is possible). Repair is not confirmed
+  in the game. Operators who are not on the roster (a VIP, say) are not listed.
 - **Gear slots** raise every operator at once, never lower them, and need the save to have a bonus slot record (any save that has had a slot upgrade does).
 - **Recruiting** cannot be steered from a save. The six candidates the Recruitment screen offers are generated each time the Den loads (the save keeps no list and
   no seed for them: a candidate kept her name and talent but came back with a different specialization and weapon after a reload), so you cannot choose who

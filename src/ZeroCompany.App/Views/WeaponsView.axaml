@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeroCompany.App.ViewModels"
+             x:Class="ZeroCompany.App.Views.WeaponsView"
+             x:DataType="vm:WeaponsViewModel">
+  <StackPanel Spacing="12">
+    <TextBlock Classes="mute" Text="{Binding Summary}" TextWrapping="Wrap" />
+
+    <ItemsControl ItemsSource="{Binding Rows}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:WeaponRowViewModel">
+          <Border Classes="panel" Width="372" Margin="0,0,12,12" Padding="14,10">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="h2" FontSize="19" Text="{Binding Name}" TextWrapping="Wrap" />
+              <TextBlock Classes="caps ice small" Text="{Binding Meta}" TextWrapping="Wrap" />
+              <TextBlock Classes="caps small" Text="DAMAGED: NO MESH OR VARIANT DATA" IsVisible="{Binding Damaged}" />
+              <ItemsControl ItemsSource="{Binding Parts}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:WeaponPartRowViewModel">
+                    <Grid ColumnDefinitions="80,*">
+                      <TextBlock Classes="caps mute small" Text="{Binding Slot}" />
+                      <TextBlock Grid.Column="1" Classes="mute" Text="{Binding Name}" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <StackPanel Spacing="6" IsVisible="{Binding CanRepair}">
+                <TextBlock Classes="caps mute small" Text="COPY THE VANILLA WEAPON OF" />
+                <ComboBox Width="220" ItemsSource="{Binding Donors}" SelectedItem="{Binding SelDonor, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:GroupChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="{Binding ToggleText}" Command="{Binding Toggle}" HorizontalAlignment="Left" />
+              </StackPanel>
+              <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CannotRepair}"
+                         Text="No other operator has an undamaged vanilla weapon of this class to copy." />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

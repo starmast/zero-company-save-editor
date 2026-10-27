@@ -329,12 +329,46 @@ public sealed class AchievementView
     public FieldRef? Count { get; init; }
 }
 
+/// <summary>One weapon part: its slot ("Barrel"), the part's asset name, and whether it still carries its mesh and variant data.</summary>
+public sealed class WeaponPartView
+{
+    public string Slot { get; init; } = "";
+    public string Name { get; init; } = "";
+    public bool HasData { get; init; }
+}
+
+/// <summary>An operator's weapon, and for a damaged one the operators whose vanilla weapon could be copied to it.</summary>
+public sealed class WeaponRowView
+{
+    public string Guid { get; init; } = "";
+    public string Name { get; init; } = "";
+    /// <summary>The weapon class the operator's specialization uses, e.g. "Blaster Rifle" ("" when the save does not say).</summary>
+    public string Class { get; init; } = "";
+    public string Type { get; init; } = "";
+    public bool Damaged { get; init; }
+    public List<WeaponPartView> Parts { get; init; } = new();
+    public List<OperatorChoiceView> Donors { get; init; } = new();
+}
+
+public sealed class OperatorChoiceView
+{
+    public string Guid { get; init; } = "";
+    public string Name { get; init; } = "";
+}
+
+public sealed class WeaponsView
+{
+    public List<WeaponRowView> Rows { get; init; } = new();
+    public int DamagedCount => Rows.Count(r => r.Damaged);
+}
+
 public sealed class SaveView
 {
     public HeaderView Header { get; init; } = new();
     public CommandView Command { get; init; } = new();
     public PersonnelView Personnel { get; init; } = new();
     public ArmoryView Armory { get; init; } = new();
+    public WeaponsView Weapons { get; init; } = new();
     public MedbayView Medbay { get; init; } = new();
     public GalaxyView Galaxy { get; init; } = new();
     public CoilView Coil { get; init; } = new();

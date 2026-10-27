@@ -1,3 +1,5 @@
+using ZeroCompany.Core.Actions;
+using ZeroCompany.Core.Model;
 using ZeroCompany.Sdk;
 using ZeroCompany.Sdk.Cli;
 
@@ -15,6 +17,7 @@ static class SaveCommands
           zc save find <save> <text> [--limit N] properties whose name or value contains the text, with their paths
           zc save dump <save> [path] [--depth N] [--take N]
                                                  property tree below a path, e.g. TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6]
+          zc save weapons <save>                 each operator's weapon parts, and which weapons have lost their mesh data
           zc save check <save>...                round-trip and consistency checks (exit 1 on any problem)
 
         <save> is a file path, a file-name fragment ("Brentaal"), a save name ("COMBAT BASE 4.0"), or "latest". --json is available on list and check.
@@ -57,12 +60,38 @@ static class SaveCommands
                 SaveInspect.Dump(doc, a.TakeOptional() ?? "", depth, take);
                 return 0;
             }
+            case "weapons":
+            {
+                NoJson(a, cmd);
+                Weapons(SaveDocument.Open(ws, a.Take("zc save weapons <save>")));
+                return 0;
+            }
             case "check": return Check(a);
             default: throw new ZcException($"unknown command 'zc save {cmd}' (zc save --help)");
         }
     }
 
     static void NoJson(CliArgs a, string cmd) { if (a.Json) throw new ZcException($"--json is not available for 'zc save {cmd}'"); }
+
+    static void Weapons(SaveDocument doc)
+    {
+        var g = doc.Gvas;
+        var model = SaveModel.ForProfile(g);
+        var ops = WeaponOps.Operators(g);
+        Console.WriteLine($"{ops.Count} operators with a weapon");
+        foreach (var guid in ops)
+        {
+            var w = WeaponOps.Read(g, guid)!;
+            var name = MedbayOps.Characters(g).TryGetValue(guid, out var wr) ? Naming.RealName(g, wr) ?? model.NameOf(guid) : guid[..8];
+            Console.WriteLine($"  {guid[..8]}  {name,-24} {(w.Class.Length == 0 ? "?" : w.Class),-16} {(w.Broken ? "DAMAGED" : "ok"),-8} {w.Type}");
+            if (w.Broken)
+            {
+                foreach (var p in w.Parts) Console.WriteLine($"      {(p.Fragments == 0 ? "no data" : "ok     ")}  {p.Slot.Replace("br.Customization.Slot.Weapon.", ""),-10} {p.Name}");
+                var donors = WeaponOps.Donors(g, guid);
+                Console.WriteLine(donors.Count == 0 ? "      no operator to copy a vanilla weapon from" : "      can copy from: " + string.Join(", ", donors.Select(d => d[..8])));
+            }
+        }
+    }
 
     static int List(CliArgs a)
     {

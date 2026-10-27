@@ -36,11 +36,31 @@ public static class ViewBuilder
             Command = Command(m, info),
             Personnel = Personnel(m, portraits),
             Armory = Armory(m),
+            Weapons = Weapons(m),
             Medbay = Medbay(m, portraits),
             Galaxy = Galaxy(m),
             Coil = CoilUpgrades(m),
             Upgrades = upgrades != null ? UpgradesScreen(m, upgrades) : null,
         };
+    }
+
+    /// <summary>The weapons of the operators on the roster (the save also holds guests such as a VIP, which the Armory never shows).</summary>
+    public static WeaponsView Weapons(SaveModel m)
+    {
+        var rows = new List<WeaponRowView>();
+        foreach (var guid in WeaponOps.Operators(m.G))
+        {
+            if (!m.Operators.TryGetValue(guid, out var op) || op.Dead) continue;
+            var w = WeaponOps.Read(m.G, guid)!;
+            rows.Add(new WeaponRowView
+            {
+                Guid = guid, Name = m.NameOf(guid), Class = w.Class.Replace('_', ' '), Type = w.Type, Damaged = w.Broken,
+                Parts = w.Parts.Select(p => new WeaponPartView { Slot = p.Slot.Replace("br.Customization.Slot.Weapon.", ""), Name = p.Name, HasData = p.Fragments > 0 }).ToList(),
+                Donors = !w.Broken ? new() : WeaponOps.Donors(m.G, guid).Where(d => m.Operators.TryGetValue(d, out var o) && !o.Dead)
+                    .Select(d => new OperatorChoiceView { Guid = d, Name = m.NameOf(d) }).ToList(),
+            });
+        }
+        return new WeaponsView { Rows = rows.OrderByDescending(r => r.Damaged).ThenBy(r => r.Name, Ord).ToList() };
     }
 
     public static HeaderView Header(SaveModel m)

@@ -58,6 +58,18 @@ then **Queue: start**. Starting works like the game's Build button: the game the
 already building. No cost is charged. **Queue all startable** queues everything that can be started, **Expedite all building**
 expedites everything under construction, and **Clear queue** drops the queued starts and expedites.
 
+## Weapons
+Each roster operator's weapon and its parts (type, base, barrel, stock, scope, cell, paint). A weapon whose parts have **no mesh or variant
+data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for example after a game update: the
+Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*.
+
+**Repair weapon** queues giving the operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or
+repeater). Choose which operator to copy from, or leave it on *Automatic*; only operators with an undamaged weapon that uses no mod assets
+are offered. **Apply to save** writes it. The operator keeps their own weapon slots and the old weapon is replaced, so a modded weapon is not
+brought back, only replaced with a working one (a backup keeps the old one). Once the mod works again, change the weapon in the game.
+From the command line: `zc save weapons <save>` lists weapons, and `zc edit do <save> repair-weapon <operator> [donor] --write` repairs one.
+Try it on a copy first; it has not been confirmed in the game.
+
 ## Armory
 Utility items and weapon mods, with how many you own. Use the search box to find one.
 
