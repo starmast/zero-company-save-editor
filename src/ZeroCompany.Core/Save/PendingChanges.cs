@@ -558,7 +558,7 @@ public sealed class PendingChanges
                 : $"Put {info.Name} in {Op(g)}'s {type} slot {slot + 1}" + (info.HeldBy.Length > 0 && info.HeldBy != g ? $" (takes it from {info.HeldByName})" : "")));
         }
         foreach (var (g, donor) in _weaponCopies.OrderBy(kv => kv.Key, StringComparer.Ordinal))
-            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} a copy of {(donor == null ? "another operator's" : Op(donor) + "'s")} vanilla weapon"
+            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} a copy of {(donor == null ? "another operator's vanilla weapon (else a generic one)" : WeaponOps.IsTemplate(donor) ? "the " + (WeaponOps.Template(donor)?.Label ?? donor) : Op(donor) + "'s vanilla weapon")}"
                 + (save.View.Weapons.Rows.FirstOrDefault(r => r.Guid == g) is { Damaged: false } ? " (replaces a working weapon)" : "")));
         if (FullOverride() is { } order)
             @out.Add(new PendingLine("Personnel", "", null, null, "Roster order: " + string.Join(", ", order.Select(Op))));

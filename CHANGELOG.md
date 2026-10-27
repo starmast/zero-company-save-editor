@@ -6,13 +6,17 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- **Weapons screen and Copy weapon.** Weapons lists each roster operator's weapon with its parts (type, base, barrel, stock, scope, cell and
-  the paint) and flags a weapon whose parts have lost their mesh and variant data, which is what a modded weapon looks like after the mod stops
-  loading (an update to the game, say): the Armory then shows no weapon and greys out Equip mods, Change weapon and Customize appearance.
-  **Copy weapon** gives that operator (a working weapon too, after a confirmation) a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or repeater); pick
-  the operator to copy from or leave it on Automatic. `zc save weapons <save>` prints the same list, and
-  `zc edit do <save> copy-weapon <operator> [donor] --write` does the same. The copy's objects get names nothing else in the save uses, and the
-  operator's weapon slot list is pointed at them. Not tried in the game yet: try it on a copy (`--copy`) first.
+- **Personnel > Loadout.** A new tab with the operator's weapon and gear. The weapon shows its parts (type, base, barrel, stock, scope, cell, paint)
+  and is marked damaged when its parts have lost their mesh and variant data, which is what a modded weapon looks like after the mod stops loading
+  (an update to the game, say): the Armory then shows no weapon and greys out Equip mods, Change weapon and Customize appearance. Personnel shows a
+  notice with a **Show me** button while a roster operator's weapon is damaged. **Copy weapon** gives the operator a copy of another operator's
+  vanilla weapon of the same class (rifle, pistol, longarm or repeater) and, when no operator in the save can donate, one of the editor's four
+  generic weapons (captured from game build 199049); a working weapon is replaced only after a confirmation. Below it, each **utility** and **weapon
+  mod** slot has a picker: choose an owned item or Empty. The game saves gear twice (the slot, and the item's list of holders), and the editor
+  changes both together; an item another operator holds is taken from them. `zc save weapons`, `zc save loadout`,
+  `zc edit do <save> copy-weapon <operator> [donor|Rifle|Pistol|Longarm|Repeater]` and
+  `zc edit do <save> equip <operator> <utility|mod> <slot> <item|empty>` do the same from the command line. Not tried in the game yet: try it on a copy
+  (`--copy`) first.
 - **Mods in the debug report.** The report has a new **Mods** section: the asset folders in the save that are not the game's own (a mod such as
   `/Game/ZCCompleteBlasters`), the weapon types in use, and a warning when a weapon has parts without mesh or variant data, with the part types
   and the fix. It holds asset names and counts only, never operator names.

@@ -31,7 +31,7 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
         Meta = string.Join(" · ", new[] { w.Class, w.Type }.Where(s => s.Length > 0));
         Damaged = w.Damaged;
         Parts = w.Parts.Select(p => new WeaponPartRowViewModel(p)).ToList();
-        Donors = new[] { new GroupChoice(Automatic, "Automatic") }.Concat(w.Donors.Select(d => new GroupChoice(d.Guid, d.Name))).ToList();
+        Donors = new[] { new GroupChoice(Automatic, "Automatic (another operator, else a generic weapon)") }.Concat(w.Donors.Select(d => new GroupChoice(d.Guid, d.Name))).ToList();
         _donor = Donors[0];
         CanCopy = w.Donors.Count > 0;
         // a working weapon is only replaced after a second click
@@ -51,7 +51,7 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
     public bool Healthy => !Damaged;
     public bool CanCopy { get; }
     public bool CannotCopy => Damaged && !CanCopy;
-    public string CopyHeading => Damaged ? "COPY THE VANILLA WEAPON OF" : "REPLACE THIS WEAPON WITH THE VANILLA WEAPON OF";
+    public string CopyHeading => Damaged ? "COPY A VANILLA WEAPON FROM" : "REPLACE THIS WEAPON WITH A VANILLA WEAPON FROM";
     bool _confirming;
     /// <summary>Asking whether to replace a weapon that works.</summary>
     public bool Confirming

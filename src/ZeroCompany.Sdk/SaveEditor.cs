@@ -246,10 +246,16 @@ public sealed class SaveEditor
             p.SetEquip(o.Guid, type, slot, it.Guid, saved);
             return $"put {it.Name} in {o.Name}'s {type} slot {slot + 1}" + (it.HeldBy.Length > 0 && it.HeldBy != o.Guid ? $" (takes it from {it.HeldByName})" : "");
         });
-        Reg("copy-weapon", "copy-weapon <operator> [donor]", "give an operator whose weapon lost its data a copy of another operator's vanilla weapon", a =>
+        Reg("copy-weapon", "copy-weapon <operator> [donor|Rifle|Pistol|Longarm|Repeater]", "give an operator a copy of another operator's vanilla weapon, or of a generic one (the first suitable donor, else the generic weapon of the operator's class)", a =>
         {
-            var o = Op(a[0]); var d = a.Count > 1 ? Op(a[1]) : null;
-            p.SetWeaponCopy(o.Guid, true, d?.Guid); return $"give {o.Name} a copy of {(d == null ? "another operator" : d.Name)}'s weapon";
+            var o = Op(a[0]);
+            string? source = null, what = "another operator's (or a generic) weapon";
+            if (a.Count > 1)
+            {
+                if (WeaponOps.Template(a[1]) is { } t) { source = t.Key; what = "the " + t.Label; }
+                else { var d = Op(a[1]); source = d.Guid; what = $"{d.Name}'s weapon"; }
+            }
+            p.SetWeaponCopy(o.Guid, true, source); return $"give {o.Name} a copy of {what}";
         });
         Reg("move-operator", "move-operator <operator> <position>", "put an operator at a place in the roster (1 = first)", a =>
         {

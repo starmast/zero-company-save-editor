@@ -224,8 +224,8 @@
               </StackPanel>
             </StackPanel>
           </StackPanel>
-          <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CannotCopy}"
-                     Text="No other operator has an undamaged vanilla weapon of this class to copy." />
+          <TextBlock Classes="mute" TextWrapping="Wrap" IsVisible="{Binding CanCopy}"
+                     Text="Automatic copies another operator's vanilla weapon of this class and, when there is none, the editor's generic weapon of the class. A generic weapon of another class can be chosen too, but the operator's specialization may not suit it." />
         </StackPanel>
       </Border>
       <Border Classes="panel" Padding="14,10" IsVisible="{Binding NoWeapon}">

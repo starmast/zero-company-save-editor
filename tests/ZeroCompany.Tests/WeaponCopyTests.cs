@@ -123,7 +123,7 @@ public class WeaponCopyTests : IDisposable
         var g = Sample();
         int copies = 0;
         foreach (var target in WeaponOps.Operators(g))
-            foreach (var donor in WeaponOps.Donors(g, target))
+            foreach (var donor in WeaponOps.Donors(g, target).Take(2))                                  // enough to cover every operator without minutes of copying
             {
                 var cut = new CutInfo();
                 var (copied, _) = WeaponOps.Copy(g, target, donor, cut);
@@ -132,6 +132,75 @@ public class WeaponCopyTests : IDisposable
                 copies++;
             }
         Skip.If(copies == 0, "the sample save has no operator that can copy a weapon");
+    }
+
+    [Fact]
+    public void The_editor_ships_a_plain_vanilla_generic_weapon_for_each_common_class()
+    {
+        var names = WeaponOps.Templates.Select(t => t.Name).OrderBy(n => n).ToList();
+        Assert.Equal(new[] { "Longarm", "Pistol", "Repeater", "Rifle" }, names);
+        foreach (var t in WeaponOps.Templates)
+        {
+            Assert.Equal("Blaster_" + t.Name, t.Class);
+            Assert.Equal(9, t.Parts.Count);
+            Assert.Equal(t.Parts.Count, t.SlotNumbers.Count);
+            Assert.StartsWith("CPD_WP_Type_", t.Type);
+            Assert.True(t.Changelist > 0);
+            var text = System.Text.Encoding.Latin1.GetString(t.Elements);
+            Assert.DoesNotContain("/Game/ZC", text);                         // nothing from a mod
+            Assert.DoesNotContain("_BF2_", text);
+            Assert.All(t.Parts, p => Assert.DoesNotContain("BF2_", p));
+            var again = WeaponOps.ReadTemplate(WeaponOps.WriteTemplate(t));   // the file format round-trips
+            Assert.Equal(t.Elements, again.Elements);
+            Assert.Equal(t.Parts, again.Parts);
+            Assert.Equal(t.SlotNumbers, again.SlotNumbers);
+        }
+        Assert.Same(WeaponOps.Templates[0], WeaponOps.Template(WeaponOps.Templates[0].Key));
+        Assert.Equal(WeaponOps.Template("rifle"), WeaponOps.Template("template:Rifle"));
+        Assert.Null(WeaponOps.Template("template:Nope"));
+    }
+
+    [SkippableFact]
+    public void A_generic_weapon_can_be_copied_onto_every_operator_of_its_class_and_onto_a_damaged_weapon()
+    {
+        var g0 = Sample();
+        int copies = 0;
+        foreach (var target in WeaponOps.Operators(g0))
+        {
+            if (WeaponOps.TemplateFor(WeaponOps.Class(g0, target)) is not { } t) continue;
+            var cut = new CutInfo();
+            var (copied, used) = WeaponOps.Copy(g0, target, t.Key, cut);
+            Assert.Equal(t.Key, used);
+            Assert.True(WeaponOps.Holds(copied, target, cut.WeaponCopies[target]), $"{target} <- {t.Name}");
+            Assert.Equal(t.Parts, WeaponOps.Read(copied, target)!.Parts.Select(p => p.Name).ToList());
+            foreach (var other in WeaponOps.Operators(g0).Where(o => o != target))                          // nobody else changed
+                Assert.Equal(WeaponOps.Read(g0, other)!.Parts, WeaponOps.Read(copied, other)!.Parts);
+            copies++;
+        }
+        Skip.If(copies == 0, "no operator in the sample save has a class with a generic weapon");
+    }
+
+    [SkippableFact]
+    public void With_no_donor_the_generic_weapon_of_the_operators_class_is_used_and_an_unknown_class_asks_for_a_choice()
+    {
+        var g0 = Sample();
+        // an operator nobody else can donate to: take away every other operator's weapon wrappers of the class by copying onto a class of one
+        var lone = WeaponOps.Operators(g0).FirstOrDefault(o => WeaponOps.Donors(g0, o).Count == 0 && WeaponOps.TemplateFor(WeaponOps.Class(g0, o)) != null);
+        if (lone != null)
+        {
+            var (copied, used) = WeaponOps.Copy(g0, lone, null, new CutInfo());
+            Assert.True(WeaponOps.IsTemplate(used));
+            Assert.True(WeaponOps.Holds(copied, lone, WeaponOps.Template(used)!.Parts));
+        }
+        var noClass = WeaponOps.Operators(g0).FirstOrDefault(o => WeaponOps.TemplateFor(WeaponOps.Class(g0, o)) == null && WeaponOps.Donors(g0, o).Count == 0);
+        Skip.If(noClass == null && lone == null, "the sample save has no operator without a donor");
+        if (noClass != null)
+        {
+            var e = Assert.Throws<GvasException>(() => WeaponOps.Copy(g0, noClass, null, new CutInfo()));
+            Assert.Contains("Rifle", e.Message);                                                                // names the generic weapons to pick from
+            var (copied, _) = WeaponOps.Copy(g0, noClass, "template:Rifle", new CutInfo());                    // an explicit choice always works
+            Assert.Equal(WeaponOps.Template("Rifle")!.Parts, WeaponOps.Read(copied, noClass)!.Parts.Select(p => p.Name).ToList());
+        }
     }
 
     [SkippableFact]

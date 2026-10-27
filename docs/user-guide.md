@@ -39,6 +39,20 @@ the roster order; the game's own strip and mission select follow it.
 - **Bonds** - partners placed on the game's 0-8 scale. Click a face to change that bond's level, progress or cross training.
 - **Focus Tree** - set ability levels using the game's own focus costs. Choose **Spend unspent focus** (levelling costs
   what you have) or **Grant the focus** (levelling is free; the total rises to match).
+- **Loadout** - the operator's weapon and gear. The weapon shows its parts (type, base, barrel, stock, scope, cell, paint); a weapon whose
+  parts have **no mesh or variant data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for
+  example after a game update: the Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*. While one
+  operator has such a weapon, Personnel shows a notice with a **Show me** button. **Copy weapon** queues giving the operator a copy of another
+  operator's vanilla weapon of the same class (rifle, pistol, longarm or repeater). Leave it on *Automatic* (another operator's weapon, and when
+  no one in the save can donate, the editor's own generic weapon of the class), pick an operator, or pick one of the generic weapons (a generic
+  weapon of another class is offered too, but the operator's specialization may not suit it). A weapon that works is only replaced after you
+  confirm. **Apply to save** writes it. A modded weapon is not brought back, only replaced with a working one (a backup keeps the old one);
+  once the mod works again, change the weapon in the game. Below the weapon are the operator's **utility** and **weapon mod** slots, one picker per
+  slot: choose an owned item or *Empty*. An item can only be in one place, so choosing one another operator holds takes it from them (the
+  picker says who has it, and the pending list says "takes it from"). If the squad owns no utility item, add one in Armory > Add items.
+  From the command line: `zc save weapons <save>` and `zc save loadout <save>` list them, `zc edit do <save> copy-weapon <operator>
+  [donor|Rifle|Pistol|Longarm|Repeater]` and `zc edit do <save> equip <operator> <utility|mod> <slot> <item|empty>` change them (add `--write`;
+  without it they only preview). Try it on a copy first; neither has been confirmed in the game.
 - **Give a bond trait** (on the Overview) - adds one of the 32 class traits operators normally learn only from a bond partner of
   another class through cross training, such as a Scout's Difficult Target or a Soldier's Grenadier. Pick it from the list (it shows
   the game's description once the game data is extracted) and press **Add**; after you apply it is listed under training and stat
@@ -57,20 +71,6 @@ then **Queue: start**. Starting works like the game's Build button: the game the
 **Also expedite upgrades I start** to have it finish at the next turn change instead, or use **Queue: expedite** on one that is
 already building. No cost is charged. **Queue all startable** queues everything that can be started, **Expedite all building**
 expedites everything under construction, and **Clear queue** drops the queued starts and expedites.
-
-## Weapons
-Each roster operator's weapon and its parts (type, base, barrel, stock, scope, cell, paint). A weapon whose parts have **no mesh or variant
-data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for example after a game update: the
-Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*.
-
-**Copy weapon** queues giving the operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or
-repeater). It is meant for a damaged weapon, but works on any: on a weapon that works it first asks you to confirm, because the old weapon
-is replaced. Choose which operator to copy from, or leave it on *Automatic*; only operators with an undamaged weapon that uses no mod assets
-are offered. **Apply to save** writes it. A modded weapon is not brought back, only replaced with a working one (a backup keeps the old one).
-Once the mod works again, change the weapon in the game.
-From the command line: `zc save weapons <save>` lists weapons and who each can copy from, and
-`zc edit do <save> copy-weapon <operator> [donor] --write` does the same (without `--write` it only previews, and says when the weapon it
-replaces works). Try it on a copy first; it has not been confirmed in the game.
 
 ## Armory
 Utility items and weapon mods, with how many you own. Use the search box to find one.

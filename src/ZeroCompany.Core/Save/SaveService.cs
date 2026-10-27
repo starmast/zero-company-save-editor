@@ -444,7 +444,7 @@ public sealed class SaveService
                     var guid = NormGuid(rw.Guid);
                     if (!seen.Add("weapon" + guid)) throw new EditException("duplicate weapon copy");
                     if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
-                    try { g = WeaponOps.Copy(g, guid, rw.Donor == null ? null : NormGuid(rw.Donor), cut).File; }
+                    try { g = WeaponOps.Copy(g, guid, rw.Donor == null ? null : WeaponOps.IsTemplate(rw.Donor) ? rw.Donor : NormGuid(rw.Donor), cut).File; }
                     catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
                     break;
                 }

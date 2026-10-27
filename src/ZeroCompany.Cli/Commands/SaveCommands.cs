@@ -1,4 +1,5 @@
 using ZeroCompany.Core.Actions;
+using ZeroCompany.Core.Gvas;
 using ZeroCompany.Core.Model;
 using ZeroCompany.Sdk;
 using ZeroCompany.Sdk.Cli;
@@ -73,6 +74,14 @@ static class SaveCommands
                 Loadout(SaveDocument.Open(ws, a.Take("zc save loadout <save>")));
                 return 0;
             }
+            case "capture-weapon":
+            {
+                // developer tool: make a generic weapon for src/ZeroCompany.Core/Resources/Weapons (see docs/development.md)
+                NoJson(a, cmd);
+                var save = SaveDocument.Open(ws, a.Take("zc save capture-weapon <save> <operator> <name> <file>"));
+                CaptureWeapon(save, a.Take("zc save capture-weapon <save> <operator> <name> <file>"), a.Take("zc save capture-weapon <save> <operator> <name> <file>"), a.Take("zc save capture-weapon <save> <operator> <name> <file>"));
+                return 0;
+            }
             case "check": return Check(a);
             default: throw new ZcException($"unknown command 'zc save {cmd}' (zc save --help)");
         }
@@ -97,6 +106,21 @@ static class SaveCommands
             if (w.Broken || donors.Count > 0)
                 Console.WriteLine(donors.Count == 0 ? "      no operator to copy a vanilla weapon from" : "      can copy from: " + string.Join(", ", donors.Select(d => d[..8])));
         }
+    }
+
+    static void CaptureWeapon(SaveDocument doc, string who, string name, string file)
+    {
+        var g = doc.Gvas;
+        var hits = MedbayOps.Characters(g).Keys.Where(k => k.StartsWith(who, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (hits.Count != 1) throw new ZcException($"'{who}' matches {hits.Count} operators; give the start of the GUID `zc save weapons` shows");
+        int changelist = doc.Container.SaveInfo() is { } info && info["changelist"] is System.Text.Json.Nodes.JsonValue v && int.TryParse(v.ToString(), out var c) ? c : 0;
+        try
+        {
+            var t = WeaponOps.Capture(g, hits[0], name, changelist);
+            File.WriteAllBytes(file, WeaponOps.WriteTemplate(t));
+            Console.WriteLine($"{t.Label}: {t.Parts.Count} parts, {t.Elements.Length:N0} bytes of weapon data, class {t.Class}, game changelist {changelist} -> {file}");
+        }
+        catch (GvasException e) { throw new ZcException(e.Message, e); }
     }
 
     static void Loadout(SaveDocument doc)

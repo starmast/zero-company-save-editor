@@ -58,7 +58,9 @@ public static class ViewBuilder
                 Guid = guid, Name = m.NameOf(guid), Class = w.Class.Replace('_', ' '), Type = w.Type, Damaged = w.Broken,
                 Parts = w.Parts.Select(p => new WeaponPartView { Slot = p.Slot.Replace("br.Customization.Slot.Weapon.", ""), Name = p.Name, HasData = p.Fragments > 0 }).ToList(),
                 Donors = WeaponOps.Donors(m.G, guid).Where(d => m.Operators.TryGetValue(d, out var o) && !o.Dead)
-                    .Select(d => new OperatorChoiceView { Guid = d, Name = m.NameOf(d) }).ToList(),
+                    .Select(d => new OperatorChoiceView { Guid = d, Name = m.NameOf(d) })
+                    .Concat(WeaponOps.Templates.OrderBy(t => t.Class == w.Class ? 0 : 1).ThenBy(t => t.Name, Ord)
+                        .Select(t => new OperatorChoiceView { Guid = t.Key, Name = t.Label + (t.Class == w.Class ? "" : " (other class)") })).ToList(),
             });
         }
         return new WeaponsView { Rows = rows.OrderByDescending(r => r.Damaged).ThenBy(r => r.Name, Ord).ToList() };
