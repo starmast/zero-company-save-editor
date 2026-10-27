@@ -418,6 +418,17 @@ public sealed class GvasFile
         return Adopt(buf);
     }
 
+    /// <summary>Replace element <paramref name="index"/> of an ArrayProperty of structs with <paramref name="raw"/> (the whole element); the count stays. Returns a NEW GvasFile.</summary>
+    public GvasFile ArrayReplaceElement(GvasNode arr, int index, byte[] raw)
+    {
+        if (arr.TName != "ArrayProperty" || arr.Children == null || arr.Count == null || index < 0 || index >= arr.Children.Count || raw.Length == 0)
+            throw new GvasException("not a replaceable array element");
+        var el = arr.Children[index];
+        var buf = Splice(Data, el.Start, el.End, raw);
+        Grow(buf, arr, raw.Length - (el.End - el.Start));
+        return Adopt(buf);
+    }
+
     /// <summary>Remove entry <paramref name="index"/> of a MapProperty; returns a NEW GvasFile.</summary>
     public GvasFile MapRemoveEntry(GvasNode mp, int index)
     {

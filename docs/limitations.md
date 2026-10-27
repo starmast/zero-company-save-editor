@@ -12,7 +12,7 @@
   able to verify.
 - **Roster capacity** can be set higher than the Den's upgrades allow, and a roster above its capacity loads without trimming (tried in the game), but the roster screens
   look odd when the numbers do not fit, for example 18/15.
-- **Weapons and gear** (Personnel > Loadout): the editor reads every operator's weapon and gear slots. It can replace a weapon (damaged or not) by copying
+- **Weapons and gear** (Personnel > Loadout): the editor reads every operator's weapon and gear slots. It can replace a weapon and its gear kit (damaged or not) by copying
   an undamaged vanilla weapon of the same class from another operator or, when there is none, one of four generic weapons it ships (rifle, pistol,
   longarm, repeater, captured from game build 199049 and untried on other builds). It cannot pick any other weapon type, restore a modded weapon,
   or fix a weapon of a class with no generic weapon unless you pick a generic weapon of another class yourself. Gear slots take any owned item that fits

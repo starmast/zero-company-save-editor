@@ -73,6 +73,8 @@ public sealed class WeaponRowViewModel : ViewModelBase, IDisposable
     }
     public bool IsQueued => _pending.WeaponCopies.ContainsKey(_guid);
     public string ToggleText => IsQueued ? "Undo copy" : "Copy weapon";
+    /// <summary>Shown once the copy is queued: nothing is written until the bar at the bottom is used.</summary>
+    public string QueuedHint => "Queued. Nothing is written yet: press Apply to save in the bar at the bottom (or Save as copy to leave this save as it is), then load the save in the game.";
     public System.Windows.Input.ICommand Toggle { get; }
 
     public System.Windows.Input.ICommand Confirm { get; }

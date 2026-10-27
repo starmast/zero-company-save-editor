@@ -40,7 +40,7 @@ the roster order; the game's own strip and mission select follow it.
 - **Focus Tree** - set ability levels using the game's own focus costs. Choose **Spend unspent focus** (levelling costs
   what you have) or **Grant the focus** (levelling is free; the total rises to match).
 - **Loadout** - the operator's weapon and gear. The weapon shows its parts (type, base, barrel, stock, scope, cell, paint); a weapon whose
-  parts have **no mesh or variant data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for
+  parts, or its **gear kit** (the character part that says which weapon the operator carries), have **no mesh or variant data** is marked damaged. The game leaves a weapon like that behind when a mod's weapon stops loading, for
   example after a game update: the Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*. While one
   operator has such a weapon, Personnel shows a notice with a **Show me** button. **Copy weapon** queues giving the operator a copy of another
   operator's vanilla weapon of the same class (rifle, pistol, longarm or repeater). Leave it on *Automatic* (another operator's weapon, and when
