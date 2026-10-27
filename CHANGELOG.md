@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-27
+
 ### Added
 - **Personnel > Loadout.** A new tab with the operator's weapon and gear. The weapon shows its parts (type, base, barrel, stock, scope, cell, paint)
   and is marked damaged when its parts have lost their mesh and variant data, which is what a modded weapon looks like after the mod stops loading
