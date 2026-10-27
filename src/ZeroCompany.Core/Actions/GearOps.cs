@@ -28,13 +28,13 @@ public static class GearOps
         _ => throw new GvasException("gear type must be mod or utility"),
     };
 
-    static List<GvasNode> Records(GvasFile g)
+    internal static List<GvasNode> Records(GvasFile g)
     {
         var sd = g.StrategyDataOrNull();
         return (sd == null ? null : g.Child(sd, "EquippedItemData"))?.Children ?? new List<GvasNode>();
     }
 
-    static GvasNode? SlotsNode(GvasFile g, string guid, string type)
+    internal static GvasNode? SlotsNode(GvasFile g, string guid, string type)
     {
         foreach (var ent in Records(g))
         {

@@ -362,6 +362,33 @@ public sealed class WeaponsView
     public int DamagedCount => Rows.Count(r => r.Damaged);
 }
 
+/// <summary>An owned item that fits a gear slot, and who holds it now ("" when nobody).</summary>
+public sealed class GearItemView
+{
+    public string Guid { get; init; } = "";
+    public string Name { get; init; } = "";
+    /// <summary>"utility" or "mod".</summary>
+    public string Type { get; init; } = "";
+    public string HeldBy { get; init; } = "";
+    public string HeldByName { get; init; } = "";
+}
+
+/// <summary>One gear slot of an operator and the item in it ("" when empty).</summary>
+public sealed class GearSlotView
+{
+    public string Type { get; init; } = "";
+    public int Index { get; init; }
+    public string Item { get; init; } = "";
+    public string ItemName { get; init; } = "";
+}
+
+/// <summary>Gear per operator: the slots they have, and the items the squad owns that could go in them.</summary>
+public sealed class LoadoutView
+{
+    public Dictionary<string, List<GearSlotView>> Slots { get; init; } = new();
+    public List<GearItemView> Items { get; init; } = new();
+}
+
 public sealed class SaveView
 {
     public HeaderView Header { get; init; } = new();
@@ -369,6 +396,7 @@ public sealed class SaveView
     public PersonnelView Personnel { get; init; } = new();
     public ArmoryView Armory { get; init; } = new();
     public WeaponsView Weapons { get; init; } = new();
+    public LoadoutView Loadout { get; init; } = new();
     public MedbayView Medbay { get; init; } = new();
     public GalaxyView Galaxy { get; init; } = new();
     public CoilView Coil { get; init; } = new();

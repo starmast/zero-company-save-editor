@@ -18,6 +18,7 @@ static class SaveCommands
           zc save dump <save> [path] [--depth N] [--take N]
                                                  property tree below a path, e.g. TacticalSaveGameWrapper/ArchiveBytes/CharacterInfos/[6]
           zc save weapons <save>                 each operator's weapon parts, and which weapons have lost their mesh data
+          zc save loadout <save>                 each operator's utility and weapon mod slots and what is in them
           zc save check <save>...                round-trip and consistency checks (exit 1 on any problem)
 
         <save> is a file path, a file-name fragment ("Brentaal"), a save name ("COMBAT BASE 4.0"), or "latest". --json is available on list and check.
@@ -66,6 +67,12 @@ static class SaveCommands
                 Weapons(SaveDocument.Open(ws, a.Take("zc save weapons <save>")));
                 return 0;
             }
+            case "loadout":
+            {
+                NoJson(a, cmd);
+                Loadout(SaveDocument.Open(ws, a.Take("zc save loadout <save>")));
+                return 0;
+            }
             case "check": return Check(a);
             default: throw new ZcException($"unknown command 'zc save {cmd}' (zc save --help)");
         }
@@ -90,6 +97,22 @@ static class SaveCommands
             if (w.Broken || donors.Count > 0)
                 Console.WriteLine(donors.Count == 0 ? "      no operator to copy a vanilla weapon from" : "      can copy from: " + string.Join(", ", donors.Select(d => d[..8])));
         }
+    }
+
+    static void Loadout(SaveDocument doc)
+    {
+        var g = doc.Gvas;
+        var items = LoadoutOps.Items(g).ToDictionary(i => i.Guid, i => Naming.Pretty(i.Asset));
+        foreach (var (guid, wrapper) in MedbayOps.Characters(g))
+        {
+            var slots = new[] { GearOps.Utility, GearOps.Modification }.SelectMany(t => LoadoutOps.Slots(g, guid, t)).ToList();
+            if (slots.Count == 0) continue;
+            Console.WriteLine($"{guid[..8]}  {Naming.RealName(g, wrapper) ?? "?"}");
+            foreach (var s in slots)
+                Console.WriteLine($"    {LoadoutOps.TypeName(s.Type),-8} {s.Index + 1}  {(s.Item == null ? "(empty)" : items.GetValueOrDefault(s.Item) ?? s.Item)}");
+        }
+        var all = LoadoutOps.AllItems(g);
+        Console.WriteLine(LoadoutOps.Consistent(g, all) ? $"slots and equipped sets agree ({all.Count} items)" : "WARNING: slots and equipped sets disagree");
     }
 
     static int List(CliArgs a)

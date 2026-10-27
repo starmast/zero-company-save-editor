@@ -427,6 +427,18 @@ public sealed class SaveService
                     catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
                     break;
                 }
+                case SaveAction.SetEquipped se:
+                {
+                    var guid = NormGuid(se.Guid);
+                    string tag;
+                    try { tag = LoadoutOps.TypeTag(se.Type ?? ""); } catch (GvasException e) { throw new EditException(e.Message, e); }
+                    if (se.Item != null && (se.Item.Length != 32 || !se.Item.All(Uri.IsHexDigit))) throw new EditException("bad item reference");
+                    if (!seen.Add($"equip{guid}{tag}{se.Slot}")) throw new EditException("duplicate gear slot change");
+                    if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
+                    try { g = LoadoutOps.Equip(g, guid, tag, se.Slot, se.Item?.ToUpperInvariant(), cut); }
+                    catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
+                    break;
+                }
                 case SaveAction.CopyWeapon rw:
                 {
                     var guid = NormGuid(rw.Guid);
@@ -836,6 +848,16 @@ public sealed class SaveService
         }
         if (cut.MarketTables.Count > 0 && !MarketOps.Holds(g2, cut.MarketTables))
             throw new EditException("verification failed: the Black Market tables are not what was intended");
+        if (cut.Equipped.Count > 0)
+        {
+            // an item asked for in two places ends up in the last one; check each slot against what the actions left there
+            var last = cut.Equipped.GroupBy(e => (e.Operator, e.Tag, e.Index)).Select(x => x.Last()).ToList();
+            foreach (var e in last)
+                if (e.Item == null || !last.Any(o => o.Item == e.Item && (o.Operator, o.Tag, o.Index) != (e.Operator, e.Tag, e.Index)))
+                    if (!LoadoutOps.Holds(g2, e.Operator, e.Tag, e.Index, e.Item)) throw new EditException("verification failed: a gear slot is not what was intended");
+            if (!LoadoutOps.Consistent(g2, LoadoutOps.AllItems(g2).Concat(cut.Equipped.Where(e => e.Item != null).Select(e => e.Item!))))
+                throw new EditException("verification failed: an item's equipped set does not match the gear slots");
+        }
         foreach (var (guid, names) in cut.WeaponCopies)
             if (!WeaponOps.Holds(g2, guid, names)) throw new EditException("verification failed: a copied weapon is not what was intended");
         foreach (var (type, total) in cut.GearSlots)
