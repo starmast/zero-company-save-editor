@@ -64,11 +64,13 @@ data** is marked damaged. The game leaves a weapon like that behind when a mod's
 Armory then shows no weapon and greys out *Equip mods*, *Change weapon* and *Customize appearance*.
 
 **Copy weapon** queues giving the operator a copy of another operator's vanilla weapon of the same class (rifle, pistol, longarm or
-repeater). Choose which operator to copy from, or leave it on *Automatic*; only operators with an undamaged weapon that uses no mod assets
-are offered. **Apply to save** writes it. The operator keeps their own weapon slots and the old weapon is replaced, so a modded weapon is not
-brought back, only replaced with a working one (a backup keeps the old one). Once the mod works again, change the weapon in the game.
-From the command line: `zc save weapons <save>` lists weapons, and `zc edit do <save> copy-weapon <operator> [donor] --write` does the same.
-Try it on a copy first; it has not been confirmed in the game.
+repeater). It is meant for a damaged weapon, but works on any: on a weapon that works it first asks you to confirm, because the old weapon
+is replaced. Choose which operator to copy from, or leave it on *Automatic*; only operators with an undamaged weapon that uses no mod assets
+are offered. **Apply to save** writes it. A modded weapon is not brought back, only replaced with a working one (a backup keeps the old one).
+Once the mod works again, change the weapon in the game.
+From the command line: `zc save weapons <save>` lists weapons and who each can copy from, and
+`zc edit do <save> copy-weapon <operator> [donor] --write` does the same (without `--write` it only previews, and says when the weapon it
+replaces works). Try it on a copy first; it has not been confirmed in the game.
 
 ## Armory
 Utility items and weapon mods, with how many you own. Use the search box to find one.

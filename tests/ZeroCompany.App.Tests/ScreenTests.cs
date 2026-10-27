@@ -38,12 +38,29 @@ public class ScreenTests
         var vm = Assert.IsType<WeaponsViewModel>(rig.Main.Screen);
         Skip.If(vm.Rows.Count == 0, "no operator in the sample save has a weapon");
         Assert.All(vm.Rows, r => Assert.NotEmpty(r.Parts));
-        var damaged = vm.Rows.FirstOrDefault(r => r.CanCopy);
-        Skip.If(damaged == null, "no damaged weapon in the sample save");
-        Headless.Run(() => damaged!.Toggle.Execute(null));
+        var damaged = vm.Rows.FirstOrDefault(r => r.Damaged && r.CanCopy);
+        if (damaged != null)
+        {
+            Headless.Run(() => damaged.Toggle.Execute(null));
+            Assert.Equal(1, rig.Main.Session.Pending.Count);
+            Assert.True(damaged.IsQueued);
+            Headless.Run(() => damaged.Toggle.Execute(null));
+            Assert.Equal(0, rig.Main.Session.Pending.Count);
+        }
+
+        // a weapon that works is only replaced after a confirmation
+        var working = vm.Rows.FirstOrDefault(r => r.Healthy && r.CanCopy);
+        Skip.If(working == null, "no working weapon with a donor in the sample save");
+        Headless.Run(() => working!.Toggle.Execute(null));
+        Assert.True(working!.Confirming);
+        Assert.Equal(0, rig.Main.Session.Pending.Count);
+        Headless.Run(() => working.Cancel.Execute(null));
+        Assert.False(working.Confirming);
+        Headless.Run(() => working.Toggle.Execute(null));
+        Headless.Run(() => working.Confirm.Execute(null));
+        Assert.True(working.IsQueued);
         Assert.Equal(1, rig.Main.Session.Pending.Count);
-        Assert.True(damaged!.IsQueued);
-        Headless.Run(() => damaged.Toggle.Execute(null));
+        Headless.Run(() => working.Toggle.Execute(null));
         Assert.Equal(0, rig.Main.Session.Pending.Count);
     }
 

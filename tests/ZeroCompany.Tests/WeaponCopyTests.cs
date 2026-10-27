@@ -77,41 +77,51 @@ public class WeaponCopyTests : IDisposable
     }
 
     [SkippableFact]
-    public void The_copy_keeps_the_operators_own_slot_objects_and_gives_the_rest_names_nothing_else_uses()
+    public void The_copy_gets_slot_objects_of_its_own_and_the_operators_slot_list_points_at_them()
     {
         var g0 = Sample();
         var (victim, donor) = Pair(g0);
         var g = Damage(g0, victim);
-        var slotsBefore = g.Child(g.Child(g.Child(MedbayOps.Characters(g)[victim], "ArchiveBytes"), "CharacterData"), "WeaponCustomizationSlots")!
-            .Children!.Select(n => g.GetStr(n)).ToList();
+        string Slots(GvasFile f, string guid) => string.Join("|", f.Child(f.Child(f.Child(MedbayOps.Characters(f)[guid], "ArchiveBytes"), "CharacterData"), "WeaponCustomizationSlots")!
+            .Children!.Select(n => f.GetStr(n)));
+        string WeaponText(GvasFile f, string guid)
+        {
+            var n = f.Child(f.Child(MedbayOps.Characters(f)[guid], "ArchiveBytes"), "WeaponObjectWrappers")!;
+            return System.Text.Encoding.Latin1.GetString(f.Data, n.ValueOffset, n.Size);
+        }
         var (fixedFile, _) = WeaponOps.Copy(g, victim, null, new CutInfo());
 
-        // the character's slot list is untouched, and every slot object it names is still used by the operator's weapon parts
-        var slotsAfter = fixedFile.Child(fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[victim], "ArchiveBytes"), "CharacterData"), "WeaponCustomizationSlots")!
-            .Children!.Select(n => fixedFile.GetStr(n)).ToList();
-        Assert.Equal(slotsBefore, slotsAfter);
-        var weaponText = System.Text.Encoding.Latin1.GetString(fixedFile.Data, fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[victim], "ArchiveBytes"), "WeaponObjectWrappers")!.ValueOffset,
-            fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[victim], "ArchiveBytes"), "WeaponObjectWrappers")!.Size);
-        foreach (var s in slotsAfter) Assert.Contains(s[(s.LastIndexOf('.') + 1)..], weaponText);
+        // the operator's slot list names objects the copied weapon contains, and not the donor's
+        var mine = Slots(fixedFile, victim).Split('|');
+        Assert.All(mine, s => Assert.Contains(s[(s.LastIndexOf('.') + 1)..], WeaponText(fixedFile, victim)));
+        Assert.Empty(mine.Intersect(Slots(fixedFile, donor).Split('|')));
+        Assert.Equal(Slots(g0, donor), Slots(fixedFile, donor));                                           // the donor is untouched
 
-        // the donor's wrapper objects were renamed in the copy, so no object name occurs in two operators' weapons
-        string Names(string guid)
-        {
-            var n = fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[guid], "ArchiveBytes"), "WeaponObjectWrappers")!;
-            return System.Text.Encoding.Latin1.GetString(fixedFile.Data, n.ValueOffset, n.Size);
-        }
-        var re = new System.Text.RegularExpressions.Regex(@"CharacterCustomization(Variant)?InstanceWrapper_\d+");
-        var mine = re.Matches(Names(victim)).Select(m => m.Value).ToHashSet();
-        var theirs = re.Matches(Names(donor)).Select(m => m.Value).ToHashSet();
-        Assert.Empty(mine.Intersect(theirs));
+        // no wrapper object name occurs in two operators' weapons
+        var re = new System.Text.RegularExpressions.Regex(@"CharacterCustomization(Variant|Slot)?InstanceWrapper_\d+");
+        var a = re.Matches(WeaponText(fixedFile, victim)).Select(m => m.Value).ToHashSet();
+        var b = re.Matches(WeaponText(fixedFile, donor)).Select(m => m.Value).ToHashSet();
+        Assert.Empty(a.Intersect(b));
     }
 
     [SkippableFact]
-    public void Copy_refuses_a_healthy_weapon_a_donor_of_another_class_and_an_operator_without_a_weapon()
+    public void A_working_weapon_can_be_replaced_by_a_donors_too()
     {
         var g = Sample();
-        var (victim, donor) = Pair(g);
-        Assert.Throws<GvasException>(() => WeaponOps.Copy(g, victim, donor, new CutInfo()));                 // not damaged
+        var (target, donor) = Pair(g);
+        var cut = new CutInfo();
+        var (copied, used) = WeaponOps.Copy(g, target, donor, cut);
+        Assert.Equal(donor, used);
+        Assert.Equal(WeaponOps.Read(g, donor)!.Parts.Select(p => (p.Slot, p.Name, p.Fragments)), WeaponOps.Read(copied, target)!.Parts.Select(p => (p.Slot, p.Name, p.Fragments)));
+        Assert.True(WeaponOps.Holds(copied, target, cut.WeaponCopies[target]));
+        Assert.Equal(WeaponOps.Read(g, donor)!.Parts, WeaponOps.Read(copied, donor)!.Parts);                 // the donor keeps its own
+    }
+
+    [SkippableFact]
+    public void Copy_refuses_a_donor_of_another_class_and_an_operator_without_a_weapon()
+    {
+        var g = Sample();
+        var (victim, _) = Pair(g);
         var damaged = Damage(g, victim);
         var other = WeaponOps.Operators(damaged).FirstOrDefault(o => o != victim && WeaponOps.Class(damaged, o) != WeaponOps.Class(damaged, victim));
         if (other != null) Assert.Throws<GvasException>(() => WeaponOps.Copy(damaged, victim, other, new CutInfo()));

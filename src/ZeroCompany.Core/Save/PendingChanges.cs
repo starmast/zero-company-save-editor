@@ -537,7 +537,8 @@ public sealed class PendingChanges
         foreach (var (g, trait) in _traits)
             @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} the bond trait {TraitOps.Find(trait)?.Name ?? trait}"));
         foreach (var (g, donor) in _weaponCopies.OrderBy(kv => kv.Key, StringComparer.Ordinal))
-            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} a copy of {(donor == null ? "another operator's" : Op(donor) + "'s")} vanilla weapon"));
+            @out.Add(new PendingLine("Personnel", "", null, null, $"Give {Op(g)} a copy of {(donor == null ? "another operator's" : Op(donor) + "'s")} vanilla weapon"
+                + (save.View.Weapons.Rows.FirstOrDefault(r => r.Guid == g) is { Damaged: false } ? " (replaces a working weapon)" : "")));
         if (FullOverride() is { } order)
             @out.Add(new PendingLine("Personnel", "", null, null, "Roster order: " + string.Join(", ", order.Select(Op))));
         if (save.Combat is { } cb)

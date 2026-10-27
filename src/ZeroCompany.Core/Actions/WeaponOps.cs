@@ -10,7 +10,7 @@ namespace ZeroCompany.Core.Actions;
 /// so on). A healthy part carries <c>FragmentInstanceWrappers</c> (its mesh and variant choices); a part whose game assets could
 /// not be loaded when the game last saved (a weapon from a mod that stopped working after a game update) has none, and the Armory
 /// then shows no weapon and greys out its menus.
-/// <see cref="Copy"/> gives such an operator a copy of the weapon of another operator with the same weapon class.
+/// <see cref="Copy"/> gives an operator (one with such a weapon, or any other) a copy of the weapon of another operator with the same weapon class.
 /// </summary>
 public static class WeaponOps
 {
@@ -26,7 +26,7 @@ public static class WeaponOps
         public bool Broken => Parts.Count > 0 && Stripped.Count > 0;
     }
 
-    const string SlotWrapperClass = "CharacterCustomizationSlotInstanceWrapper";
+    const string SlotObjectClass = "BRC_CustomizationFragmentInstanceSlot";
     static readonly Regex ObjectName = new(@"(CharacterCustomizationSlotInstanceWrapper|CharacterCustomizationInstanceWrapper|CharacterCustomizationVariantInstanceWrapper|BRC_CustomizationFragmentInstanceSlot)_(\d+)", RegexOptions.CultureInvariant);
     static readonly Regex WeaponSpec = new(@"CPD_WeaponSpec_[A-Za-z0-9]+_[A-Za-z0-9]+", RegexOptions.CultureInvariant);
 
@@ -92,25 +92,6 @@ public static class WeaponOps
         return int.Parse(m.Groups[2].Value);
     }
 
-    static int Digits(GvasFile g, GvasNode node) => ObjectName.Match(g.GetStr(node)).Groups[2].Length;
-
-    /// <summary>
-    /// Whether the donor's slot objects have numbers of the same length as the operator's own, which the copy needs: it keeps the operator's
-    /// names byte for byte the same size, so no size field in the save has to move.
-    /// </summary>
-    static bool SameWidths(GvasFile g, string guid, string donor)
-    {
-        var dk = WrappersNode(g, donor)?.Children; var tk = WrappersNode(g, guid)?.Children;
-        var ds = SlotsNode(g, donor)?.Children; var ts = SlotsNode(g, guid)?.Children;
-        if (dk == null || tk == null || ds == null || ts == null || dk.Count != tk.Count || ds.Count != dk.Count || ts.Count != dk.Count) return false;
-        for (int i = 0; i < dk.Count; i++)
-        {
-            if (g.Child(dk[i], "Object") is not { } a || g.Child(tk[i], "Object") is not { } b || Digits(g, a) != Digits(g, b)) return false;
-            if (Digits(g, ds[i]) != Digits(g, ts[i])) return false;
-        }
-        return true;
-    }
-
     /// <summary>Whether every slot object the weapon's data mentions is one of the operator's own weapon slots (so nothing in the copy would point elsewhere).</summary>
     static bool OwnSlotsOnly(GvasFile g, string guid)
     {
@@ -118,7 +99,7 @@ public static class WeaponOps
         if (w == null || slots == null) return false;
         var own = slots.Select(n => ObjectName.Match(g.GetStr(n))).Where(m => m.Success).Select(m => m.Groups[2].Value).ToHashSet();
         return ObjectName.Matches(Encoding.Latin1.GetString(g.Data, w.ValueOffset, w.Size))
-            .Where(m => m.Groups[1].Value == "BRC_CustomizationFragmentInstanceSlot").All(m => own.Contains(m.Groups[2].Value));
+            .Where(m => m.Groups[1].Value == SlotObjectClass).All(m => own.Contains(m.Groups[2].Value));
     }
 
     /// <summary>The operators whose weapon could be copied to <paramref name="guid"/>, best first.</summary>
@@ -129,70 +110,59 @@ public static class WeaponOps
         if (cls.Length == 0 || want == 0) return new List<string>();
         return Operators(g).Where(o => o != guid && Class(g, o) == cls
                 && Read(g, o) is { Broken: false } w && w.Parts.Count == want && !UsesMod(g, o)
-                && SameWidths(g, guid, o) && OwnSlotsOnly(g, o))
+                && OwnSlotsOnly(g, o))
             .ToList();
     }
 
     /// <summary>
     /// Give <paramref name="guid"/> a copy of <paramref name="donor"/>'s weapon (or of the first suitable donor when null).
-    /// Object names in the copy are rewritten to the operator's own (same digits, so no size field moves): the operator's slot objects
-    /// keep the numbers CharacterData.WeaponCustomizationSlots already points at, and the other wrapper objects get numbers nothing
-    /// else in the save uses. Returns the new file and the donor used.
+    /// Every object in the copy gets a number nothing else in the save uses, as long as the donor's own number was (so no size field
+    /// inside the copy moves), and the operator's CharacterData.WeaponCustomizationSlots, the only other place that names a weapon slot
+    /// object, is pointed at the copy's slot objects. Returns the new file and the donor used.
     /// </summary>
     public static (GvasFile File, string Donor) Copy(GvasFile g, string guid, string? donor, CutInfo cut)
     {
         var dest = WrappersNode(g, guid) ?? throw new GvasException("this operator has no weapon data");
         var have = Read(g, guid)!;
-        if (!have.Broken) throw new GvasException("this operator's weapon is not damaged");
         var candidates = Donors(g, guid);
-        if (candidates.Count == 0) throw new GvasException($"no other operator with a vanilla {(have.Class.Length == 0 ? "weapon of the same class" : have.Class.Replace('_', ' ') + " weapon")} to copy from");
+        if (candidates.Count == 0) throw new GvasException($"no other operator to copy a weapon from: it needs an undamaged vanilla {(have.Class.Length == 0 ? "weapon of the same class" : have.Class.Replace('_', ' ') + " weapon")} (no mod assets)");
         if (donor == null) donor = candidates[0];
         else if (!candidates.Contains(donor)) throw new GvasException("that operator's weapon cannot be copied here (different class, damaged, or from a mod)");
 
         var src = WrappersNode(g, donor)!;
         var dk = src.Children!; var tk = dest.Children!;
         if (dk.Count != tk.Count) throw new GvasException("the two weapons have a different number of parts");
-
-        // the numbers to keep: each part's slot object (CharacterData.WeaponCustomizationSlots) and its slot wrapper
-        var keepSlot = new Dictionary<int, int>();          // donor slot object number -> this operator's
         var dSlots = SlotsNode(g, donor)?.Children; var tSlots = SlotsNode(g, guid)?.Children;
         if (dSlots == null || tSlots == null || dSlots.Count != dk.Count || tSlots.Count != dk.Count)
             throw new GvasException("the weapon slot list does not match the weapon parts");
-        for (int i = 0; i < dk.Count; i++) keepSlot[Number(g, dSlots[i], "BRC_CustomizationFragmentInstanceSlot")] = Number(g, tSlots[i], "BRC_CustomizationFragmentInstanceSlot");
-        var keepWrap = new Dictionary<int, int>();
-        for (int i = 0; i < dk.Count; i++) keepWrap[Number(g, g.Child(dk[i], "Object")!, SlotWrapperClass)] = Number(g, g.Child(tk[i], "Object")!, SlotWrapperClass);
+        var slotNumbers = dSlots.Select(n => Number(g, n, SlotObjectClass)).ToList();
 
         // numbers in use anywhere in the save, so a fresh one cannot collide
-        var all = Encoding.Latin1.GetString(g.Data);
         var used = new Dictionary<string, HashSet<int>>();
-        foreach (Match m in ObjectName.Matches(all))
+        foreach (Match m in ObjectName.Matches(Encoding.Latin1.GetString(g.Data)))
         {
             if (!used.TryGetValue(m.Groups[1].Value, out var set)) used[m.Groups[1].Value] = set = new HashSet<int>();
             set.Add(int.Parse(m.Groups[2].Value));
         }
-        var fresh = new Dictionary<(string, int), int>();
+        var fresh = new Dictionary<(string, int), string>();
 
         string Rename(Match m)
         {
             string cls = m.Groups[1].Value; string digits = m.Groups[2].Value; int n = int.Parse(digits);
-            int to;
-            if (cls == "BRC_CustomizationFragmentInstanceSlot" && keepSlot.TryGetValue(n, out var ks)) to = ks;
-            else if (cls == SlotWrapperClass && keepWrap.TryGetValue(n, out var kw)) to = kw;
-            else if (cls == "BRC_CustomizationFragmentInstanceSlot")
+            if (cls == SlotObjectClass && !slotNumbers.Contains(n))
                 throw new GvasException($"the weapon data refers to an object outside the weapon's own parts ({m.Value})");
-            else if (!fresh.TryGetValue((cls, n), out to))
+            if (!fresh.TryGetValue((cls, n), out var to))
             {
                 var set = used[cls];
-                int hi = (int)Math.Pow(10, digits.Length) - 1;
-                to = Math.Min(hi, set.Max() + 1);
-                while (to <= hi && set.Contains(to)) to++;
-                if (to > hi) throw new GvasException("no free object number of the same length in this save");
-                set.Add(to);
-                fresh[(cls, n)] = to;
+                int lo = digits.Length == 1 ? 0 : (int)Math.Pow(10, digits.Length - 1), hi = (int)Math.Pow(10, digits.Length) - 1;
+                int pick = Math.Max(lo, Math.Min(hi, set.Max() + 1));
+                while (pick <= hi && set.Contains(pick)) pick++;
+                if (pick > hi) { pick = lo; while (pick <= hi && set.Contains(pick)) pick++; }
+                if (pick > hi) throw new GvasException("no free object number of the same length in this save");
+                set.Add(pick);
+                fresh[(cls, n)] = to = pick.ToString(new string('0', digits.Length));
             }
-            var s = to.ToString(new string('0', digits.Length));
-            if (s.Length != digits.Length) throw new GvasException("object number would change length");
-            return cls + "_" + s;
+            return cls + "_" + to;
         }
 
         var from = dk[0].Start; var end = dk[^1].End;
@@ -200,6 +170,7 @@ public static class WeaponOps
             throw new GvasException("unexpected layout of the weapon data");
         var copy = Encoding.Latin1.GetBytes(ObjectName.Replace(Encoding.Latin1.GetString(g.Data, from, end - from), Rename));
         if (copy.Length != end - from) throw new GvasException("the rewritten weapon changed size");
+        var newSlots = slotNumbers.Select(n => fresh.TryGetValue((SlotObjectClass, n), out var t) ? t : throw new GvasException("a weapon part has no slot object")).ToList();
 
         var value = new byte[4 + copy.Length];
         BitConverter.TryWriteBytes(value.AsSpan(0, 4), dk.Count);
@@ -208,12 +179,24 @@ public static class WeaponOps
         cut.OpaqueRemoved -= g.Walk(dk).Count(n => n.Opaque);
         cut.OpaqueRemoved += g.Walk(tk).Count(n => n.Opaque);
         cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(dest)));
+        cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(SlotsNode(g, guid))));
+        var names = Read(g, donor)!.Parts.Select(p => p.Name).ToList();
         var ng = g.ReplaceValue(dest, value);
-        cut.WeaponCopies[guid] = Read(g, donor)!.Parts.Select(p => p.Name).ToList();
+
+        // point the operator's slot list at the copy's slot objects (each edit re-reads the file, so find the node again)
+        for (int i = 0; i < newSlots.Count; i++)
+        {
+            var node = SlotsNode(ng, guid)!.Children![i];
+            var text = ng.GetStr(node);
+            var m = ObjectName.Match(text);
+            var want = text[..m.Groups[2].Index] + newSlots[i] + text[(m.Groups[2].Index + m.Groups[2].Length)..];
+            if (want != text) ng = ng.SetString(node, want);
+        }
+        cut.WeaponCopies[guid] = names;
         return (ng, donor);
     }
 
     /// <summary>Whether the operator's weapon has exactly these parts and every part carries its mesh and variant data.</summary>
     public static bool Holds(GvasFile g, string guid, IReadOnlyList<string> names) =>
-        Read(g, guid) is { Broken: false } w && w.Parts.Select(p => p.Name).SequenceEqual(names);
+        Read(g, guid) is { Broken: false } w && w.Parts.Select(p => p.Name).SequenceEqual(names) && OwnSlotsOnly(g, guid);
 }

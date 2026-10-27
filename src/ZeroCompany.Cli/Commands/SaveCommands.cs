@@ -85,11 +85,10 @@ static class SaveCommands
             var name = MedbayOps.Characters(g).TryGetValue(guid, out var wr) ? Naming.RealName(g, wr) ?? model.NameOf(guid) : guid[..8];
             Console.WriteLine($"  {guid[..8]}  {name,-24} {(w.Class.Length == 0 ? "?" : w.Class),-16} {(w.Broken ? "DAMAGED" : "ok"),-8} {w.Type}");
             if (w.Broken)
-            {
                 foreach (var p in w.Parts) Console.WriteLine($"      {(p.Fragments == 0 ? "no data" : "ok     ")}  {p.Slot.Replace("br.Customization.Slot.Weapon.", ""),-10} {p.Name}");
-                var donors = WeaponOps.Donors(g, guid);
+            var donors = WeaponOps.Donors(g, guid);
+            if (w.Broken || donors.Count > 0)
                 Console.WriteLine(donors.Count == 0 ? "      no operator to copy a vanilla weapon from" : "      can copy from: " + string.Join(", ", donors.Select(d => d[..8])));
-            }
         }
     }
 

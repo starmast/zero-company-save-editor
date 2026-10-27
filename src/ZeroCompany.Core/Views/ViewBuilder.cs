@@ -56,7 +56,7 @@ public static class ViewBuilder
             {
                 Guid = guid, Name = m.NameOf(guid), Class = w.Class.Replace('_', ' '), Type = w.Type, Damaged = w.Broken,
                 Parts = w.Parts.Select(p => new WeaponPartView { Slot = p.Slot.Replace("br.Customization.Slot.Weapon.", ""), Name = p.Name, HasData = p.Fragments > 0 }).ToList(),
-                Donors = !w.Broken ? new() : WeaponOps.Donors(m.G, guid).Where(d => m.Operators.TryGetValue(d, out var o) && !o.Dead)
+                Donors = WeaponOps.Donors(m.G, guid).Where(d => m.Operators.TryGetValue(d, out var o) && !o.Dead)
                     .Select(d => new OperatorChoiceView { Guid = d, Name = m.NameOf(d) }).ToList(),
             });
         }
