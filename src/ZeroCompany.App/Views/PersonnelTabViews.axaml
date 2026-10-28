@@ -60,6 +60,31 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="panel" IsVisible="{Binding CanGiveStat}">
+        <StackPanel>
+          <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Give a stat upgrade" /></Border>
+          <StackPanel Margin="14,10" Spacing="8">
+            <TextBlock Classes="mute" TextWrapping="Wrap"
+                       Text="Stat upgrades are what bond cross training raises: ranged damage, crit chance, grenade crit chance, utility damage, defense and the rest. Pick one this operator has not trained yet to add it at one stack; raise the stacks under training and stat effects once the save is written." />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <ComboBox ItemsSource="{Binding StatOptions}" SelectedItem="{Binding ChosenStat}" HorizontalAlignment="Stretch" PlaceholderText="Choose a stat" />
+              <Button Grid.Column="1" Content="Add" Command="{Binding AddStatCommand}" IsEnabled="{Binding HasChosenStat}" />
+            </Grid>
+            <TextBlock Classes="ice small" Text="{Binding ChosenStatDescription}" IsVisible="{Binding HasChosenStatDescription}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding QueuedStats}" IsVisible="{Binding HasQueuedStats}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:QueuedGrantViewModel">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,2">
+                    <TextBlock Classes="amber" Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Undo" Command="{Binding RemoveCommand}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <Border Classes="panel">
         <StackPanel>
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="TRAINING &amp; STAT EFFECTS" /></Border>

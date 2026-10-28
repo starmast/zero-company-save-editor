@@ -14,10 +14,10 @@ public class LoadoutOpsTests
         return new GvasFile(SaveContainer.Load(File.ReadAllBytes(src!)).Gvas);
     }
 
-    /// <summary>A held utility item with its operator and slot, and an operator with a free utility slot.</summary>
-    static (string Holder, int HolderSlot, string Item, string Free, int FreeSlot) Pick(GvasFile g)
+    /// <summary>A held utility item with its operator and slot, and an operator with a free utility slot (both passing <paramref name="usable"/>, when given).</summary>
+    static (string Holder, int HolderSlot, string Item, string Free, int FreeSlot) Pick(GvasFile g, Func<string, bool>? usable = null)
     {
-        var ops = MedbayOps.Characters(g).Keys.ToList();
+        var ops = MedbayOps.Characters(g).Keys.Where(o => usable?.Invoke(o) ?? true).ToList();
         foreach (var h in ops)
             foreach (var s in LoadoutOps.Slots(g, h, GearOps.Utility).Where(s => s.Item != null))
                 foreach (var f in ops.Where(o => o != h))
@@ -104,9 +104,10 @@ public class LoadoutOpsTests
             var name = Path.GetFileName(src!);
             File.Copy(src!, Path.Combine(dir, name));
             var svc = new SaveService(new Dictionary<string, string> { ["t"] = dir }, Path.Combine(tmp, "backups"), gameRunning: () => null);
-            svc.Open("t", name);
+            var open = svc.Open("t", name);
             var g0 = new GvasFile(SaveContainer.Load(File.ReadAllBytes(Path.Combine(dir, name))).Gvas);
-            var (holder, hs, item, free, fs) = Pick(g0);
+            // a write only changes operators on the roster, so the pair is picked from those
+            var (holder, hs, item, free, fs) = Pick(g0, o => open.Model.Operators.TryGetValue(o, out var op) && !op.Dead);
 
             svc.Apply(Array.Empty<FieldChange>(), force: true, actions: new SaveAction[] { new SaveAction.SetEquipped(free, "utility", fs, item) });
 

@@ -40,6 +40,12 @@ public sealed record TraitOption(string Asset, string Name, string Source, strin
     public override string ToString() => $"{Name} ({Source})";
 }
 
+/// <summary>A cross-training stat upgrade this operator could be given, named and described as the game does once the game data is extracted.</summary>
+public sealed record StatOption(string Asset, string Name, string Description)
+{
+    public override string ToString() => Name;
+}
+
 public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
 {
     readonly PendingChanges _pending;
@@ -47,6 +53,7 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
     readonly FieldSet _fields;
     readonly string _guid;
     readonly List<TraitOption> _allTraits = new();
+    readonly List<StatOption> _allStats = new();
 
     public OverviewTabViewModel(MainViewModel main, OperatorView op, FaceViewModel face)
     {
@@ -72,8 +79,13 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
                 })
                 .OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
+        if (!op.Dead && main.Session.Current is { } open2) _allStats = StatOps.Givable(open2.Gvas, op.Guid)
+                .Select(s => { var (title, desc) = main.Session.Service.Db.EffectText(s.Asset); return new StatOption(s.Asset, title is { Length: > 0 } ? title : s.Name, desc); })
+                .OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         _pending.Changed += RefreshTraits;
+        _pending.Changed += RefreshStats;
         RefreshTraits();
+        RefreshStats();
     }
 
     // ---- give a bond trait -------------------------------------------------------------------
@@ -110,6 +122,40 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
         OnPropertyChanged(nameof(HasQueuedTraits));
     }
 
+    // ---- give a stat upgrade -----------------------------------------------------------------
+    public ObservableCollection<StatOption> StatOptions { get; } = new();
+    public ObservableCollection<QueuedGrantViewModel> QueuedStats { get; } = new();
+    [ObservableProperty] StatOption? _chosenStat;
+    public bool CanGiveStat => _allStats.Count > 0;
+    public bool HasQueuedStats => QueuedStats.Count > 0;
+    public bool HasChosenStat => ChosenStat != null;
+    /// <summary>What the chosen stat does, from the game data (empty until it is extracted).</summary>
+    public string ChosenStatDescription => ChosenStat?.Description ?? "";
+    public bool HasChosenStatDescription => ChosenStatDescription.Length > 0;
+    partial void OnChosenStatChanged(StatOption? value)
+    {
+        OnPropertyChanged(nameof(HasChosenStat)); OnPropertyChanged(nameof(ChosenStatDescription)); OnPropertyChanged(nameof(HasChosenStatDescription));
+    }
+
+    [RelayCommand]
+    void AddStat()
+    {
+        if (ChosenStat is { } s) _pending.SetStat(_guid, s.Asset, true);
+    }
+
+    void RefreshStats()
+    {
+        var queued = _pending.Stats.Where(x => x.Guid == _guid).Select(x => x.Stat).ToHashSet();
+        var keep = ChosenStat;
+        StatOptions.Clear();
+        foreach (var s in _allStats.Where(s => !queued.Contains(s.Asset))) StatOptions.Add(s);
+        ChosenStat = keep != null && StatOptions.Contains(keep) ? keep : null;
+        QueuedStats.Clear();
+        foreach (var s in _allStats.Where(s => queued.Contains(s.Asset)))
+            QueuedStats.Add(new QueuedGrantViewModel(s.Name, () => _pending.SetStat(_guid, s.Asset, false)));
+        OnPropertyChanged(nameof(HasQueuedStats));
+    }
+
     public string Name { get; }
     public FaceViewModel Face { get; }
     public string RoleLine { get; }
@@ -124,7 +170,7 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
     public List<EffectRowViewModel> Effects { get; } = new();
     public bool NoEffects => Effects.Count == 0;
 
-    public override void Dispose() { _pending.Changed -= RefreshTraits; _fields.Dispose(); }
+    public override void Dispose() { _pending.Changed -= RefreshTraits; _pending.Changed -= RefreshStats; _fields.Dispose(); }
 }
 
 // ------------------------------------------------------------------------------------------------ bonds

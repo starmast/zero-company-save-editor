@@ -427,6 +427,15 @@ public sealed class SaveService
                     catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
                     break;
                 }
+                case SaveAction.GiveStat gs:
+                {
+                    var guid = NormGuid(gs.Guid);
+                    if (!granted.Add(guid + "|" + gs.Stat)) throw new EditException("bad stat reference");
+                    if (!c.Model.Operators.TryGetValue(guid, out var op) || op.Dead) throw new EditException("That operator is not on the roster; re-open the save.");
+                    try { g = StatOps.Give(g, guid, gs.Stat ?? "", cut, Db); }
+                    catch (GvasException e) { throw new EditException($"{op.Name}: {e.Message}", e); }
+                    break;
+                }
                 case SaveAction.SetEquipped se:
                 {
                     var guid = NormGuid(se.Guid);
@@ -862,18 +871,18 @@ public sealed class SaveService
             if (!WeaponOps.Holds(g2, guid, names)) throw new EditException("verification failed: a copied weapon is not what was intended");
         foreach (var (type, total) in cut.GearSlots)
             if (!GearOps.Holds(g2, type, total)) throw new EditException("verification failed: the gear slots are not what was intended");
-        foreach (var guid in cut.TraitsGiven.Select(t => t.Guid).Distinct())
+        foreach (var guid in cut.TraitsGiven.Concat(cut.StatsGiven).Select(t => t.Guid).Distinct())
         {
-            // the operator's effects must be exactly the old ones followed by the traits given, in that order
+            // the operator's effects must be exactly the old ones followed by the traits and then the stats given, in that order
             // (injury records a heal in the same write removes are left out of the comparison)
             static bool Injury(GvasFile f, GvasNode e) => MedbayOps.EffectName(f, e) is var n && (n.Contains("Injured", StringComparison.Ordinal) || n.Contains("ApplyDead", StringComparison.Ordinal));
-            var given = cut.TraitsGiven.Where(t => t.Guid == guid).Select(t => t.Asset).ToList();
+            var given = cut.TraitsGiven.Concat(cut.StatsGiven).Where(t => t.Guid == guid).Select(t => t.Asset).ToList();
             var was = (MedbayOps.EffectsNode(old, guid)?.Children ?? new List<GvasNode>()).Where(e => !Injury(old, e)).Select(e => old.Slice(e.Start, e.End)).ToList();
             var now = (MedbayOps.EffectsNode(g2, guid)?.Children ?? new List<GvasNode>()).Where(e => !Injury(g2, e)).ToList();
             if (now.Count != was.Count + given.Count || !now.Take(was.Count).Select(e => g2.Slice(e.Start, e.End)).Zip(was).All(p => p.First.AsSpan().SequenceEqual(p.Second)))
                 throw new EditException("verification failed: an operator's existing effects changed");
-            if (!now.Skip(was.Count).Select(e => MedbayOps.EffectName(g2, e)).SequenceEqual(given) || given.Any(a => TraitOps.Count(g2, guid, a) != 1))
-                throw new EditException("verification failed: a bond trait is not on the operator as intended");
+            if (!now.Skip(was.Count).Select(e => MedbayOps.EffectName(g2, e)).SequenceEqual(given) || given.Any(a => TraitOps.Count(g2, guid, a) + StatOps.Count(g2, guid, a) != 1))
+                throw new EditException("verification failed: a bond trait or stat upgrade is not on the operator as intended");
         }
         foreach (var (guid, tag, record) in cut.Granted)
             if (!AbilityOps.Has(g2, guid, tag, record))

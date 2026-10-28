@@ -275,6 +275,8 @@ public sealed class EffectInfo
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
     public List<EffectModifier> Modifiers { get; set; } = new();
+    /// <summary>How many stacks the effect can hold (the game's StackLimitCount); 0 when the game data predates it.</summary>
+    public int StackLimit { get; set; }
 }
 
 public sealed class EffectModifier

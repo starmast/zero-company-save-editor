@@ -5,6 +5,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-28
+
+### Added
+- **Give a stat upgrade** (on the Overview) - adds one of the 19 cross-training stat upgrades (ranged damage, crit chance, grenade crit chance,
+  utility damage, defense and the rest) to an operator who has never trained it, so it can then be raised under training and stat effects.
+  From the command line: `zc edit do <save> give-stat <operator> <stat>`. A stat nobody in the save has trained gets its modifier entries
+  and values per stack from the extracted game data.
+
+### Changed
+- **Stack and focus limits come from the game data.** An effect's stacks are capped at the game's own stack limit (99 for the cross-training
+  stats, 1 for many others) instead of a fixed 100, and an ability's focus spent at the cost of its top level instead of a fixed 500. A value
+  the save already holds above the limit stays editable. Game data extracted by an earlier version has no stack limits, so extract it again to
+  get them; until then the old limits apply.
+- The stat picker names stats and describes them as the game does once the game data is extracted.
+
+### Checked in the game
+- Stat upgrades given to operators, including a stat nobody in the save had trained (made from the game data), were carried by the operators
+  after loading.
+
 ## [1.3.1] - 2026-10-27
 
 ### Fixed
@@ -403,7 +422,10 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.1...v1.4.0
+[1.3.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/starmast/zero-company-save-editor/compare/v0.8.0...v1.0.0

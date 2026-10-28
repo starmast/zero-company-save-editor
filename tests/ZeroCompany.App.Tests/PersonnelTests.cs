@@ -175,6 +175,29 @@ public class PersonnelTests
     }
 
     [SkippableFact]
+    public void Overview_gives_a_stat_upgrade_and_the_operator_keeps_it_after_the_write()
+    {
+        Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");
+        using var rig = new TestRig(combatFile: "Hub_Traits.sav");
+        rig.Start(height: 1900);
+        var op = rig.Main.Session.Current!.View.Personnel.Roster.First(o => !o.Dead
+            && ZeroCompany.Core.Actions.StatOps.Givable(rig.Main.Session.Current.Gvas, o.Guid).Any(s => s.Asset == "GE_CrossTraining_RangedDamage"));
+        Headless.Run(() => rig.Main.Navigate("personnel", op.Guid, "overview"));
+        var tab = (OverviewTabViewModel)Vm(rig).Content!;
+        Assert.True(tab.CanGiveStat);
+        var ranged = tab.StatOptions.Single(s => s.Asset == "GE_CrossTraining_RangedDamage");
+        Headless.Run(() => { tab.ChosenStat = ranged; tab.AddStatCommand.Execute(null); rig.Pump(); });
+        Assert.Contains((op.Guid, "GE_CrossTraining_RangedDamage"), rig.Main.Session.Pending.Stats);
+        Assert.DoesNotContain(tab.StatOptions, s => s.Asset == ranged.Asset);
+        Assert.Single(tab.QueuedStats);
+        rig.Shot("personnel-give-stat");
+
+        Headless.RunAsync(() => rig.Main.ApplyAsync(copy: false, force: false)).GetAwaiter().GetResult();
+        Assert.Equal("ok", rig.Main.BannerKind);
+        Assert.Contains("GE_CrossTraining_RangedDamage", ZeroCompany.Core.Actions.StatOps.Held(rig.Main.Session.Current!.Gvas, op.Guid));
+    }
+
+    [SkippableFact]
     public void Overview_gives_a_bond_trait_and_the_operator_keeps_it_after_the_write()
     {
         Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");

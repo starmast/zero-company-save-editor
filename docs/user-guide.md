@@ -57,6 +57,9 @@ the roster order; the game's own strip and mission select follow it.
   another class through cross training, such as a Scout's Difficult Target or a Soldier's Grenadier. Pick it from the list (it shows
   the game's description once the game data is extracted) and press **Add**; after you apply it is listed under training and stat
   effects, and the operator has the trait's ability in fights.
+- **Give a stat upgrade** (on the Overview) - adds a cross-training stat (ranged damage, crit chance, grenade crit chance, utility damage,
+  defense and so on) to an operator who has not trained it. It arrives at one stack; after you apply, raise the stacks under training and
+  stat effects. Command line: `zc edit do <save> give-stat <operator> <stat>`.
 - **Give an ability** (on the Focus Tree) - copies an ability another operator in the save holds, such as Cly's Combat Jump
   jetpack, onto this operator. It arrives at level 1; level it up like any other once the save is written.
 - **Complete tree** - shown when an operator (such as the tutorial operator) is missing the higher tiers of some abilities.

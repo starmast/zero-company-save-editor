@@ -33,6 +33,8 @@ public abstract record SaveAction
     public sealed record CopyWeapon(string Guid, string? Donor) : SaveAction;
     /// <summary>Give an operator a bond trait (a class trait normally learned through cross training), by its effect asset name.</summary>
     public sealed record GiveTrait(string Guid, string Trait) : SaveAction;
+    /// <summary>Give an operator a cross-training stat upgrade (ranged damage, crit chance and so on) at one stack, by its effect asset name.</summary>
+    public sealed record GiveStat(string Guid, string Stat) : SaveAction;
     /// <summary>Give every operator <c>Total</c> gear slots of a type ("mod" or "utility").</summary>
     public sealed record SetGearSlots(string Type, int Total) : SaveAction;
     /// <summary>Make a Black Market quality table (kind "mods" or "utility", tier 1 to 3) roll <c>Count</c> items per refresh.</summary>

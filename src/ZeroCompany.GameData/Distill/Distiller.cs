@@ -316,9 +316,11 @@ public static class Distiller
         {
             string title = "", desc = "", shownTitle = "", shownDesc = "";
             var mods = new List<EffectModifier>();
+            int stackLimit = 0;
             foreach (var o in Objects(a.Value))
             {
                 var p = Props(o);
+                if (stackLimit == 0 && p["StackLimitCount"] is JValue { Type: JTokenType.Integer } sl) stackLimit = Convert.ToInt32(sl.Value);
                 if (title.Length == 0 && (Truthy(p["Title"]) || Truthy(p["DisplayName"]) || Truthy(p["Name"])))
                 {
                     title = Text(Truthy(p["Title"]) ? p["Title"] : Truthy(p["DisplayName"]) ? p["DisplayName"] : p["Name"]);
@@ -347,7 +349,7 @@ public static class Distiller
             }
             if (title.Length == 0 && a.Name.StartsWith("GE_", StringComparison.Ordinal) && a.Name.Split('_') is [_, "Offense" or "Defense" or "Support", _, _])
                 (title, desc) = (shownTitle, shownDesc);
-            @out[a.Name] = new EffectInfo { Name = a.Name, Title = title, Description = GameDatabase.Plain(desc), Modifiers = mods };
+            @out[a.Name] = new EffectInfo { Name = a.Name, Title = title, Description = GameDatabase.Plain(desc), Modifiers = mods, StackLimit = stackLimit };
         }
         return @out;
     }
