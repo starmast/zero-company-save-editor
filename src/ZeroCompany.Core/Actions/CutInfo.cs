@@ -21,6 +21,8 @@ public sealed class CutInfo
     public Dictionary<string, List<int>> ZoneClaims { get; } = new();
     /// <summary>Bond traits given: (operator guid, trait effect asset).</summary>
     public List<(string Guid, string Asset)> TraitsGiven { get; } = new();
+    /// <summary>Cross-training stats given: (operator guid, stat effect asset).</summary>
+    public List<(string Guid, string Asset)> StatsGiven { get; } = new();
     /// <summary>Gear slots set for everyone: item type tag -> the slot count each operator must have at least.</summary>
     public Dictionary<string, int> GearSlots { get; } = new();
     /// <summary>Gear equipped: (operator guid, item type tag, slot index, item guid or null when emptied).</summary>

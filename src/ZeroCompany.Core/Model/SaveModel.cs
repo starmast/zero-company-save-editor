@@ -343,7 +343,11 @@ public sealed class SaveModel
                 if (!string.IsNullOrEmpty(title)) label = title;
                 else if (TraitOps.Find(Naming.AssetName(defPath)) is { } trait) label = $"{trait.Name} (bond trait, {trait.Class})";
                 var eff = new OperatorEffect { Asset = Naming.AssetName(defPath), Title = label, Description = edesc };
-                eff.Stacks = Add(g.Child(e, "StackCount"), "Operators", sect, $"{label} - stacks", hi: 100, note: edesc);
+                // the game's own stack limit when the game data has it (never below what the save already holds)
+                var stackNode = g.Child(e, "StackCount");
+                long stackHi = Db.Effects.GetValueOrDefault(Naming.AssetName(defPath))?.StackLimit is > 0 and var lim
+                    ? Math.Max(lim, stackNode != null ? g.GetInt(stackNode) : 0) : 100;
+                eff.Stacks = Add(stackNode, "Operators", sect, $"{label} - stacks", hi: stackHi, note: edesc);
                 var mods = g.Child(e, "Modifiers");
                 var ml = mods?.Children ?? new List<GvasNode>();
                 for (int i = 0; i < ml.Count; i++)
@@ -380,7 +384,10 @@ public sealed class SaveModel
             if (lvlNode != null && (levelable == null || (bool)g.Get(levelable)))
                 lf = Add(lvlNode, "Abilities", sect, $"{name} - level", lo: 1, hi: thr is { Length: > 0 } ? thr.Length : 6,
                          note: "Allocated focus and unspent focus are NOT changed automatically.");
-            var sf = Add(g.Child(val, "AllocatedFocus"), "Abilities", sect, $"{name} - focus spent", hi: 500);
+            // focus spent tops out at the cost of the highest level (the thresholds are cumulative), never below what the save holds
+            var spentNode = g.Child(val, "AllocatedFocus");
+            var sf = Add(spentNode, "Abilities", sect, $"{name} - focus spent",
+                         hi: thr is { Length: > 0 } ? Math.Max(thr.Max(), spentNode != null ? g.GetInt(spentNode) : 0) : 500);
             var dots = tag.Count(c => c == '.');
             @out.Add(new Ability
             {

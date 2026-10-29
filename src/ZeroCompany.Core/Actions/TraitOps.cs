@@ -63,7 +63,7 @@ public static class TraitOps
     static List<GvasNode> Records(GvasFile g, string gid) => MedbayOps.EffectsNode(g, gid)?.Children ?? new List<GvasNode>();
 
     /// <summary>A permanent effect with a plain layout: the kind of record a trait can be made from once its modifiers are removed.</summary>
-    static bool IsPlainPermanent(GvasFile g, GvasNode el) =>
+    internal static bool IsPlainPermanent(GvasFile g, GvasNode el) =>
         g.Child(el, "Duration") is { } d && g.GetDouble(d) < 0 && g.Child(el, "Modifiers") != null && g.Child(el, "StackCount") != null
         && (g.Child(el, "GrantedAbilitySpecs")?.Children?.Count ?? 0) == 0
         && DefOf(g, el) is { } p && (p.Contains("/CrossTrainingStatRewards/", StringComparison.Ordinal) || p.Contains("/GameData/Progression/", StringComparison.Ordinal));

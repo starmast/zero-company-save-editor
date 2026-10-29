@@ -12,8 +12,9 @@ public class WeaponCopyTests : IDisposable
 
     internal static GvasFile Sample()
     {
-        var src = Repo.SampleSave();
-        Skip.If(src == null, "no sample save");
+        // weapon objects are named the way the game has written them since its 1.2 update, so the early-campaign sample (an older save) is not used
+        var src = Repo.CombatSaveNamed("Hub_Traits.sav");
+        Skip.If(src == null, "no sample save from the current game");
         return new GvasFile(SaveContainer.Load(File.ReadAllBytes(src!)).Gvas);
     }
 

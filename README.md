@@ -32,8 +32,8 @@ free community [mappings file](https://www.nexusmods.com/starwarszerocompany/mod
 ## What you can do
 - **Command** - turn, level, XP, credits and other resources, roster capacity, gear slots, field tasks, the Black Market and the
   campaign options a game 1.2 campaign was started with (permadeath, injuries, risk of death ...); restore any backup.
-- **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has or any bond trait (the class traits
-  normally learned through cross training), roster order, bring back fallen operators, and a **Loadout** tab with each operator's weapon
+- **Personnel** - focus points, bonds, ability levels, give an operator an ability another one has, any bond trait (the class traits
+  normally learned through cross training) or a cross-training stat upgrade (ranged damage, crit chance ...), roster order, bring back fallen operators, and a **Loadout** tab with each operator's weapon
   (copy a working one onto a weapon that lost its data, such as a mod weapon the game could no longer load) and gear slots.
 - **Upgrades** - start base upgrades and optionally finish them at the next turn change.
 - **Armory** (including adding items you never had), **Galaxy** (influence and claimed zone rewards, operations, Den missions, Coil upgrades), **Medbay** (heal injuries) and **Advanced** (every raw value).

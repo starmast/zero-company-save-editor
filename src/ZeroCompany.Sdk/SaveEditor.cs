@@ -197,7 +197,20 @@ public sealed class SaveEditor
             p.SetTrait(o.Guid, hit[0].Asset, true);
             return $"give {o.Name} the bond trait {hit[0].Name}";
         });
-        Reg("set-market", "set-market <mods|utility> <tier 1-3> <count>", "how many items the Black Market rolls per refresh from one quality table (1 Basic, 2 Superior, 3 Exquisite)", a =>
+        Reg("give-stat", "give-stat <operator> <stat>", "give an operator a cross-training stat upgrade at one stack (raise the stacks afterwards with set), e.g. give-stat Hawks \"Ranged Damage\"", a =>
+        {
+            var o = Op(a[0]);
+            var opts = StatOps.Givable(Save.Gvas, o.Guid);
+            if (opts.Count == 0)
+                throw new ZcException(StatOps.CanGive(Save.Gvas, o.Guid) ? $"{o.Name} already has every stat upgrade" : $"{o.Name} has no effect record a stat can be copied from");
+            string key = NormName(string.Join(" ", a.Skip(1)));
+            var hit = opts.Where(s => NormName(s.Name) == key || NormName(s.Asset) == key || NormName(s.Asset["GE_CrossTraining_".Length..]) == key).ToList();
+            if (hit.Count != 1)
+                throw new ZcException($"{o.Name} cannot be given '{string.Join(" ", a.Skip(1))}'. Options: {string.Join(", ", opts.Select(s => s.Name))}");
+            p.SetStat(o.Guid, hit[0].Asset, true);
+            return $"give {o.Name} the stat upgrade {hit[0].Name}";
+        });
+        Reg("set-market","set-market <mods|utility> <tier 1-3> <count>", "how many items the Black Market rolls per refresh from one quality table (1 Basic, 2 Superior, 3 Exquisite)", a =>
         {
             string kind = a[0].ToLowerInvariant();
             if (!MarketOps.Kinds.Contains(kind)) throw new ZcException("the kind must be mods or utility");

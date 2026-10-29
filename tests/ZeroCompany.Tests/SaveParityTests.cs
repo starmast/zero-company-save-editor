@@ -40,6 +40,23 @@ public class SaveParityTests : IDisposable
     /// <summary>Fields the Python editor never had: portraits are checked elsewhere, and "addable" is the C# Armory's add-items list and "missions" the Galaxy screen's Den missions.</summary>
     static readonly HashSet<string> Ignore = new() { "portrait", "has_portrait", "addable", "missions", "operations", "roster_cap", "field_tasks_max", "field_tasks_now", "shop_refresh_cost", "shop_bonus_items" };
 
+    /// <summary>
+    /// The Python editor capped every effect's stacks at 100 and every ability's spent focus at 500. This one takes the game's own stack limit and
+    /// the cost of the ability's top level from the game data, so the limits of those fields (and only the limits) are left out of the comparison.
+    /// </summary>
+    static bool GameLimited(string label) => label.EndsWith(" - stacks", StringComparison.Ordinal) || label.EndsWith(" - focus spent", StringComparison.Ordinal);
+
+    static void DropGameLimits(JsonNode? node)
+    {
+        if (node is JsonObject o)
+        {
+            foreach (var key in new[] { "spent", "stacks" })
+                if (o[key] is JsonObject limited) limited.Remove("max");
+            foreach (var kv in o.ToList()) DropGameLimits(kv.Value);
+        }
+        else if (node is JsonArray a) foreach (var item in a) DropGameLimits(item);
+    }
+
     [SkippableFact]
     public void Fields_match_the_python_model()
     {
@@ -56,6 +73,8 @@ public class SaveParityTests : IDisposable
             if (f.Note.Length > 0) o["note"] = f.Note;
             return (JsonNode)o;
         }).ToArray());
+        var goldenMax = golden["fields"]!.AsArray().OfType<JsonObject>().Where(f => GameLimited(f["label"]!.GetValue<string>())).ToDictionary(f => f["id"]!.GetValue<string>(), f => f["max"]!.DeepClone());
+        foreach (var f in actual.OfType<JsonObject>().Where(f => goldenMax.ContainsKey(f["id"]!.GetValue<string>()))) f["max"] = goldenMax[f["id"]!.GetValue<string>()].DeepClone();
         Assert.Null(JsonCompare.Diff(golden["fields"], actual));
         Assert.Equal(golden["parsed_nodes"]!.GetValue<int>(), open.ParsedNodes);
         Assert.Equal(golden["opaque_nodes"]!.GetValue<int>(), open.OpaqueNodes);
@@ -85,6 +104,7 @@ public class SaveParityTests : IDisposable
         var open = svc.Open("t", name);
         var golden = JsonNode.Parse(File.ReadAllText(Path.Combine(GoldenDir, "state.json")))!["view"]![screen];
         var actual = JsonCompare.ToNode(open.View)![screen];
+        DropGameLimits(golden); DropGameLimits(actual);
         if (screen == "galaxy")
             // the Python editor named zones by their tag ("Outer Southwest") and knew nothing of claimed tiers; this one adds the Holotable name
             foreach (var r in actual!["regions"]!.AsArray().OfType<JsonObject>())

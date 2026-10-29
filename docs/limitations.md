@@ -41,6 +41,10 @@
   the game both ways: the heroes carried the traits and their abilities after loading, and a save the game wrote afterwards kept them.
   The game normally limits which traits an operator can learn (from a partner of another class, at certain bond levels); the editor does
   not, so an operator can be given their own class's traits too. Not every trait was played through, and traits cannot be taken away here.
+- **Give a stat upgrade** copies the same stat's record from another operator in the save when there is one. Otherwise it copies another
+  record and, with the game data extracted, fills in the stat's modifier entries and values per stack from it (the saved layout matches the
+  game data for the stat checked); without the game data the stat arrives with no values. Tried in the game: the stats were carried after
+  loading, but not every stat was played through, so check an operator's stats after loading. A modifier the game works out from other attributes (Reduce range penalties) is written as 0.
 - **Heal** removes injuries but doesn't add the game's own treatment history entry.
 - **Bring back** works in the Personnel screens, the Den and on missions (tested in the game with the tutorial operator), but it
   was built by comparing a fallen operator with the living roster, not from a save the game wrote itself. A returning operator
