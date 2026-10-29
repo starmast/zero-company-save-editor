@@ -65,7 +65,7 @@
           <Border Classes="panelh"><TextBlock Classes="caps h2" Text="Give a stat upgrade" /></Border>
           <StackPanel Margin="14,10" Spacing="8">
             <TextBlock Classes="mute" TextWrapping="Wrap"
-                       Text="Stat upgrades are what bond cross training raises: ranged damage, crit chance, grenade crit chance, utility damage, defense and the rest. Pick one this operator has not trained yet to add it at one stack; raise the stacks under training and stat effects once the save is written." />
+                       Text="Stat upgrades are what bond cross training raises: ranged damage, crit chance, grenade crit chance, utility damage, defense and the rest. Pick one this operator has not trained yet to add it at one stack. Stats they already have are not listed here: raise their stacks under training and stat effects." />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
               <ComboBox ItemsSource="{Binding StatOptions}" SelectedItem="{Binding ChosenStat}" HorizontalAlignment="Stretch" PlaceholderText="Choose a stat" />
               <Button Grid.Column="1" Content="Add" Command="{Binding AddStatCommand}" IsEnabled="{Binding HasChosenStat}" />

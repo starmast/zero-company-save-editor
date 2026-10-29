@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Give a stat upgrade** also offers **Cover Combat Practice** (Cover Bonus, +5% cover bonus for both operators), the one cross-training stat the game
+  keeps outside the stat reward folder (`GE_CrossTraining_CoverBonus1`), so the editor missed it. It is copied from another operator's record
+  when the save has one. Extract the game data again to pull in its name and values.
+
+### Changed
+- The Give a stat upgrade panel says that stats an operator already has are not listed there: raise their stacks under training and stat effects.
+
 ## [1.4.0] - 2026-10-28
 
 ### Added

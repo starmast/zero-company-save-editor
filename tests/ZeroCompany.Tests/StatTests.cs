@@ -28,13 +28,15 @@ public class StatTests : IDisposable
         (MedbayOps.EffectsNode(g, guid)?.Children ?? new List<GvasNode>()).Select(e => g.Slice(e.Start, e.End)).ToList();
 
     [Fact]
-    public void The_table_lists_19_distinct_stats()
+    public void The_table_lists_20_distinct_stats()
     {
-        Assert.Equal(19, StatOps.All.Count);
-        Assert.Equal(19, StatOps.All.Select(s => s.Asset).Distinct().Count());
+        Assert.Equal(20, StatOps.All.Count);
+        Assert.Equal(20, StatOps.All.Select(s => s.Asset).Distinct().Count());
         Assert.All(StatOps.All, s => Assert.False(string.IsNullOrWhiteSpace(s.Name)));
         Assert.Equal("/Game/Game/GameData/BondData/CrossTrainingStatRewards/GE_CrossTraining_RangedDamage.Default__GE_CrossTraining_RangedDamage_C",
                      StatOps.DefPath("GE_CrossTraining_RangedDamage"));
+        Assert.Equal("/Game/Game/GameData/Abilities/ResultEffects/GE_CrossTraining_CoverBonus1.Default__GE_CrossTraining_CoverBonus1_C",
+                     StatOps.DefPath("GE_CrossTraining_CoverBonus1"));
     }
 
     [SkippableFact]
@@ -103,5 +105,25 @@ public class StatTests : IDisposable
         Assert.NotEmpty(stacks);
         Assert.All(stacks, e => Assert.Equal(Math.Max(db.Effects[e.Asset].StackLimit, e.Stacks!.Value), e.Stacks.Max));
         Assert.Contains(stacks, e => e.Stacks!.Max != 100);                                       // some effect really is limited below the old fixed 100
+    }
+
+    [SkippableFact]
+    public void Cover_combat_practice_lives_outside_the_stat_reward_folder_and_is_given_like_the_others()
+    {
+        const string Cover = "GE_CrossTraining_CoverBonus1";
+        var (ws, path) = Rig(Repo.CombatSaveNamed("Hub_Traits.sav"));
+        var ed = Open(ws, path);
+        var g = ed.Save.Gvas;
+        Assert.Contains(ed.Save.Model.Operators.Keys, gid => StatOps.Held(g, gid).Contains(Cover));
+        var who = ed.Save.View.Personnel.Roster.First(o => StatOps.Givable(g, o.Guid).Any(s => s.Asset == Cover));
+
+        ed.Do("give-stat", new[] { who.Name, "Cover Bonus" });
+        var res = ed.Apply(asCopy: true);
+
+        var g2 = Open(ws, CopyOf(ed, res)).Save.Gvas;
+        var added = MedbayOps.EffectsNode(g2, who.Guid)!.Children!.Last();
+        Assert.Equal(StatOps.DefPath(Cover), g2.GetStr(g2.Child(added, "Def")!));
+        Assert.Equal(1, StatOps.Count(g2, who.Guid, Cover));
+        Assert.NotEmpty(g2.Child(added, "Modifiers")!.Children!);                      // copied from another operator's record, modifiers and all
     }
 }
