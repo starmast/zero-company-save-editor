@@ -71,7 +71,7 @@ public sealed class TestRig : IDisposable
     public NullUiServices Ui { get; } = new();
     public string SaveName { get; }
 
-    public TestRig(bool withGameData = true, bool combat = false, string? combatFile = null, Func<string?>? gameRunning = null)
+    public TestRig(bool withGameData = true, bool combat = false, string? combatFile = null, Func<string?>? gameRunning = null, bool staleGameData = false)
     {
         var env = new AppEnvironment(Path.Combine(Tmp, "data")) { UseSystemSaveDirs = false };
         var saves = Path.Combine(Tmp, "saves");
@@ -82,7 +82,12 @@ public sealed class TestRig : IDisposable
         if (withGameData)
         {
             var raw = RawGameData.LoadLegacyDirectory(Path.Combine(Repo.Root, "gamedata"));
-            if (raw != null) Distiller.Distill(raw).Save(env.GameDbPath);
+            if (raw != null)
+            {
+                var db = Distiller.Distill(raw);
+                if (staleGameData) db.Revision = 0;                       // as written by an editor from before the revision was recorded
+                db.Save(env.GameDbPath);
+            }
         }
         var settings = new AppSettings { SaveDirs = { saves } };
         settings.Save(env);

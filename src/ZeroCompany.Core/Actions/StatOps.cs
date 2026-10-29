@@ -16,27 +16,30 @@ public static class StatOps
 {
     public const string Folder = "/Game/Game/GameData/BondData/CrossTrainingStatRewards/";
 
-    /// <summary>One stat upgrade: its effect asset and a readable name.</summary>
-    public sealed record Stat(string Asset, string Name);
+    /// <summary>The folder of the one cross-training stat that is not under <see cref="Folder"/> (Cover Combat Practice).</summary>
+    const string ResultFolder = "/Game/Game/GameData/Abilities/ResultEffects/";
 
-    static Stat S(string asset) => new(asset, Naming.Pretty(asset["GE_CrossTraining_".Length..]));
+    /// <summary>One stat upgrade: its effect asset, a readable name and the game folder its effect class is in.</summary>
+    public sealed record Stat(string Asset, string Name, string Folder);
 
-    /// <summary>Every cross-training stat the game defines (19).</summary>
+    static Stat S(string asset) => new(asset, Naming.Pretty(asset["GE_CrossTraining_".Length..]), Folder);
+
+    /// <summary>Every cross-training stat the game defines (19 stat rewards and Cover Combat Practice).</summary>
     public static readonly IReadOnlyList<Stat> All = new[]
     {
         "AssistDamage", "CritChance", "CritDamage", "Defense", "DodgeChance", "GainBond_AFriendlyGame", "GainBond_ConflictResolution",
         "GainFocus", "GrenadeCritChance", "GrenadeDamage", "Health", "Large_DodgeChance", "Large_Speed", "MeleeDamage", "OverwatchDamage",
         "RangedDamage", "ReduceRangePenalties", "Speed", "UtilityDamage",
-    }.Select(n => S("GE_CrossTraining_" + n)).ToArray();
+    }.Select(n => S("GE_CrossTraining_" + n)).Append(new Stat("GE_CrossTraining_CoverBonus1", "Cover Bonus", ResultFolder)).ToArray();
 
     public static Stat? Find(string asset) => All.FirstOrDefault(s => s.Asset == asset);
 
     /// <summary>The effect class path the save stores for a stat.</summary>
-    public static string DefPath(string asset) => $"{Folder}{asset}.Default__{asset}_C";
+    public static string DefPath(string asset) => $"{Find(asset)?.Folder ?? Folder}{asset}.Default__{asset}_C";
 
     static string? DefOf(GvasFile g, GvasNode el) => g.Child(el, "Def") is { } d ? g.GetStr(d) : null;
 
-    static bool IsStatRecord(GvasFile g, GvasNode el) => DefOf(g, el) is { } d && d.StartsWith(Folder, StringComparison.Ordinal);
+    static bool IsStatRecord(GvasFile g, GvasNode el) => DefOf(g, el) is { } d && Find(Naming.AssetName(d).Replace("Default__", "")) is { } s && d == DefPath(s.Asset);
 
     static List<GvasNode> Records(GvasFile g, string gid) => MedbayOps.EffectsNode(g, gid)?.Children ?? new List<GvasNode>();
 

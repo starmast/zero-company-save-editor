@@ -83,6 +83,7 @@ public sealed partial class MainViewModel : ViewModelBase
         PendingBar = new PendingBarViewModel(this);
         Navigate(HasSave ? "command" : "saves");
         if (!session.HasGameData) SetBanner("No game data yet. Names and costs show as ids until you extract them from your install (Game data tab).", "info");
+        else if (session.Db.IsStale) SetBanner(ZeroCompany.GameData.Models.GameDatabase.StaleNotice, "info");
     }
 
     partial void OnBannerTextChanged(string? value) => OnPropertyChanged(nameof(HasBanner));
@@ -227,6 +228,7 @@ public sealed partial class MainViewModel : ViewModelBase
             Navigate(open.IsProfile ? "profile" : "command");
             if (running != null)
                 SetBanner($"The game appears to be running ({running}). Close it before applying, or the game may overwrite your edit.", "err");
+            else if (Session.Db.IsStale) SetBanner(ZeroCompany.GameData.Models.GameDatabase.StaleNotice, "info");
         }
         catch (EditException e) { SetBanner(e.Message, "err"); }
         catch (Exception e) { ReportUnexpected("Could not open the save", e); }

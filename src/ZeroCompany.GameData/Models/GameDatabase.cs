@@ -15,7 +15,18 @@ public sealed class GameDatabase
     /// <summary>Bump when the shape changes; older files are rejected and must be re-extracted.</summary>
     public const int CurrentSchema = 1;
 
+    /// <summary>
+    /// Bump when an editor version reads something that earlier extractions lack (1 up to 1.3, 2 for the stack limits and the cover bonus of 1.4).
+    /// An older file still loads and works, but <see cref="IsStale"/> is set so the editor can ask for a new extraction.
+    /// </summary>
+    public const int CurrentRevision = 2;
+
+    /// <summary>What to tell someone whose game data is older than <see cref="CurrentRevision"/>.</summary>
+    public const string StaleNotice = "Your game data was extracted by an older version of the editor, so some names, values and limits are missing. Extract it again on the Game data tab.";
+
     public int Schema { get; set; } = CurrentSchema;
+    /// <summary>The <see cref="CurrentRevision"/> of the editor that extracted this file (0 in files from before it was recorded).</summary>
+    public int Revision { get; set; }
     public DateTime ExtractedUtc { get; set; }
     public string GameDir { get; set; } = "";
     public List<UpgradeRecipe> Upgrades { get; set; } = new();
@@ -54,6 +65,10 @@ public sealed class GameDatabase
 
     [JsonIgnore]
     public bool IsEmpty => Upgrades.Count == 0 && Items.Count == 0;
+
+    /// <summary>Real game data, but extracted by an older version than this one reads (extract again to get everything).</summary>
+    [JsonIgnore]
+    public bool IsStale => !IsEmpty && Revision < CurrentRevision;
 
     static readonly Regex Markup = new("<[^>]+>", RegexOptions.Compiled);
     static readonly Regex PluralRx = new(@"\{Count\}\|plural\(one=([^,]+),\s*other=([^)]+)\)", RegexOptions.Compiled);

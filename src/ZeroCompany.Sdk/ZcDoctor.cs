@@ -83,7 +83,9 @@ public static class ZcDoctor
         var summary = $"{db.Upgrades.Count} upgrades, {db.Items.Count} items, {db.Effects.Count} effects, extracted {db.ExtractedUtc.ToLocalTime():yyyy-MM-dd HH:mm}";
         var paks = GameExtractor.FindPaksDir(ws.GameDir());
         var newest = paks == null ? (DateTime?)null : Directory.EnumerateFiles(paks, "*.utoc").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty().Max();
-        l.Add(newest != null && newest > db.ExtractedUtc
+        l.Add(db.IsStale
+            ? Check.Warn("game data", summary + "; extracted by an older version of zc", "run zc data extract to get the names, values and limits this version reads")
+            : newest != null && newest > db.ExtractedUtc
             ? Check.Warn("game data", summary + "; the game files are newer", "run zc data extract to refresh it")
             : Check.Ok("game data", summary));
     }
