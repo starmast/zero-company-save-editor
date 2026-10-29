@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **Intel Macs:** showing an operator portrait could close the editor, because the image library it decodes portraits with has no Intel
+  Mac build. Operators now show their initials there instead.
+
 ## [1.5.0] - 2026-10-29
 
 ### Changed
