@@ -16,6 +16,8 @@ public sealed class PortraitService
 {
     readonly string _cacheDir;
     readonly Dictionary<string, Bitmap?> _mem = new();
+    /// <summary>Magick's native library could not be loaded (Magick.NET has none for Intel Macs): show initials, don't retry.</summary>
+    bool _noDecoder;
 
     public PortraitService(string cacheDir) { _cacheDir = cacheDir; }
 
@@ -39,7 +41,7 @@ public sealed class PortraitService
             {
                 var file = Path.Combine(_cacheDir, Convert.ToHexString(SHA1.HashData(exr)).ToLowerInvariant() + ".png");
                 if (File.Exists(file)) bmp = new Bitmap(file);
-                else if (ExrDecoder.TryDecode(exr, out var w, out var h, out var rgba))
+                else if (!_noDecoder && ExrDecoder.TryDecode(exr, out var w, out var h, out var rgba))
                 {
                     bmp = FromRgba(w, h, rgba);
                     try { Directory.CreateDirectory(_cacheDir); bmp.Save(file); } catch (IOException) { }
@@ -47,6 +49,7 @@ public sealed class PortraitService
             }
         }
         catch (Exception e) when (e is IOException or MagickException or ArgumentException or InvalidOperationException) { bmp = null; }
+        catch (Exception e) when (e is TypeInitializationException or DllNotFoundException) { _noDecoder = true; bmp = null; }
         _mem[key] = bmp;
         return bmp;
     }
