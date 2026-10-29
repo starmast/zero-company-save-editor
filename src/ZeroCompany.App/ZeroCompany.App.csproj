@@ -14,12 +14,12 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
-  <!-- Release builds are published as one self-contained file per OS: keep it as small as is safe. -->
+  <!-- Release builds are published as one self-contained exe per OS, with the native libraries (Skia, HarfBuzz, ANGLE, Magick) next
+       to it. The bundle is not compressed and the libraries are not packed into it: unpacking DLLs to the temp folder and loading them
+       from there is what made malware sandboxes (VirusTotal, as run by Nexus Mods) flag the editor. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
