@@ -16,7 +16,8 @@ an app that looks like the game. Every change is backed up and checked before it
 
 ## Get started
 1. **Download** the file for your system from the [Releases](https://github.com/starmast/zero-company-save-editor/releases)
-   page, unpack it and run `ZeroCompanyEditor`. Nothing needs installing.
+   page, unpack it and run `ZeroCompanyEditor`. Nothing needs installing. Keep the files in the folder together: the editor
+   loads its libraries from beside it.
 2. **Close the game**, then pick a save. On Windows your saves are found automatically; otherwise use **Add folder**.
 3. **Make your changes** and press **Apply to save**. Edits stay pending until then, and a backup is made first.
 

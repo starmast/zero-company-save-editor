@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **The native libraries ship next to the editor** instead of being packed into it and unpacked to the temp folder at start-up.
+  That unpacking looked like a malware dropper to virus-scan sandboxes such as the one Nexus Mods runs uploads through. The download is
+  about the same size. Keep the files in the folder together: an editor started without them says which file is missing instead of
+  closing without a word.
+
 ## [1.4.1] - 2026-10-29
 
 ### Added

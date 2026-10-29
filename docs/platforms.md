@@ -1,7 +1,8 @@
 # Platforms
 
-The editor is a single self-contained file: no .NET, Python or browser is needed. Download the archive for your system from the
-[Releases](https://github.com/starmast/zero-company-save-editor/releases) page.
+The editor is self-contained: no .NET, Python or browser is needed. Download the archive for your system from the
+[Releases](https://github.com/starmast/zero-company-save-editor/releases) page and unpack it. The folder holds the editor, `zc`
+and a few native libraries (graphics, text and image handling) that the editor loads from beside it, so keep them together.
 
 | System | Status | Notes |
 |---|---|---|
