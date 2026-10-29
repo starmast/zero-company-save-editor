@@ -83,6 +83,7 @@ public sealed partial class MainViewModel : ViewModelBase
         PendingBar = new PendingBarViewModel(this);
         Navigate(HasSave ? "command" : "saves");
         if (!session.HasGameData) SetBanner("No game data yet. Names and costs show as ids until you extract them from your install (Game data tab).", "info");
+        else if (session.Db.IsStale) SetBanner(ZeroCompany.GameData.Models.GameDatabase.StaleNotice, "info");
     }
 
     partial void OnBannerTextChanged(string? value) => OnPropertyChanged(nameof(HasBanner));

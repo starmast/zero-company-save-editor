@@ -70,6 +70,7 @@ public static class Distiller
         var flat = Flatten(raw.Strings);
         return new GameDatabase
         {
+            Revision = GameDatabase.CurrentRevision,
             ExtractedUtc = DateTime.UtcNow,
             GameDir = gameDir,
             Upgrades = Upgrades(raw.Upgrades),

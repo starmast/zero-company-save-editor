@@ -69,7 +69,8 @@ public sealed partial class GameDataViewModel : ScreenViewModel
         Status = db.IsEmpty
             ? "No game data yet."
             : $"{db.Upgrades.Count} upgrades · {db.Items.Count} items · {db.Effects.Count} effects · {db.FocusThresholds.Count} abilities · "
-              + $"{db.CoilEffects.Count} Coil upgrades. Extracted {db.ExtractedUtc.ToLocalTime():yyyy-MM-dd HH:mm}.";
+              + $"{db.CoilEffects.Count} Coil upgrades. Extracted {db.ExtractedUtc.ToLocalTime():yyyy-MM-dd HH:mm}."
+              + (db.IsStale ? " " + GameDatabase.StaleNotice : "");
     }
 
     void Append(string line)

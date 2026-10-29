@@ -71,6 +71,7 @@
               <Button Grid.Column="1" Content="Add" Command="{Binding AddStatCommand}" IsEnabled="{Binding HasChosenStat}" />
             </Grid>
             <TextBlock Classes="ice small" Text="{Binding ChosenStatDescription}" IsVisible="{Binding HasChosenStatDescription}" TextWrapping="Wrap" />
+            <TextBlock Classes="amber small" Text="Your game data is from an older version of the editor. Extract it again on the Game data tab for the game's own stat names and values." IsVisible="{Binding StaleGameData}" TextWrapping="Wrap" />
             <ItemsControl ItemsSource="{Binding QueuedStats}" IsVisible="{Binding HasQueuedStats}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:QueuedGrantViewModel">

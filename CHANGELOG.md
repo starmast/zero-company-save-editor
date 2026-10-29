@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
   when the save has one. Extract the game data again to pull in its name and values.
 
 ### Changed
+- **The editor tells you when your game data is out of date.** Game data records which version of the editor extracted it. If it is older than
+  the version you run (the stack limits and the cover bonus in the 1.4 line need a fresh extraction), a banner at the top, the **Game data** tab,
+  the Give a stat upgrade panel and `zc doctor` ask you to extract it again. An older file keeps working until you do.
 - The Give a stat upgrade panel says that stats an operator already has are not listed there: raise their stacks under training and stat effects.
 
 ## [1.4.0] - 2026-10-28

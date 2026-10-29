@@ -175,6 +175,28 @@ public class PersonnelTests
     }
 
     [SkippableFact]
+    public void Old_game_data_is_flagged_on_the_banner_the_game_data_screen_and_the_stat_panel()
+    {
+        Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");
+        using var rig = new TestRig(combatFile: "Hub_Traits.sav", staleGameData: true);
+        rig.Start(height: 1900);
+        Assert.True(rig.Session.Db.IsStale);
+        Assert.Equal(ZeroCompany.GameData.Models.GameDatabase.StaleNotice, rig.Main.BannerText);
+        Assert.Equal("info", rig.Main.BannerKind);
+        var op = rig.Main.Session.Current!.View.Personnel.Roster.First(o => !o.Dead);
+        Headless.Run(() => rig.Main.Navigate("personnel", op.Guid, "overview"));
+        Assert.True(((OverviewTabViewModel)Vm(rig).Content!).StaleGameData);
+        rig.Shot("personnel-give-stat-old-game-data");
+        Headless.Run(() => rig.Main.Navigate("gamedata"));
+        Assert.Contains("extracted by an older version", ((GameDataViewModel)rig.Main.Screen!).Status);
+
+        using var fresh = new TestRig(combatFile: "Hub_Traits.sav");
+        fresh.Start();
+        Assert.False(fresh.Session.Db.IsStale);
+        Assert.NotEqual(ZeroCompany.GameData.Models.GameDatabase.StaleNotice, fresh.Main.BannerText);
+    }
+
+    [SkippableFact]
     public void Overview_gives_a_stat_upgrade_and_the_operator_keeps_it_after_the_write()
     {
         Skip.If(Repo.CombatSaveNamed("Hub_Traits.sav") == null, "no late-campaign sample save");

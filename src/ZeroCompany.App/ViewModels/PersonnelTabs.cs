@@ -79,6 +79,7 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
                 })
                 .OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
+        StaleGameData = main.Session.Db.IsStale;
         if (!op.Dead && main.Session.Current is { } open2) _allStats = StatOps.Givable(open2.Gvas, op.Guid)
                 .Select(s => { var (title, desc) = main.Session.Service.Db.EffectText(s.Asset); return new StatOption(s.Asset, title is { Length: > 0 } ? title : s.Name, desc); })
                 .OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
@@ -127,6 +128,8 @@ public sealed partial class OverviewTabViewModel : PersonnelTabViewModel
     public ObservableCollection<QueuedGrantViewModel> QueuedStats { get; } = new();
     [ObservableProperty] StatOption? _chosenStat;
     public bool CanGiveStat => _allStats.Count > 0;
+    /// <summary>The game data is from an older version: stat names, values and the cover bonus need a new extraction.</summary>
+    public bool StaleGameData { get; }
     public bool HasQueuedStats => QueuedStats.Count > 0;
     public bool HasChosenStat => ChosenStat != null;
     /// <summary>What the chosen stat does, from the game data (empty until it is extracted).</summary>
