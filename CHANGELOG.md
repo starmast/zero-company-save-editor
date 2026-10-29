@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-29
+
 ### Added
 - **Give a stat upgrade** also offers **Cover Combat Practice** (Cover Bonus, +5% cover bonus for both operators), the one cross-training stat the game
   keeps outside the stat reward folder (`GE_CrossTraining_CoverBonus1`), so the editor missed it. It is copied from another operator's record
@@ -433,7 +435,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.2.0...v1.3.0
