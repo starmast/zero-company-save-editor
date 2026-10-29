@@ -1,6 +1,6 @@
 <Project>
   <!-- One version for the editor, zc and zcdebug (each reports it, and the debug report prints it). -->
   <PropertyGroup>
-    <Version>1.4.1</Version>
+    <Version>1.5.0</Version>
   </PropertyGroup>
 </Project>

@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-29
+
 ### Changed
 - **The native libraries ship next to the editor** instead of being packed into it and unpacked to the temp folder at start-up.
   That unpacking looked like a malware dropper to virus-scan sandboxes such as the one Nexus Mods runs uploads through. The download is
@@ -441,7 +443,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.0...v1.3.1
