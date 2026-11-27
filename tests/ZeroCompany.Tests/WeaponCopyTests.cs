@@ -50,6 +50,36 @@ public class WeaponCopyTests : IDisposable
         Assert.All(weapons.Where(w => !w.Type.Contains("BF2_")), w => Assert.False(w.Broken, $"{w.Guid} {w.Type}"));
     }
 
+    /// <summary>Give an operator's weapon one more part (and slot), like the mod pistols that carry a second paint finish.</summary>
+    static GvasFile AddPart(GvasFile g, string guid)
+    {
+        var arch = g.Child(MedbayOps.Characters(g)[guid], "ArchiveBytes");
+        var w = g.Child(arch, "WeaponObjectWrappers")!; var last = w.Children![^1];
+        g = g.ArrayAppendRaw(w, g.Slice(last.Start, last.End));
+        arch = g.Child(MedbayOps.Characters(g)[guid], "ArchiveBytes");
+        var s = g.Child(g.Child(arch, "CharacterData"), "WeaponCustomizationSlots")!; var ls = s.Children![^1];
+        return g.ArrayAppendRaw(s, g.Slice(ls.Start, ls.End));
+    }
+
+    [SkippableFact]
+    public void A_mod_weapon_with_more_parts_than_the_replacement_is_replaced_and_its_slot_list_shrinks()
+    {
+        var g0 = Sample();
+        var (victim, donor) = Pair(g0);
+        var g = Damage(AddPart(g0, victim), victim);
+        Assert.Equal(WeaponOps.Read(g0, victim)!.Parts.Count + 1, WeaponOps.Read(g, victim)!.Parts.Count);
+
+        var cut = new CutInfo();
+        var (fixedFile, _) = WeaponOps.Copy(g, victim, $"template:{WeaponOps.TemplateFor(WeaponOps.Class(g, victim))?.Name}", cut);
+        var after = WeaponOps.Read(fixedFile, victim)!;
+        Assert.False(after.Broken);
+        Assert.Equal(WeaponOps.TemplateFor(WeaponOps.Class(g, victim))!.AllParts, after.Parts.Select(p => p.Name));
+        var slots = fixedFile.Child(fixedFile.Child(MedbayOps.Characters(fixedFile)[victim], "ArchiveBytes"), "CharacterData");
+        Assert.Equal(WeaponOps.TemplateFor(WeaponOps.Class(g, victim))!.Parts.Count, fixedFile.Child(slots, "WeaponCustomizationSlots")!.Children!.Count);   // one slot per part, the kit apart
+        Assert.True(WeaponOps.Holds(fixedFile, victim, cut.WeaponCopies[victim]));
+        Assert.Equal(WeaponOps.Operators(g).Count, WeaponOps.Operators(fixedFile).Count);
+    }
+
     [SkippableFact]
     public void A_weapon_stripped_of_its_data_is_reported_and_copy_gives_a_donors_weapon_without_touching_anyone_else()
     {
