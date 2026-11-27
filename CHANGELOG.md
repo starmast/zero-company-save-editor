@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-27
+
 ### Fixed
 - **Copy weapon works on mod weapons with a different number of parts.** The mod pistols (Nexus mod 279) have a tenth part, so replacing them
   stopped with "the two weapons have a different number of parts". The weapon's slot list is now resized to the replacement's. (#31)
@@ -449,7 +451,8 @@ The test suite runs in CI on Python 3.10-3.14. A game update may change the save
 ### Known limitations
 - Windows only. No Medbay/injury editing, no adding items or abilities, no computed combat stats.
 
-[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/starmast/zero-company-save-editor/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/starmast/zero-company-save-editor/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/starmast/zero-company-save-editor/compare/v1.3.1...v1.4.0
