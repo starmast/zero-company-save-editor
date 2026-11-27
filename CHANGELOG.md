@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- **Copy weapon works on mod weapons with a different number of parts.** The mod pistols (Nexus mod 279) have a tenth part, so replacing them
+  stopped with "the two weapons have a different number of parts". The weapon's slot list is now resized to the replacement's. (#31)
 - **Intel Macs:** showing an operator portrait could close the editor, because the image library it decodes portraits with has no Intel
   Mac build. Operators now show their initials there instead.
 

@@ -338,9 +338,10 @@ public static class WeaponOps
     {
         var dest = WrappersNode(g, guid)!;
         var tk = dest.Children!;
-        if (count != tk.Count) throw new GvasException("the two weapons have a different number of parts");
+        // A mod's weapon can have more or fewer parts than the replacement (the mod pistols have a tenth, a second paint finish): the wrapper
+        // list is replaced whole below and the operator's slot list is resized to the new count.
         var tSlots = SlotsNode(g, guid)?.Children;
-        if (tSlots == null || tSlots.Count != count || slotNumbers.Count != count) throw new GvasException("the weapon slot list does not match the weapon parts");
+        if (tSlots == null || tSlots.Count != tk.Count || slotNumbers.Count != count || count == 0) throw new GvasException("the weapon slot list does not match the weapon parts");
         if (tk[0].Start != dest.ValueOffset + 4 || tk[^1].End != dest.End) throw new GvasException("unexpected layout of the weapon data");
 
         // numbers in use anywhere in the save, so a fresh one cannot collide
@@ -383,6 +384,10 @@ public static class WeaponOps
         cut.Prefixes.Add(PathKey.Of(GvasFile.PathOf(SlotsNode(g, guid))));
         var ng = g.ReplaceValue(dest, value);
         cut.OpaqueRemoved += g.OpaqueCount - ng.OpaqueCount;                        // the old weapon's raw nodes go and the copy's come in
+
+        // give the slot list as many entries as the copy has parts (a new entry is a copy of the last one; it is pointed at its slot object below)
+        while (SlotsNode(ng, guid)!.Children!.Count > count) { var sn = SlotsNode(ng, guid)!; ng = ng.ArrayRemoveElement(sn, sn.Children!.Count - 1); }
+        while (SlotsNode(ng, guid)!.Children!.Count < count) { var sn = SlotsNode(ng, guid)!; var last = sn.Children![^1]; ng = ng.ArrayAppendRaw(sn, ng.Slice(last.Start, last.End)); }
 
         // point the operator's slot list at the copy's slot objects (each edit re-reads the file, so find the node again)
         for (int i = 0; i < newSlots.Count; i++)
